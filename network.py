@@ -1,5 +1,16 @@
 import socket
+import struct
+import ctypes
 from threading import Thread
+
+
+class MyStruct:
+    _fields_ = [
+        ("x", ctypes.c_double),
+        ("y", ctypes.c_double),
+        ("z", ctypes.c_float)
+    ]
+
 
 class Network:
     listenAddress = "0.0.0.0"
@@ -20,29 +31,35 @@ class Network:
             print(msg)
             sys.exit()
 
-        #Start listening on socket
+        # Start listening on socket
         soc.listen(10)
         print('Socket now listening')
 
-
-        # this will make an infinite loop needed for 
+        # this will make an infinite loop needed for
         # not reseting server for every client
         while True:
             connection, addr = soc.accept()
             ip, port = str(addr[0]), str(addr[1])
             print('Accepting connection from ' + ip + ':' + port)
             try:
-                Thread(target=self.clientThread, args=(connection, ip, port)).start()
+                Thread(target=self.clientThread, args=(
+                    connection, ip, port)).start()
             except:
                 print("Terrible error!")
                 import traceback
                 traceback.print_exc()
         soc.close()
 
-    def clientThread(self, connection, IP, PORT, MAX_BUFFER_SIZE = 4096):
+    def clientThread(self, connection, IP, PORT, MAX_BUFFER_SIZE=4096):
         while 1:
             data = connection.recv(MAX_BUFFER_SIZE)
-            if not data: break
-            print ("received data:", data)
-            connection.send(data)  # echo
+            if not data:
+                break
+            print("received data:", data)
+            x = MyStruct()
+            fmt = "<ddf"
+            fmt_size = struct.calcsize(fmt)
+            x.x, x.y, x.z = struct.unpack(fmt, data[:fmt_size])
+            print("Fields\n  x: {:f}\n  y: {:f}\n  z: {:f}".format(
+                x.x, x.y, x.z))
         connection.close()
