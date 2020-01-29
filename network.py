@@ -1,16 +1,39 @@
 import socket
 import struct
 import ctypes
+import time
+import socketio
 from threading import Thread
 
+sio = socketio.Client()
+sio.connect('http://localhost:4000')
 
-class MyStruct:
-    _fields_ = [
-        ("x", ctypes.c_double),
-        ("y", ctypes.c_double),
-        ("z", ctypes.c_float)
-    ]
-
+vehicleData = {
+    "rearLeft": 0,
+    "rearRight": 0,
+    "frontLeft": 0,
+    "frontRight": 0,
+    "TPS": 0,
+    "IPW": 0,
+    "baro": 0,
+    "MAP": 0,
+    "AFR": 0,
+    "IAT": 0,
+    "engineTemp": 0,
+    "oilPressure": 0,
+    "oilTemp": 0,
+    "fuelTemp": 0,
+    "xAccel": 0,
+    "yAccel": 0,
+    "zAccel": 0,
+    "roll": 0,
+    "pitch": 0,
+    "yaw": 0,
+    "longitude": 0,
+    "latitude": 0,
+    "speed": 0,
+    "distance": 0
+}
 
 class Network:
     listenAddress = "0.0.0.0"
@@ -55,11 +78,12 @@ class Network:
             data = connection.recv(MAX_BUFFER_SIZE)
             if not data:
                 break
-            print("received data:", data)
-            x = MyStruct()
-            fmt = "<ddf"
+            fmt = "<ffffffffffffffffffffddff"
             fmt_size = struct.calcsize(fmt)
-            x.x, x.y, x.z = struct.unpack(fmt, data[:fmt_size])
-            print("Fields\n  x: {:f}\n  y: {:f}\n  z: {:f}".format(
-                x.x, x.y, x.z))
+            y = struct.unpack(fmt, data[:fmt_size])
+            i = 0
+            for value in vehicleData:
+                vehicleData[value] = round(y[i],2)
+                i = i + 1
+            sio.emit('message', vehicleData)
         connection.close()
