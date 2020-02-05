@@ -5,10 +5,11 @@ import time
 import socketio
 from threading import Thread
 
-sio = socketio.Client()
-sio.connect('http://localhost:4000')
+# sio = socketio.Client()
+# sio.connect('http://127.0.0.1:4000')
 
 vehicleData = {
+    "count": 0,
     "rearLeft": 0,
     "rearRight": 0,
     "frontLeft": 0,
@@ -40,33 +41,29 @@ class Network:
     listenPort = 8000
 
     def startServer(self):
-        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
-            soc.bind((self.listenAddress, self.listenPort))
+            soc.bind(('', self.listenPort))
         except socket.error as msg:
             import sys
             print('Bind failed. Error : ' + str(sys.exc_info()))
             print(msg)
             sys.exit()
-        # Start listening on socket
-        soc.listen(10)
+        # Start listening on sock
         print('Socket now listening')
-        # This will make an infinite loop needed for not reseting server for every client
         while True:
-            connection, addr = soc.accept()
-            ip, port = str(addr[0]), str(addr[1])
-            print('Accepting connection from ' + ip + ':' + port)
-            try:
-                Thread(target=self.clientThread, args=(
-                    connection, ip, port)).start()
-            except:
-                print("Terrible error!")
-                import traceback
-                traceback.print_exc()
-        soc.close()
+            message, address = soc.recvfrom(4096)
+            fmt = "<fffffffffffffffffffffffff"
+            fmt_size = struct.calcsize(fmt)
+            y = struct.unpack(fmt, message[:fmt_size])
+            i = 0
+            for value in vehicleData:
+                vehicleData[value] = round(y[i],2)
+                i = i + 1
+            print(y)
 
     def clientThread(self, connection, IP, PORT, MAX_BUFFER_SIZE=4096):
+        b = 0
         while 1:
             data = connection.recv(MAX_BUFFER_SIZE)
             import time
@@ -74,12 +71,13 @@ class Network:
             print (millis)
             if not data:
                 break
-            fmt = "<ffffffffffffffffffffddff"
+            fmt = "<fffffffffffffffffffffffff"
             fmt_size = struct.calcsize(fmt)
             y = struct.unpack(fmt, data[:fmt_size])
             i = 0
             for value in vehicleData:
                 vehicleData[value] = round(y[i],2)
                 i = i + 1
+            print(y)
             sio.emit('message', vehicleData)
         connection.close()
