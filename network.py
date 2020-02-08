@@ -1,8 +1,9 @@
 import socket
 import struct
 import ctypes
+import sys
 import time
-import socketio
+# import socketio
 from threading import Thread
 
 # sio = socketio.Client()
@@ -36,6 +37,7 @@ vehicleData = {
     "distance": 0
 }
 
+
 class Network:
     listenAddress = "0.0.0.0"
     listenPort = 8000
@@ -45,22 +47,39 @@ class Network:
         try:
             soc.bind(('', self.listenPort))
         except socket.error as msg:
-            import sys
             print('Bind failed. Error : ' + str(sys.exc_info()))
             print(msg)
             sys.exit()
         # Start listening on sock
         print('Socket now listening')
+        self.readData(soc)
+
+    def readData(self, sock):
+        lastPacketID = -1
         while True:
-            message, address = soc.recvfrom(4096)
-            fmt = "<fffffffffffffffffffffffff"
+            message, address = sock.recvfrom(4096)
+            # Padding needed to read doubles (xxxx)
+            fmt = "<Iffffffffffffffffffffxxxxddff"
             fmt_size = struct.calcsize(fmt)
             y = struct.unpack(fmt, message[:fmt_size])
-            i = 0
-            for value in vehicleData:
-                vehicleData[value] = round(y[i],2)
-                i = i + 1
-            print(y)
+            # Check Packet is more recent than old
+            if lastPacketID < y[0]:
+                lastPacketID = y[0]
+                i = 0
+                for value in vehicleData:
+                    # Keeping Decimal Values For Longi and Lati
+                    if i != 22 and i != 21:
+                        vehicleData[value] = round(y[i], 2)
+                        i = i + 1
+                    else:
+                        print(sys.getsizeof(y[i]))
+                        vehicleData[value] = y[i]
+                        i = i + 1
+                print("{" + "\n".join("{!r}: {!r},".format(k, v)
+                                      for k, v in vehicleData.items()) + "}")
+            # Print PacketOutOfOrder Error and Ignore packet
+            else:
+                print('PacketOutOfOrder: Packet ' + str(y[0]) + ' dropped')
 
     def clientThread(self, connection, IP, PORT, MAX_BUFFER_SIZE=4096):
         b = 0
@@ -68,7 +87,7 @@ class Network:
             data = connection.recv(MAX_BUFFER_SIZE)
             import time
             millis = int(round(time.time() * 1000))
-            print (millis)
+            print(millis)
             if not data:
                 break
             fmt = "<fffffffffffffffffffffffff"
@@ -76,8 +95,8 @@ class Network:
             y = struct.unpack(fmt, data[:fmt_size])
             i = 0
             for value in vehicleData:
-                vehicleData[value] = round(y[i],2)
+                vehicleData[value] = round(y[i], 2)
                 i = i + 1
             print(y)
-            sio.emit('message', vehicleData)
+            # sio.emit('message', vehicleData)
         connection.close()
