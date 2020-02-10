@@ -3,14 +3,14 @@ import struct
 import ctypes
 import sys
 import time
-# import socketio
+import socketio
 from threading import Thread
 
 sio = socketio.Client()
 sio.connect('http://127.0.0.1:4000')
 
 vehicleData = {
-    #"count": 0,
+    "count": 0,
     "rearLeft": 0,
     "rearRight": 0,
     "frontLeft": 0,
@@ -77,6 +77,7 @@ class Network:
                         i = i + 1
                 print("{" + "\n".join("{!r}: {!r},".format(k, v)
                                       for k, v in vehicleData.items()) + "}")
+                sio.emit('message', vehicleData)
             # Print PacketOutOfOrder Error and Ignore packet
             else:
                 print('PacketOutOfOrder: Packet ' + str(y[0]) + ' dropped')
@@ -98,5 +99,4 @@ class Network:
                 vehicleData[value] = round(y[i], 2)
                 i = i + 1
             print(y)
-            # sio.emit('message', vehicleData)
         connection.close()
