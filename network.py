@@ -5,11 +5,11 @@ import time
 import socketio
 from threading import Thread
 
-# sio = socketio.Client()
-# sio.connect('http://127.0.0.1:4000')
+sio = socketio.Client()
+sio.connect('http://127.0.0.1:4000')
 
 vehicleData = {
-    "count": 0,
+    #"count": 0,
     "rearLeft": 0,
     "rearRight": 0,
     "frontLeft": 0,
@@ -53,14 +53,17 @@ class Network:
         print('Socket now listening')
         while True:
             message, address = soc.recvfrom(4096)
-            fmt = "<fffffffffffffffffffffffff"
+            fmt = "<ffffffffffffffffffffddff"
             fmt_size = struct.calcsize(fmt)
             y = struct.unpack(fmt, message[:fmt_size])
             i = 0
             for value in vehicleData:
-                vehicleData[value] = round(y[i],2)
+                if value != "longitude" and value != "latitude":
+                    vehicleData[value] = round(y[i],2)
+                else:
+                    vehicleData[value] = y[i]
                 i = i + 1
-            print(y)
+            sio.emit('message', vehicleData)
 
     def clientThread(self, connection, IP, PORT, MAX_BUFFER_SIZE=4096):
         b = 0
