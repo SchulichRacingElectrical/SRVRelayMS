@@ -7,34 +7,51 @@ import socketio
 import threading
 
 sio = socketio.Client()
-sio.connect('http://127.0.0.1:4000')
+sio.connect('http://localhost:5000')
 
 vehicleData = {
     "count": 0,
-    "rearLeft": 0,
-    "rearRight": 0,
-    "frontLeft": 0,
-    "frontRight": 0,
-    "TPS": 0,
-    "IPW": 0,
+    "rlSuspension": 0,
+    "rrSuspension": 0,
+    "flSuspension": 0,
+    "frSuspension": 0,
+    "tp": 0,
+    "ipw": 0,
     "baro": 0,
-    "MAP": 0,
-    "AFR": 0,
-    "IAT": 0,
+    "map": 0,
+    "atf": 0, #AFR
+    "iat": 0,
     "engineTemp": 0,
-    "oilPressure": 0,
+    "oilPres": 0,
     "oilTemp": 0,
     "fuelTemp": 0,
-    "xAccel": 0,
-    "yAccel": 0,
-    "zAccel": 0,
+    "x": 0,
+    "y": 0,
+    "z": 0,
     "roll": 0,
     "pitch": 0,
     "yaw": 0,
     "longitude": 0,
     "latitude": 0,
     "speed": 0,
-    "distance": 0
+    "distance": 0,
+    "egt1": 0,
+    "egt2": 0,
+    "egt3": 0,
+    "egt4": 0,
+    "o2": 0,
+    "cam": 0,
+    "crank": 0,
+    "neutral": 0,
+    "flSpeed": 0,
+    "frSpeed": 0,
+    "rlSpeed": 0,
+    "rrSpeed": 0,
+    "fbrakes": 0,
+    "rbrakes": 0,
+    "rotPot": 0,
+    "voltage": 0,
+    "rpm":0
 }
 
 
