@@ -4,7 +4,7 @@ import ctypes
 import sys
 import time
 import socketio
-from threading import Thread
+import threading
 
 sio = socketio.Client()
 sio.connect('http://127.0.0.1:4000')
@@ -42,7 +42,12 @@ class Network:
     listenAddress = "0.0.0.0"
     listenPort = 8000
 
+    def __init__(self):
+        self.lastPacketTime = 0
+        self.lastPacketTime = -1
+
     def startServer(self):
+
         soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             soc.bind(('', self.listenPort))
@@ -52,19 +57,22 @@ class Network:
             sys.exit()
         # Start listening on sock
         print('Socket now listening')
+        packetResetter = threading.Thread(target=self.resetPacketTracker)
+        packetResetter.start()
         self.readData(soc)
 
     def readData(self, sock):
-        lastPacketID = -1
+        self.lastPacketID = -1
         while True:
+            self.lastPacketTime = int(round(time.time() * 1000))
             message, address = sock.recvfrom(4096)
             # Padding needed to read doubles (xxxx)
             fmt = "<Iffffffffffffffffffffxxxxddff"
             fmt_size = struct.calcsize(fmt)
             y = struct.unpack(fmt, message[:fmt_size])
             # Check Packet is more recent than old
-            if lastPacketID < y[0]:
-                lastPacketID = y[0]
+            if self.lastPacketID < y[0]:
+                self.lastPacketID = y[0]
                 i = 0
                 for value in vehicleData:
                     # Keeping Decimal Values For Longi and Lati
@@ -72,7 +80,6 @@ class Network:
                         vehicleData[value] = round(y[i], 2)
                         i = i + 1
                     else:
-                        print(sys.getsizeof(y[i]))
                         vehicleData[value] = y[i]
                         i = i + 1
                 print("{" + "\n".join("{!r}: {!r},".format(k, v)
@@ -100,3 +107,11 @@ class Network:
                 i = i + 1
             print(y)
         connection.close()
+
+    def resetPacketTracker(self):
+        print("Reset Started")
+        while True:
+            time.sleep(3)
+            if int(round(time.time() * 1000)) - self.lastPacketTime > 3000 and self.lastPacketID != -1:
+                print("Reset Packet Tracker")
+                self.lastPacketID = -1
