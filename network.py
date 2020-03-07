@@ -7,7 +7,7 @@ import socketio
 import threading
 
 sio = socketio.Client()
-sio.connect('http://localhost:5000')
+sio.connect('http://127.0.0.1:4000')
 
 vehicleData = {
     "count": 0,
@@ -19,7 +19,7 @@ vehicleData = {
     "ipw": 0,
     "baro": 0,
     "map": 0,
-    "atf": 0, #AFR
+    "atf": 0,  # AFR
     "iat": 0,
     "engineTemp": 0,
     "oilPres": 0,
@@ -51,7 +51,7 @@ vehicleData = {
     "rbrakes": 0,
     "rotPot": 0,
     "voltage": 0,
-    "rpm":0
+    "rpm": 0
 }
 
 
@@ -83,7 +83,7 @@ class Network:
             self.lastPacketTime = int(round(time.time() * 1000))
             message, address = sock.recvfrom(4096)
             # Padding needed to read doubles (xxxx)
-            fmt = "<Iffffffffffffffffffffxxxxddff"
+            fmt = "<Iffffffffffffffffffffxxxxddfffffffffffffffffff"
             fmt_size = struct.calcsize(fmt)
             y = struct.unpack(fmt, message[:fmt_size])
             # Check Packet is more recent than old
