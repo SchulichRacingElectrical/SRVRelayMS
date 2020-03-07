@@ -98,17 +98,11 @@ class Network:
                     else:
                         vehicleData[value] = y[i]
                         i = i + 1
-                print("{" + "\n".join("{!r}: {!r},".format(k, v)
-                                      for k, v in vehicleData.items()) + "}")
                 sio.emit('message', vehicleData)
-            # Print PacketOutOfOrder Error and Ignore packet
-            else:
-                print('PacketOutOfOrder: Packet ' + str(y[0]) + ' dropped')
 
     def resetPacketTracker(self):
-        print("Reset Started")
         while True:
-            time.sleep(3)
-            if int(round(time.time() * 1000)) - self.lastPacketTime > 3000 and self.lastPacketID != -1:
+            time.sleep(1)
+            if int(round(time.time() * 1000)) - self.lastPacketTime > 1000 and self.lastPacketID != -1:
                 print("Reset Packet Tracker")
                 self.lastPacketID = -1
