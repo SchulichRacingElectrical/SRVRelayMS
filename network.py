@@ -47,7 +47,6 @@ class Network:
         self.lastPacketTime = -1
 
     def startServer(self):
-
         soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             soc.bind(('', self.listenPort))
@@ -88,25 +87,6 @@ class Network:
             # Print PacketOutOfOrder Error and Ignore packet
             else:
                 print('PacketOutOfOrder: Packet ' + str(y[0]) + ' dropped')
-
-    def clientThread(self, connection, IP, PORT, MAX_BUFFER_SIZE=4096):
-        b = 0
-        while 1:
-            data = connection.recv(MAX_BUFFER_SIZE)
-            import time
-            millis = int(round(time.time() * 1000))
-            print(millis)
-            if not data:
-                break
-            fmt = "<fffffffffffffffffffffffff"
-            fmt_size = struct.calcsize(fmt)
-            y = struct.unpack(fmt, data[:fmt_size])
-            i = 0
-            for value in vehicleData:
-                vehicleData[value] = round(y[i], 2)
-                i = i + 1
-            print(y)
-        connection.close()
 
     def resetPacketTracker(self):
         print("Reset Started")
