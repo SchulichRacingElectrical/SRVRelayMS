@@ -7,7 +7,9 @@ import socketio
 import threading
 
 sio = socketio.Client()
-sio.connect('http://127.0.0.1:4000')
+sio.connect('http://127.0.0.1:5500')
+
+
 
 vehicleData = {
     "count": 0,
@@ -104,5 +106,5 @@ class Network:
         while True:
             time.sleep(1)
             if int(round(time.time() * 1000)) - self.lastPacketTime > 1000 and self.lastPacketID != -1:
-                print("Reset Packet Tracker")
+                print("Reset Packet Tracker ")
                 self.lastPacketID = -1
