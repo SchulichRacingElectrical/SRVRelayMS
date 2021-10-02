@@ -8,12 +8,9 @@ import ctypes
 import threading
 import time
 
-# Should handle receiving from multiple pieces of hardware
-
 class Receiver:
   def __init__(self):
     self.last_packet_time = -1
-    pass
 
   def start_receiver(self, port):
     soc = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -30,6 +27,8 @@ class Receiver:
     self.last_packet_id = -1
     while True:
       self.last_packet_time = int(round(time.time() * 1000))
+      # Read data from socket and create sender
+
       return
     pass
 
@@ -38,5 +37,5 @@ class Receiver:
       time.sleep(1)
       current_time = int(round(time.time() * 1000))
       if current_time - self.last_packet_time > 1000:
-        if self.last_packet_time != -1:
+        if self.last_packet_id != -1:
           self.last_packet_id = -1
