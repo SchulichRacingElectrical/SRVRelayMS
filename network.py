@@ -9,8 +9,6 @@ import threading
 sio = socketio.Client()
 sio.connect('http://127.0.0.1:5500')
 
-
-
 vehicleData = {
     "count": 0,
     "rlSuspension": 0,
