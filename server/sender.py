@@ -1,8 +1,8 @@
 from main import app
 
 class Sender:
-  sensors = []
-  def __init__(self):
+  def __init__(self, sensors):
+    self.sensors = sensors
     # Make request to get sensors
     pass
 

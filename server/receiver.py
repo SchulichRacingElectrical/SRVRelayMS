@@ -9,7 +9,9 @@ import threading
 import time
 
 class Receiver:
-  def __init__(self):
+  def __init__(self, sensors, relay):
+    self.sensors = sensors
+    self.relay = relay
     self.last_packet_time = -1
 
   def start_receiver(self, port):
