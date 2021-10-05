@@ -15,6 +15,10 @@ class Sensors:
     # Return the version
     return self.version
 
+  def get_sensors(self):
+    # Return sensor list
+    pass
+
   def get_diff(old_version):
     # Get difference between old and new version and return
     pass
