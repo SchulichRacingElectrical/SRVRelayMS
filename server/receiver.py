@@ -20,7 +20,7 @@ class Receiver:
       soc.bind(('', port))
     except socket.error as msg:
       print("Bind failed. Error: " + str(sys.exc_info()))
-      # TODO: Throw Exception
+      sys.exit() # Throw exception or inform somehow
     packet_resetter = threading.Thread(target = self.reset_packet_tracker)
     packet_resetter.start()
     self.read_data(soc)
@@ -30,8 +30,11 @@ class Receiver:
     while True:
       self.last_packet_time = int(round(time.time() * 1000))
       # Read data from socket and create sender
+      # TODO: Have time expiry that closes the socket and resets? 10 seconds
+    return
 
-      return
+  def decode_data(self, data):
+    
     pass
 
   def reset_packet_tracker(self):
