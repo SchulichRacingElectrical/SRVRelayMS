@@ -1,5 +1,5 @@
 # Copyright Schulich Racing FSAE
-# Written By Justin Tijunelis
+# Written By Justin Tijunelis, Camilla Abdrazakov, Jonathan Mulyk
 
 class Sensors:
   def __init__(self):

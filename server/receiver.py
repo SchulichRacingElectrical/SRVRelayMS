@@ -8,6 +8,12 @@ import ctypes
 import threading
 import time
 
+maptypes = {
+  'a': 'I',
+  'b': 'f',
+  'c': 'd'
+}
+
 class Receiver:
   def __init__(self, sensors, relay):
     self.sensors = sensors
@@ -30,9 +36,23 @@ class Receiver:
     while True:
       self.last_packet_time = int(round(time.time() * 1000))
       # Read data from socket and create sender
+      message, _ = sock.recvfrom(4096)
+      message = "3abcAAAABC"
+      print(message)
+      num_sensor = int(message[0])
+      id_sensor = list(message[1:num_sensor+1])
+      fmt = list(message[num_sensor+1:])
+      msg = tuple(zip(id_sensor,fmt))
+      print(msg)
 
-      return
-    pass
+      for i in range(id_sensor):
+        if id_sensor[i-1] is not 'c' and i is not 0 :
+          #insert 4 x 
+          #check a
+          #check b
+        #else replace c with d 
+          
+          
 
   def reset_packet_tracker(self):
     while True:
