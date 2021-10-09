@@ -81,7 +81,7 @@ class Network:
         self.lastPacketID = -1
         while True:
             self.lastPacketTime = int(round(time.time() * 1000))
-            message, address = sock.recvfrom(4096)
+            message, _ = sock.recvfrom(4096)
             # Padding needed to read doubles (xxxx)
             fmt = "<Iffffffffffffffffffffxxxxddfffffffffffffffffff"
             fmt_size = struct.calcsize(fmt)
