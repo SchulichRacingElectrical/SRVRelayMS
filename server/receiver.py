@@ -44,15 +44,17 @@ class Receiver:
       fmt = list(message[num_sensor+1:])
       msg = tuple(zip(id_sensor,fmt))
       print(msg)
-
+      
       for i in range(id_sensor):
-        if id_sensor[i-1] is not 'c' and i is not 0 :
-          #insert 4 x 
-          #check a
-          #check b
-        #else replace c with d 
-          
-          
+        if id_sensor[i - 1] is not 'c' and i is not 0:
+          pass
+          # insert 4 x
+          # check a
+          # check b
+        # else replace c with d
+  
+  def parse_data(self, data):
+    pass
 
   def reset_packet_tracker(self):
     while True:
