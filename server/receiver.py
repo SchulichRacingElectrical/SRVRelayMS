@@ -1,5 +1,5 @@
 # Copyright Schulich Racing FSAE
-# Written By Justin Tijunelis
+# Written By Justin Tijunelis, Camilla Abdrazakov, Jonathan Mulyk
 
 import sys
 import socket
@@ -37,38 +37,25 @@ class Receiver:
   def read_data(self, sock):
     self.last_packet_id = -1
     while True:
+      # Wait for a new message
+      message, _ = sock.recvfrom(4096)
       self.last_packet_time = int(round(time.time() * 1000))
-      # message, _ = sock.recvfrom(4096)
-      message = str.encode(
-        "\6" +
-        "abcdef" +
-        "\65\0\0\0" +          # 65
-        "B\0\0\0" +          # Floating point (32-bit floating point)
-        "\0\0\0\0\0\0\0\0" + # 0 (64-bit floating point)
-        "\0\0\0\0\0\0\0\0" + # 0 (64-bit floating point)
-        "E\0\0\0" +          # 69
-        "\0\0\0\0\0\0\0\0"   # 0 (64-bit floating point)
-      )
-      data = self.parse_data(message)
-  
-  def parse_data(self, message):
-    # Parse the message
-    sensor_count = message[0]
-    sensor_ids = list(message.decode()[1 : sensor_count + 1])
-    data_bytes = message[sensor_count + 1:]
-    
-    # Create the decode string based on sensor types
-    # TODO: Update to read from sensor data
-    # TODO: Add other types as needed (Padding required for variables < 4 bytes)
-    data_format = "<"
-    for i, sensor_id in enumerate(sensor_ids):
-      sensor_type = maptypes[sensor_id]
-      data_format += sensor_type
 
-    # Decode the data
-    data_format_size = struct.calcsize(data_format)
-    data = struct.unpack(data_format, data_bytes)
-    return data
+      # Parse the message
+      sensor_count = message[0]
+      sensor_ids = list(message.decode()[1:sensor_count + 1])
+      
+      # Create the decode string based on sensor types
+      # TODO: Update to read from sensor data rather than maptypes
+      # TODO: Add other types as needed (Padding required for variables < 4 bytes)
+      data_format = "<"
+      for i, sensor_id in enumerate(sensor_ids):
+        data_format += maptypes[sensor_id]
+
+      # Decode the data
+      data = struct.unpack(data_format, message[sensor_count + 1:])
+      self.sensors.update_values(data)
+      relay.send_data()
 
   def reset_packet_tracker(self):
     while True:

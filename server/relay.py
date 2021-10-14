@@ -13,7 +13,7 @@ class Relay:
     except:
       pass
 
-  def send_data(self, data):
+  def send_data(self):
     # TODO: Set other sensor data to be the most recent?
     # When passing data, send the value of every existing sensor
     pass

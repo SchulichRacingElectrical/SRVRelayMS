@@ -11,6 +11,10 @@ class Sensors:
     # Get the sensor list
     pass
 
+  def update_values(self, new_values):
+    # Update the current values of the relevant sensors
+    pass
+
   def get_version(self):
     # Return the version
     return self.version
@@ -19,7 +23,7 @@ class Sensors:
     # Return sensor list
     pass
 
-  def get_diff(old_version):
+  def get_diff(self, old_version):
     # Get difference between old and new version and return
     pass
 
