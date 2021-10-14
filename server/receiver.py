@@ -9,6 +9,7 @@ import threading
 import time
 
 maptypes = {
+  'I': 'Q', # Always included, the interval or UTC of the data (defines ID)
   'a': 'I',
   'b': 'f',
   'c': 'd',
@@ -29,13 +30,13 @@ class Receiver:
       soc.bind(('', port))
     except socket.error as msg:
       print("Bind failed. Error: " + str(sys.exc_info()))
-      # TODO: Throw Exception
-    packet_resetter = threading.Thread(target = self.reset_packet_tracker)
+      # TODO: Handle exception
+    packet_resetter = threading.Thread(target = self.__handle_disconnect)
     packet_resetter.start()
     self.read_data(soc)
 
   def read_data(self, sock):
-    self.last_packet_id = -1
+    self.last_packet_id = -1 # Equivalent to the UTC (should we use a count instead?)
     while True:
       # Wait for a new message
       message, _ = sock.recvfrom(4096)
@@ -53,14 +54,22 @@ class Receiver:
         data_format += maptypes[sensor_id]
 
       # Decode the data
-      data = struct.unpack(data_format, message[sensor_count + 1:])
-      self.sensors.update_values(data)
-      relay.send_data()
+      data = struct.unpack(data_format, message[sensor_count + 1 :])
+      
+      # Handle the data
+      if self.last_packet_id < data[0]:
+        self.last_packet_id = data[0]
+        self.sensors.update_values(data)
+        self.relay.send_data()
+      else:
+        # TODO: The data came out of order, but we still want to use it
+        pass
 
-  def reset_packet_tracker(self):
+  def __handle_disconnect(self):
     while True:
       time.sleep(1)
       current_time = int(round(time.time() * 1000))
       if current_time - self.last_packet_time > 1000:
         if self.last_packet_id != -1:
           self.last_packet_id = -1
+          # This means there was a disconnection, we should create and store the data
