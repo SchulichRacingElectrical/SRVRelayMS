@@ -40,9 +40,9 @@ class Receiver:
       self.last_packet_time = int(round(time.time() * 1000))
       # message, _ = sock.recvfrom(4096)
       message = str.encode(
-        "6" +
+        "\6" +
         "abcdef" +
-        "A\0\0\0" +          # 65
+        "\65\0\0\0" +          # 65
         "B\0\0\0" +          # Floating point (32-bit floating point)
         "\0\0\0\0\0\0\0\0" + # 0 (64-bit floating point)
         "\0\0\0\0\0\0\0\0" + # 0 (64-bit floating point)
@@ -53,14 +53,13 @@ class Receiver:
   
   def parse_data(self, message):
     # Parse the message
-    sensor_count = int(message.decode("utf-8")[0])
-    sensor_ids = list(message.decode("utf-8")[1: sensor_count + 1])
+    sensor_count = message[0]
+    sensor_ids = list(message.decode()[1 : sensor_count + 1])
     data_bytes = message[sensor_count + 1:]
     
     # Create the decode string based on sensor types
     # TODO: Update to read from sensor data
-    # TODO: Figure out when padding is required
-    # TODO: Add other types as needed
+    # TODO: Add other types as needed (Padding required for variables < 4 bytes)
     data_format = "<"
     for i, sensor_id in enumerate(sensor_ids):
       sensor_type = maptypes[sensor_id]
