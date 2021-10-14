@@ -11,7 +11,10 @@ import time
 maptypes = {
   'a': 'I',
   'b': 'f',
-  'c': 'd'
+  'c': 'd',
+  'd': 'd',
+  'e': 'I',
+  'f': 'd'
 }
 
 class Receiver:
@@ -35,26 +38,38 @@ class Receiver:
     self.last_packet_id = -1
     while True:
       self.last_packet_time = int(round(time.time() * 1000))
-      # Read data from socket and create sender
-      message, _ = sock.recvfrom(4096)
-      message = "3abcAAAABC"
-      print(message)
-      num_sensor = int(message[0])
-      id_sensor = list(message[1:num_sensor+1])
-      fmt = list(message[num_sensor+1:])
-      msg = tuple(zip(id_sensor,fmt))
-      print(msg)
-      
-      for i in range(id_sensor):
-        if id_sensor[i - 1] is not 'c' and i is not 0:
-          pass
-          # insert 4 x
-          # check a
-          # check b
-        # else replace c with d
+      # message, _ = sock.recvfrom(4096)
+      message = str.encode(
+        "6" +
+        "abcdef" +
+        "A\0\0\0" +          # 65
+        "B\0\0\0" +          # Floating point (32-bit floating point)
+        "\0\0\0\0\0\0\0\0" + # 0 (64-bit floating point)
+        "\0\0\0\0\0\0\0\0" + # 0 (64-bit floating point)
+        "E\0\0\0" +          # 69
+        "\0\0\0\0\0\0\0\0"   # 0 (64-bit floating point)
+      )
+      data = self.parse_data(message)
   
-  def parse_data(self, data):
-    pass
+  def parse_data(self, message):
+    # Parse the message
+    sensor_count = int(message.decode("utf-8")[0])
+    sensor_ids = list(message.decode("utf-8")[1: sensor_count + 1])
+    data_bytes = message[sensor_count + 1:]
+    
+    # Create the decode string based on sensor types
+    # TODO: Update to read from sensor data
+    # TODO: Figure out when padding is required
+    # TODO: Add other types as needed
+    data_format = "<"
+    for i, sensor_id in enumerate(sensor_ids):
+      sensor_type = maptypes[sensor_id]
+      data_format += sensor_type
+
+    # Decode the data
+    data_format_size = struct.calcsize(data_format)
+    data = struct.unpack(data_format, data_bytes)
+    return data
 
   def reset_packet_tracker(self):
     while True:

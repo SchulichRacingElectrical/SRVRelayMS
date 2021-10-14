@@ -7,17 +7,17 @@ class Sender:
     pass
 
   @app.route("/sensors/get_version")
-  def get_version():
+  def get_version(self):
     # Return a version
     pass
 
   @app.route("/sensors/get_sensors")
-  def get_sensors():
+  def get_sensors(self):
     # Return all sensors and send to the hardware
     pass
 
   @app.route("/sensors/get_diff")
-  def get_diff(version):
+  def get_diff(self, version):
     # Send the difference between version
     pass
 
