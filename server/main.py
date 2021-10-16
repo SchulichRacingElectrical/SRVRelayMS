@@ -2,7 +2,7 @@
 # Written By Justin Tijunelis
 
 from flask import Flask
-from receiver import Receiver
+from iot.receiver import Receiver
 from sensors import Sensors
 # from sender import Sender
 from relay import Relay
