@@ -1,4 +1,4 @@
-package config
+package databases
 
 import (
 	"context"
@@ -16,28 +16,30 @@ type FirebaseDB struct {
 	Client  *firestore.Client
 }
 
-func (f *FirebaseDB) FirestoreDBInit() error {
-	f.Context = context.Background()
+func (db *FirebaseDB) Init() error {
+	db.Context = context.Background()
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
 		gopath = build.Default.GOPATH
 	}
 
 	sa := option.WithCredentialsFile(gopath + "/src/github.com/SchulichRacingElectrical/srv-database-ms/config/firebase_config.json")
-	app, err := firebase.NewApp(f.Context, nil, sa)
+	app, err := firebase.NewApp(db.Context, nil, sa)
 	if err != nil {
 		return err
 	}
 
-	f.App = app
+	db.App = app
 
-	client, err := f.App.Firestore(f.Context)
+	client, err := app.Firestore(db.Context)
 	if err != nil {
 		return err
 	}
 
-	f.Client = client
-	// defer f.Client.Close() //TODO: close client later when server shutsdown
-
+	db.Client = client
 	return nil
+}
+
+func (db *FirebaseDB) Close() {
+	db.Client.Close()
 }
