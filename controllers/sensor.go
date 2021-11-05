@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"database-ms/databases"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/api/iterator"
@@ -10,13 +12,65 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type Sensor struct {
+	Sid         *int    `json:"sid"`
+	Type        *string `json:"type,omitempty"`
+	LastUpdated *int    `json:"lastUpdated,omitempty"`
+	Group       *string `json:"group,omitempty"`
+	Category    *string `json:"category,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	Frequency   *int    `json:"frequency,omitempty"`
+	Unit        *string `json:"unit,omitempty"`
+	CanId       *string `json:"canId,omitempty"`    //TODO: Comes in as hex but should be converted to longlong
+	Disabled    *bool   `json:"disabled,omitempty"` //TODO: Should have default when empty
+}
+
 // AddSensor
 func AddSensor(c *gin.Context) {
+	dsnap := databases.Database.Client.Collection("sensors")
+
+	var newSensor Sensor
+	if err := c.BindJSON(&newSensor); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+			"error":   true,
+		})
+		return
+	}
+
+	//TODO: required fields for a sensor; should create custom Unmarshall that checks for required fields
+	//TODO: verify how sid will be generated
+	if newSensor.Sid == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "sid is required",
+			"error":   true,
+		})
+		return
+	}
+
+	_, err := dsnap.Doc(strconv.Itoa(*newSensor.Sid)).Create(databases.Database.Context, newSensor)
+	if err != nil {
+		if status.Code(err) == codes.AlreadyExists {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"message": fmt.Sprintf("Sensor with sid %d already exists", *newSensor.Sid),
+				"error":   true,
+			})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": err.Error(),
+				"error":   true,
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"messaage": fmt.Sprintf("String with sid %d successfully created", *newSensor.Sid),
+	})
 
 }
 
 func GetSensors(c *gin.Context) {
-
 	dsnap := databases.Database.Client.Collection("sensors")
 
 	// TODO: check for last update queryparam
@@ -85,6 +139,6 @@ func DeleteSensor(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"messaage": "Sensor with sid = " + sid + " was successfully deleted",
+		"message": fmt.Sprintf("String with sid %s successfully deleted", sid),
 	})
 }

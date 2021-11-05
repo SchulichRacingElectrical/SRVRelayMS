@@ -45,6 +45,7 @@ func main() {
 		//DELETE
 		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
 		//POST
+		databaseHandlers.POST("/sensors", controllers.AddSensor)
 	}
 
 	m.router.Run(":8080")

@@ -17,7 +17,9 @@ GOPATH
 5. Inside `SchulichRacingElectrical` directory, clone this repository
 6. Navigate to `srv-database-ms`
 7. Add the `firebase_config.json` folder in the `config` directory
+   - Will need to create `config` directory
 8. Run the command `docker compose up` to start the server inside a docker container
    - The server will be using port `8080` so make sure that no other processes is using that port
    - Once the server starts, it should display all available endpoints
+   - If using a Linux device, download `docker-compose` and use `docker-compose up` to start container
 9. `Crt-d` to kill the container
