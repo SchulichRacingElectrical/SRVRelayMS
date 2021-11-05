@@ -1,7 +1,7 @@
 package main
 
 import (
-	controller "database-ms/controllers"
+	"database-ms/controllers"
 	"database-ms/databases"
 
 	"github.com/gin-gonic/gin"
@@ -39,10 +39,11 @@ func main() {
 
 	databaseHandlers := m.router.Group("/database")
 	{
-		databaseHandlers.GET("/sensors", controller.GetSensors)
-		databaseHandlers.GET("/sensors/:sid", controller.GetSensor)
+		databaseHandlers.GET("/sensors", controllers.GetSensors)
+		databaseHandlers.GET("/sensors/:sid", controllers.GetSensor)
 		//PUT
 		//DELETE
+		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
 		//POST
 	}
 

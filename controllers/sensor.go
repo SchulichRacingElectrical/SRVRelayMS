@@ -1,4 +1,4 @@
-package controller
+package controllers
 
 import (
 	"database-ms/databases"
@@ -9,6 +9,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+// AddSensor
+func AddSensor(c *gin.Context) {
+
+}
 
 func GetSensors(c *gin.Context) {
 
@@ -59,4 +64,27 @@ func GetSensor(c *gin.Context) {
 
 	sensor := dsnap.Data()
 	c.JSON(http.StatusOK, sensor)
+}
+
+//UpdateSensor
+func UpdateSensor(c *gin.Context) {
+
+}
+
+// DeleteSensor deletes a sensor document given the sid, if sensor does not exist then no error
+func DeleteSensor(c *gin.Context) {
+	sid := c.Param("sid")
+
+	_, err := databases.Database.Client.Collection("sensors").Doc(sid).Delete(databases.Database.Context)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+			"error":   true,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"messaage": "Sensor with sid = " + sid + " was successfully deleted",
+	})
 }
