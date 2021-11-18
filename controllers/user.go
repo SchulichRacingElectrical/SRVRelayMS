@@ -9,23 +9,25 @@ import (
 	"google.golang.org/api/iterator"
 )
 
+// TODO: Store everything in firebase's auth. Including custom claims
 type User struct {
-
+	UserID 					*string  	`json:"user_id"`
+	OrganizationID 	*string 	`json:"organization_id"`
+	DisplayName 		*string		`json:"display_name`
+	Role 						*string		`json:"role"` // admin | lead | member
 }
 
 func GetUsers(c *gin.Context) {
 	organization_id := c.Param("organization_id")
 
-	type user_struct struct {
-		user_id string
-		display_name string
-		role string
-	}
-
-	users := []user_struct{}
+	users := []User{}
 
 	// Get all the user records
-	iter := databases.Database.Client.Collection("users").Where("organization_id", "==", organization_id).Documents(databases.Database.Context)
+	iter := databases.Database.Client.
+		Collection("organizations").
+		Doc(organization_id).
+		Collection("users").
+		Documents(databases.Database.Context)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -44,11 +46,16 @@ func GetUsers(c *gin.Context) {
 			})
 		}
 
-		// Concatenate user and auth into list, then return
-		users = append(users, user_struct{
-			doc.Ref.ID,
-			user.DisplayName,
-			doc.Data()["role"].(string),
+		// Read custom claims
+		organizationID := user.CustomClaims["organization_id"].(string) // Can we use a provider?
+		role := user.CustomClaims["role"].(string)
+
+		// Append to the list
+		users = append(users, User{
+			&doc.Ref.ID,
+			&organizationID, 
+			&user.DisplayName,
+			&role, 
 		})
 	}
 
@@ -62,9 +69,15 @@ func GetUsers(c *gin.Context) {
 }
 
 func GetUser(c *gin.Context) {
+	organization_id := c.Param("organization_id")
 	user_id := c.Param("user_id")
 
-	snapshot, err := databases.Database.Client.Collection("users").Doc(user_id).Get(databases.Database.Context) 
+	snapshot, err := databases.Database.Client.
+		Collection("organizations").
+		Doc(organization_id).
+		Collection("users").
+		Doc(user_id).
+		Get(databases.Database.Context) 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H {
 			"message": "User not found",
@@ -77,7 +90,7 @@ func GetUser(c *gin.Context) {
 }
 
 func PostUser(c *gin.Context) {
-	// Get body
+	// Get body, put oid in query params?
 	type user_struct struct {
 		organization_id string
 		user_id string
@@ -93,10 +106,14 @@ func PostUser(c *gin.Context) {
 	}
 
 	// Create the user entry
-	_, fetchError := databases.Database.Client.Collection("users").Doc(user.user_id).Set(databases.Database.Context, map[string]interface{}{
-		"organization_id": user.organization_id,
-		"role": "member",
-	})
+	_, fetchError := databases.Database.Client.
+		Collection("organizations").
+		Doc(user.organization_id).
+		Collection("users").
+		Doc(user.user_id).
+		Set(databases.Database.Context, map[string]interface{}{
+			// TODO
+		})
 	if fetchError != nil {
 		c.JSON(http.StatusInternalServerError, gin.H {
 			"message": "Could not create entry",
@@ -109,7 +126,7 @@ func PostUser(c *gin.Context) {
 }
 
 func PutUser(c *gin.Context) {
-	// Get the body
+	// Get the body, put the oid in params?
 	type user_struct struct {
 		organization_id string
 		user_id string
@@ -125,7 +142,12 @@ func PutUser(c *gin.Context) {
 	}
 
 	// Update the user
-	_, fetchError := databases.Database.Client.Collection("users").Doc(user.user_id).Set(databases.Database.Context, c.Request.Body)
+	_, fetchError := databases.Database.Client.
+		Collection("organizations").
+		Doc(user.organization_id).
+		Collection("users").
+		Doc(user.user_id).
+		Set(databases.Database.Context, c.Request.Body)
 	if fetchError != nil {
 		c.JSON(http.StatusInternalServerError, gin.H {
 			"message": "Could not update user.",
