@@ -25,8 +25,7 @@ type Sensor struct {
 	Disabled    *bool   `json:"disabled,omitempty"` //TODO: Should have default when empty
 }
 
-// AddSensor
-func AddSensor(c *gin.Context) {
+func PostSensor(c *gin.Context) {
 	dsnap := databases.Database.Client.Collection("sensors")
 
 	var newSensor Sensor

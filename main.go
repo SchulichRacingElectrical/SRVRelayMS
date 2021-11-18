@@ -30,7 +30,7 @@ func (m *Main) initServer() error {
 func main() {
 	m := Main{}
 
-	//Initialize server
+	// Initialize server
 	if m.initServer() != nil {
 		return
 	}
@@ -39,13 +39,18 @@ func main() {
 
 	databaseHandlers := m.router.Group("/database")
 	{
+		// GET
+		databaseHandlers.GET("/users/:organization_id", controllers.GetUsers)
+		databaseHandlers.GET("/users/:organization_id/:user_id", controllers.GetUser)
 		databaseHandlers.GET("/sensors", controllers.GetSensors)
 		databaseHandlers.GET("/sensors/:sid", controllers.GetSensor)
-		//PUT
-		//DELETE
+		// PUT
+		databaseHandlers.GET("/users", controllers.PutUser)
+		// DELETE
 		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
-		//POST
-		databaseHandlers.POST("/sensors", controllers.AddSensor)
+		// POST
+		databaseHandlers.POST("/users", controllers.PostUser)
+		databaseHandlers.POST("/sensors", controllers.PostSensor)
 	}
 
 	m.router.Run(":8080")
