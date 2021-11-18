@@ -119,8 +119,7 @@ func GetSensor(c *gin.Context) {
 	c.JSON(http.StatusOK, sensor)
 }
 
-//UpdateSensor
-func UpdateSensor(c *gin.Context) {
+func PutSensor(c *gin.Context) {
 
 }
 
