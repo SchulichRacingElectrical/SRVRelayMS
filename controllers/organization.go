@@ -15,11 +15,11 @@ type Organization struct {
 }
 
 func GetOrganizations(c *gin.Context) {
-	snapshot := databases.Database.Client.Collection("organizations")
-
-	// Generate the organizaton array
 	organizations := make([]interface{}, 0)
-	iter := snapshot.Documents(databases.Database.Context)
+	iter := databases.Database.Client.
+		Collection("organizations").
+			Documents(databases.Database.Context)
+
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -34,13 +34,14 @@ func GetOrganizations(c *gin.Context) {
 		organization["organizationId"] = doc.Ref.ID
 		organizations = append(organizations, organization)
 	}
-
+	
 	c.JSON(http.StatusOK, organizations)
 }
 
 func GetOrganization(c *gin.Context) {
 	organizationId := c.Param("organizationId")
 
+	// Fetch the organization
 	doc, err := databases.Database.Client.
 		Collection("organizations").
 			Doc(organizationId).
@@ -52,7 +53,6 @@ func GetOrganization(c *gin.Context) {
 
 	organization := doc.Data()
 	organization["organizationId"] = doc.Ref.ID
-
 	c.JSON(http.StatusOK, organization)
 }
 
