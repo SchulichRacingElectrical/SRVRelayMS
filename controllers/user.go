@@ -2,13 +2,15 @@ package controllers
 
 import (
 	"database-ms/databases"
+	"encoding/json"
 	"net/http"
 
 	"firebase.google.com/go/auth"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/api/iterator"
 )
 
-type UserPreferences struct {
+type UserFirestore struct {
 	StreamingSensors	*[]string					`json:"streamingSensors"`
 }
 
@@ -20,96 +22,95 @@ type User struct {
 	Role 							*string						`json:"role"` // guest | admin | lead | member
 	Email           	*string   				`json:"email"`
 	Disabled					*bool 						`json:"disabled"`
-	Preferences				*UserPreferences	`json:"preferences,omitempty"`
+	FireStore					*UserFirestore		`json:"firestore"`
 }
 
 func GetUsers(c *gin.Context) {
-	// organizationId := c.Param("organizationId")
+	organizationId := c.Param("organizationId")
 
-	// users := []User{}
+	users := []User{}
 
-	// // Get all the user records
-	// iter := databases.Database.Client.
-	// 	Collection("organization").
-	// 		Doc(organizationId).
-	// 			Collection("users").
-	// 				Documents(databases.Database.Context)
-	// for {
-	// 	doc, err := iter.Next()
-	// 	if err == iterator.Done {
-	// 		break
-	// 	}
-	// 	if err != nil {
-	// 		c.JSON(http.StatusInternalServerError, gin.H {
-	// 			"message": "Could not get users.",
-	// 		})
-	// 	}
+	// Get all the user records
+	iter := databases.Database.Client.
+		Collection("organizations").
+			Doc(organizationId).
+				Collection("users").
+					Documents(databases.Database.Context)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 		
-	// 	user, authError := databases.Database.Auth.GetUser(databases.Database.Context, doc.Ref.ID)
-	// 	if authError != nil {
-	// 		c.JSON(http.StatusInternalServerError, gin.H {
-	// 			"message": "Could not get users.",
-	// 		})
-	// 	}
+		user, authError := databases.Database.Auth.GetUser(databases.Database.Context, doc.Ref.ID)
+		if authError != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 
-	// 	// Read custom claims
-	// 	role := user.CustomClaims["role"].(string)
+		// Append to the list
+		role := user.CustomClaims["role"].(string)
+		users = append(users, User {
+			UserId: &doc.Ref.ID,
+			OrganizationId: &organizationId, 
+			DisplayName: &user.DisplayName,
+			Role: &role, 
+			Email: &user.Email,
+			Disabled: &user.Disabled,
+			// Preferences not needed for this request
+		})
+	}
 
-	// 	// Append to the list
-	// 	users = append(users, User {
-	// 		UserId: &doc.Ref.ID,
-	// 		OrganizationId: &organizationId, 
-	// 		DisplayName: &user.DisplayName,
-	// 		Role: &role, 
-	// 		Email: &user.Email,
-	// 		Disabled: &user.Disabled,
-	// 	})
-	// }
-
-	// c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, users)
 }
 
 func GetUser(c *gin.Context) {
-	// organizationId := c.Param("organizationId")
-	// userId := c.Param("userId")
+	organizationId := c.Param("organizationId")
+	userId := c.Param("userId")
 
-	// // Get the data from firebase
-	// _, err := databases.Database.Client. // TODO: change _ to snapshot
-	// 	Collection("organization"). // TODO: Change firebase to have "organizations"
-	// 		Doc(organizationId).
-	// 			Collection("users").
-	// 				Doc(userId).
-	// 					Get(databases.Database.Context) 
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H {
-	// 		"message": "User not found",
-	// 		"error": true,
-	// 	})
-	// 	return
-	// }
-	// //userData = snapshot.Data()
+	// Get the data from authentication
+	user, err := databases.Database.Auth.GetUser(databases.Database.Context, userId)
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
 
-	// // Get the data from authentication
-	// auth, err := databases.Database.Auth.GetUser(databases.Database.Context, userId)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H {
-	// 		"message": "User not found",
-	// 		"error": true,
-	// 	})
-	// 	return
-	// }
+	// Get the firestore user data
+	snapshot, err := databases.Database.Client. 
+		Collection("organizations"). 
+			Doc(organizationId).
+				Collection("users").
+					Doc(userId).
+						Get(databases.Database.Context) 
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	firestore := UserFirestore{}
+	data, parseError := json.Marshal(snapshot.Data())
+	if parseError != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	}
+	json.Unmarshal(data, &firestore)
 
-	// role := auth.CustomClaims["role"].(string)
-	// user := User {
-	// 	UserId: &userId,
-	// 	OrganizationId: &organizationId,
-	// 	DisplayName: &auth.DisplayName,
-	// 	Role: &role,
-	// 	Email: &auth.Email,
-	// 	Disabled: &auth.Disabled,
-	// }
+	// Create the response
+	role := user.CustomClaims["role"].(string)
+	response := User {
+		UserId: &userId,
+		OrganizationId: &organizationId,
+		DisplayName: &user.DisplayName,
+		Role: &role,
+		Email: &user.Email,
+		Disabled: &user.Disabled,
+		FireStore: &firestore,
+	}
 
-	// c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, response)
 }
 
 func PostUser(c *gin.Context) {
@@ -123,7 +124,7 @@ func PostUser(c *gin.Context) {
 	// Parse the incoming body
 	var newUser PostUserBody
 	if err := c.BindJSON(&newUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H {})
+		c.Status(http.StatusInternalServerError)
 	}
 
 	// Create the user
@@ -134,7 +135,8 @@ func PostUser(c *gin.Context) {
 		Disabled(true)
 	user, createError := databases.Database.Auth.CreateUser(databases.Database.Context, newUserParams)
 	if createError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{})
+		// TODO: Send message indicating error, could be that email already taken, display name taken, etc
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
@@ -146,31 +148,26 @@ func PostUser(c *gin.Context) {
 	_, authUpdateError := databases.Database.Auth.
 		UpdateUser(databases.Database.Context, user.UID, updateParams)
 	if authUpdateError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H {})
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
 	// Create a user record for the organization
+	_, fetchError := databases.Database.Client.
+		Collection("organizations").
+			Doc(*newUser.OrganizationID).
+				Collection("users").
+					Doc(user.UID).
+						Set(databases.Database.Context, map[string]interface{} {
+							"streamingSensors": []string{},
+							// TODO: Probably many other settings in the future
+						})
+	if fetchError != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 
-	// Create the user entry
-	// _, fetchError := databases.Database.Client.
-	// 	Collection("organization").
-	// 		Doc(*newUser.OrganizationID).
-	// 			Collection("users").
-	// 				Doc(*newUser.UserID).
-	// 					Set(databases.Database.Context, map[string]interface{}{
-	// 						"data": "x",
-	// 					})
-	// if fetchError != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H {
-	// 		"message": "Could not set firebase document.",
-	// 	})
-	// 	return
-	// }
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Success!",
-	})
+	c.Status(http.StatusOK)
 }
 
 func PutUser(c *gin.Context) {
@@ -192,7 +189,8 @@ func PutUser(c *gin.Context) {
 	_, authUpdateError := databases.Database.Auth.
 		UpdateUser(databases.Database.Context, *updatedUser.UserId, params)
 	if authUpdateError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H {})
+		// TODO: Send error message if display name is taken
+		c.Status(http.StatusOK)
 		return
 	}
 
@@ -202,11 +200,11 @@ func PutUser(c *gin.Context) {
 			Doc(*updatedUser.OrganizationId).
 				Collection("users").
 					Doc(*updatedUser.OrganizationId).
-						Set(databases.Database.Context, *updatedUser.Preferences)
+						Set(databases.Database.Context, *updatedUser.FireStore)
 	if fetchError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H {})
+		c.Status(http.StatusOK)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.Status(http.StatusOK)
 }
