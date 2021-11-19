@@ -45,7 +45,7 @@ func main() {
 		databaseHandlers.GET("/sensors", controllers.GetSensors)
 		databaseHandlers.GET("/sensors/:sid", controllers.GetSensor)
 		// PUT
-		databaseHandlers.GET("/users", controllers.PutUser)
+		databaseHandlers.PUT("/users", controllers.PutUser)
 		// DELETE
 		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
 		// POST

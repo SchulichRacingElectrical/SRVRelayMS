@@ -13,16 +13,16 @@ import (
 )
 
 type Sensor struct {
-	Sid         *int    `json:"sid"`
+	Sid         *int    `json:"sid"`										// Document ID
 	Type        *string `json:"type,omitempty"`
-	LastUpdated *int    `json:"lastUpdated,omitempty"`
+	LastUpdated *int    `json:"last_updated,omitempty"`
 	Group       *string `json:"group,omitempty"`
 	Category    *string `json:"category,omitempty"`
 	Name        *string `json:"name,omitempty"`
 	Frequency   *int    `json:"frequency,omitempty"`
 	Unit        *string `json:"unit,omitempty"`
-	CanId       *string `json:"canId,omitempty"`    //TODO: Comes in as hex but should be converted to longlong
-	Disabled    *bool   `json:"disabled,omitempty"` //TODO: Should have default when empty
+	CanId       *string `json:"can_id,omitempty"`    		//TODO: Comes in as hex but should be converted to longlong
+	Disabled    *bool   `json:"disabled,omitempty"` 		//TODO: Should have default when empty
 }
 
 func PostSensor(c *gin.Context) {
@@ -99,7 +99,10 @@ func GetSensors(c *gin.Context) {
 func GetSensor(c *gin.Context) {
 	sid := c.Param("sid")
 
-	dsnap, err := databases.Database.Client.Collection("sensors").Doc(sid).Get(databases.Database.Context)
+	dsnap, err := databases.Database.Client.
+		Collection("sensors").
+			Doc(sid).
+				Get(databases.Database.Context)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			c.JSON(http.StatusBadRequest, gin.H{

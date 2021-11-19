@@ -25,9 +25,9 @@ func GetUsers(c *gin.Context) {
 	// Get all the user records
 	iter := databases.Database.Client.
 		Collection("organizations").
-		Doc(organization_id).
-		Collection("users").
-		Documents(databases.Database.Context)
+			Doc(organization_id).
+				Collection("users").
+					Documents(databases.Database.Context)
 	for {
 		doc, err := iter.Next()
 		if err == iterator.Done {
@@ -74,10 +74,10 @@ func GetUser(c *gin.Context) {
 
 	snapshot, err := databases.Database.Client.
 		Collection("organizations").
-		Doc(organization_id).
-		Collection("users").
-		Doc(user_id).
-		Get(databases.Database.Context) 
+			Doc(organization_id).
+				Collection("users").
+					Doc(user_id).
+						Get(databases.Database.Context) 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H {
 			"message": "User not found",
@@ -108,12 +108,12 @@ func PostUser(c *gin.Context) {
 	// Create the user entry
 	_, fetchError := databases.Database.Client.
 		Collection("organizations").
-		Doc(user.organization_id).
-		Collection("users").
-		Doc(user.user_id).
-		Set(databases.Database.Context, map[string]interface{}{
-			// TODO
-		})
+			Doc(user.organization_id).
+				Collection("users").
+					Doc(user.user_id).
+						Set(databases.Database.Context, map[string]interface{}{
+							// TODO
+						})
 	if fetchError != nil {
 		c.JSON(http.StatusInternalServerError, gin.H {
 			"message": "Could not create entry",
@@ -144,10 +144,10 @@ func PutUser(c *gin.Context) {
 	// Update the user
 	_, fetchError := databases.Database.Client.
 		Collection("organizations").
-		Doc(user.organization_id).
-		Collection("users").
-		Doc(user.user_id).
-		Set(databases.Database.Context, c.Request.Body)
+			Doc(user.organization_id).
+				Collection("users").
+					Doc(user.user_id).
+						Set(databases.Database.Context, c.Request.Body)
 	if fetchError != nil {
 		c.JSON(http.StatusInternalServerError, gin.H {
 			"message": "Could not update user.",
