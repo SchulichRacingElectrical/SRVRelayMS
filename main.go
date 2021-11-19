@@ -40,6 +40,8 @@ func main() {
 	databaseHandlers := m.router.Group("/database")
 	{
 		// GET
+		databaseHandlers.GET("/organizations", controllers.GetOrganizations)
+		databaseHandlers.GET("/organizations/:organizationId", controllers.GetOrganization)
 		databaseHandlers.GET("/users/:organizationId", controllers.GetUsers)
 		databaseHandlers.GET("/users/:organizationId/:userId", controllers.GetUser)
 		databaseHandlers.GET("/sensors", controllers.GetSensors)
@@ -49,6 +51,7 @@ func main() {
 		// DELETE
 		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
 		// POST
+		databaseHandlers.POST("/organizations", controllers.PostOrganization)
 		databaseHandlers.POST("/users", controllers.PostUser)
 		databaseHandlers.POST("/sensors", controllers.PostSensor)
 	}

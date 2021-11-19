@@ -40,7 +40,7 @@ func PostSensor(c *gin.Context) {
 	//TODO: required fields for a sensor; should create custom Unmarshall that checks for required fields
 	//TODO: verify how sid will be generated
 	if newSensor.Sid == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H {
 			"message": "sid is required",
 			"error":   true,
 		})

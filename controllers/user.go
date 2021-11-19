@@ -14,7 +14,6 @@ type UserFirestore struct {
 	StreamingSensors	*[]string					`json:"streamingSensors"`
 }
 
-// TODO: Store everything in firebase's auth. Including custom claims
 type User struct {
 	UserId 						*string  					`json:"userId"`
 	OrganizationId 		*string 					`json:"organizationId"`
