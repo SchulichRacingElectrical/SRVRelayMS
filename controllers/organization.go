@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"database-ms/databases"
-	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +12,52 @@ type Organization struct {
 	OrganizationId	*string	`json:"organizationId,omitempty"`
 	Name						*string	`json:"name"`
 	ApiKey					*string `json:"apiKey,omitempty"`
+}
+
+func GetOrganizations(c *gin.Context) {
+	snapshot := databases.Database.Client.Collection("organizations")
+
+	// Generate the organizaton array
+	organizations := make([]interface{}, 0)
+	iter := snapshot.Documents(databases.Database.Context)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		organization := doc.Data()
+		delete(organization, "apiKey")
+		organization["organizationId"] = doc.Ref.ID
+		organizations = append(organizations, organization)
+	}
+
+	c.JSON(http.StatusOK, organizations)
+}
+
+func GetOrganization(c *gin.Context) {
+	organizationId := c.Param("organizationId")
+
+	doc, err := databases.Database.Client.
+		Collection("organizations").
+			Doc(organizationId).
+				Get(databases.Database.Context)
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	organization := doc.Data()
+	organization["organizationId"] = doc.Ref.ID
+
+	c.JSON(http.StatusOK, organization)
+}
+
+func GetKeyVerification(c *gin.Context) {
+	// TODO
 }
 
 func PostOrganization(c *gin.Context) {
@@ -36,41 +81,6 @@ func PostOrganization(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func GetOrganizations(c *gin.Context) {
-	snapshot := databases.Database.Client.Collection("organizations")
-
-	// Generate the organizaton array
-	organizations := []Organization{}
-	iter := snapshot.Documents(databases.Database.Context)
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		organization := Organization{}
-		organizationMap := doc.Data()
-		delete(organizationMap, "apiKey")
-		organizationMap["organizationId"] = doc.Ref.ID
-		data, parseError := json.Marshal(organizationMap)
-		if parseError != nil {
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		json.Unmarshal(data, &organization)
-		organizations = append(organizations, organization)
-	}
-
-	c.JSON(http.StatusOK, organizations)
-}
-
-func GetOrganization(c *gin.Context) {
-	// TODO
-}
-
-func GetKeyVerification(c *gin.Context) {
+func PutOrganization(c *gin.Context) {
 	// TODO
 }

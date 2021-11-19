@@ -39,21 +39,22 @@ func main() {
 
 	databaseHandlers := m.router.Group("/database")
 	{
-		// GET
+		// Organization
 		databaseHandlers.GET("/organizations", controllers.GetOrganizations)
 		databaseHandlers.GET("/organizations/:organizationId", controllers.GetOrganization)
+		databaseHandlers.POST("/organizations", controllers.PostOrganization)
+
+		// User
 		databaseHandlers.GET("/users/:organizationId", controllers.GetUsers)
 		databaseHandlers.GET("/users/:organizationId/:userId", controllers.GetUser)
+		databaseHandlers.POST("/users", controllers.PostUser)
+		databaseHandlers.PUT("/users", controllers.PutUser)
+
+		// Sensor
 		databaseHandlers.GET("/sensors", controllers.GetSensors)
 		databaseHandlers.GET("/sensors/:sid", controllers.GetSensor)
-		// PUT
-		databaseHandlers.PUT("/users", controllers.PutUser)
-		// DELETE
-		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
-		// POST
-		databaseHandlers.POST("/organizations", controllers.PostOrganization)
-		databaseHandlers.POST("/users", controllers.PostUser)
 		databaseHandlers.POST("/sensors", controllers.PostSensor)
+		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
 	}
 
 	m.router.Run(":8080")
