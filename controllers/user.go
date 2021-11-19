@@ -20,7 +20,7 @@ type User struct {
 	Role 							*string						`json:"role"` // guest | admin | lead | member
 	Email           	*string   				`json:"email"`
 	Disabled					*bool 						`json:"disabled"`
-	Preferences				*UserPreferences	`json:"preferences", omitempty`
+	Preferences				*UserPreferences	`json:"preferences,omitempty"`
 }
 
 func GetUsers(c *gin.Context) {
@@ -120,32 +120,37 @@ func PostUser(c *gin.Context) {
 		DisplayName			*string `json:"displayName"`
 	}
 
+	// Parse the incoming body
 	var newUser PostUserBody
 	if err := c.BindJSON(&newUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H {
-			"message": "Body is incorrectly formatted.",
-		})
+		c.JSON(http.StatusBadRequest, gin.H {})
 	}
 
-	// // TODO: Create the user
-	// params := (&auth.UserToUpdate{}).Disabled(true)
-	// _, updateError := databases.Database.Auth.UpdateUser(databases.Database.Context, *newUser.UserId, params)
-	// if updateError != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H {
-	// 		"message": "Could not set custom claims.",
-	// 	})
-	// 	return
-	// }
+	// Create the user
+	newUserParams := (&auth.UserToCreate{}).
+		DisplayName(*newUser.DisplayName).
+		Email(*newUser.Email).
+		Password(*newUser.Password).
+		Disabled(true)
+	user, createError := databases.Database.Auth.CreateUser(databases.Database.Context, newUserParams)
+	if createError != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	}
 
-	// // Set the default role
-	// claims := map[string]interface{}{"role": "member"}
-	// err := databases.Database.Auth.SetCustomUserClaims(databases.Database.Context, *newUser.UserId, claims)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H {
-	// 		"message": "Could not set custom claims.",
-	// 	})
-	// 	return
-	// }
+	// Create the custom claims for the user
+	updateParams := (&auth.UserToUpdate{}).
+		CustomClaims(map[string]interface{} {
+			"role": "member", // New users will be members by default, TODO: Create an admin for the first user
+		})
+	_, authUpdateError := databases.Database.Auth.
+		UpdateUser(databases.Database.Context, user.UID, updateParams)
+	if authUpdateError != nil {
+		c.JSON(http.StatusInternalServerError, gin.H {})
+		return
+	}
+
+	// Create a user record for the organization
 
 	// Create the user entry
 	// _, fetchError := databases.Database.Client.
@@ -187,13 +192,11 @@ func PutUser(c *gin.Context) {
 	_, authUpdateError := databases.Database.Auth.
 		UpdateUser(databases.Database.Context, *updatedUser.UserId, params)
 	if authUpdateError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H {
-			"message": "Could not update the user.",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H {})
 		return
 	}
 
-	// TODO: Update the user
+	// Update the user's preferences
 	_, fetchError := databases.Database.Client.
 		Collection("organizations").
 			Doc(*updatedUser.OrganizationId).
@@ -201,9 +204,7 @@ func PutUser(c *gin.Context) {
 					Doc(*updatedUser.OrganizationId).
 						Set(databases.Database.Context, *updatedUser.Preferences)
 	if fetchError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H {
-			"message": "Could not update the user.",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H {})
 		return
 	}
 
