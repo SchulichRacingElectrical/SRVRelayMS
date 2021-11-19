@@ -40,8 +40,8 @@ func main() {
 	databaseHandlers := m.router.Group("/database")
 	{
 		// GET
-		databaseHandlers.GET("/users/:organization_id", controllers.GetUsers)
-		databaseHandlers.GET("/users/:organization_id/:user_id", controllers.GetUser)
+		databaseHandlers.GET("/users/:organizationId", controllers.GetUsers)
+		databaseHandlers.GET("/users/:organizationId/:userId", controllers.GetUser)
 		databaseHandlers.GET("/sensors", controllers.GetSensors)
 		databaseHandlers.GET("/sensors/:sid", controllers.GetSensor)
 		// PUT

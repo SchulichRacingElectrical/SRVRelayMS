@@ -15,13 +15,13 @@ import (
 type Sensor struct {
 	Sid         *int    `json:"sid"`										// Document ID
 	Type        *string `json:"type,omitempty"`
-	LastUpdated *int    `json:"last_updated,omitempty"`
+	LastUpdated *int    `json:"lastUpdated,omitempty"`
 	Group       *string `json:"group,omitempty"`
 	Category    *string `json:"category,omitempty"`
 	Name        *string `json:"name,omitempty"`
 	Frequency   *int    `json:"frequency,omitempty"`
 	Unit        *string `json:"unit,omitempty"`
-	CanId       *string `json:"can_id,omitempty"`    		//TODO: Comes in as hex but should be converted to longlong
+	CanId       *string `json:"canId,omitempty"`    		//TODO: Comes in as hex but should be converted to longlong
 	Disabled    *bool   `json:"disabled,omitempty"` 		//TODO: Should have default when empty
 }
 
@@ -64,9 +64,8 @@ func PostSensor(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"messaage": fmt.Sprintf("String with sid %d successfully created", *newSensor.Sid),
+		"message": fmt.Sprintf("String with sid %d successfully created", *newSensor.Sid),
 	})
-
 }
 
 func GetSensors(c *gin.Context) {
@@ -93,7 +92,6 @@ func GetSensors(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"sensors": sensors,
 	})
-
 }
 
 func GetSensor(c *gin.Context) {
