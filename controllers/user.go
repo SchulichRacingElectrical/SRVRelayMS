@@ -143,6 +143,7 @@ func PostUser(c *gin.Context) {
 	updateParams := (&auth.UserToUpdate{}).
 		CustomClaims(map[string]interface{} {
 			"role": "member", // New users will be members by default, TODO: Create an admin for the first user
+			"organziationId": *newUser.OrganizationID,
 		})
 	_, authUpdateError := databases.Database.Auth.
 		UpdateUser(databases.Database.Context, user.UID, updateParams)
@@ -184,6 +185,7 @@ func PutUser(c *gin.Context) {
 		Disabled(*updatedUser.Disabled).
 		CustomClaims(map[string]interface{} {
 			"role": *updatedUser.Role,
+			"organizationId": *updatedUser.OrganizationId,
 		})
 	_, authUpdateError := databases.Database.Auth.
 		UpdateUser(databases.Database.Context, *updatedUser.UserId, params)

@@ -41,8 +41,10 @@ func main() {
 	{
 		// Organization
 		databaseHandlers.GET("/organizations", controllers.GetOrganizations)
-		databaseHandlers.GET("/organizations/:organizationId", controllers.GetOrganization)
-		databaseHandlers.POST("/organizations", controllers.PostOrganization)
+		databaseHandlers.GET("/organization", controllers.GetOrganization)
+		databaseHandlers.POST("/organization", controllers.PostOrganization)
+		databaseHandlers.PUT("/organizations", controllers.PutOrganization)
+		databaseHandlers.DELETE("/organization", controllers.DeleteOrganization)
 
 		// User
 		databaseHandlers.GET("/users/:organizationId", controllers.GetUsers)

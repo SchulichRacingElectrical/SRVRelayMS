@@ -2,9 +2,11 @@ package controllers
 
 import (
 	"database-ms/databases"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
 )
 
@@ -34,14 +36,13 @@ func GetOrganizations(c *gin.Context) {
 		organization["organizationId"] = doc.Ref.ID
 		organizations = append(organizations, organization)
 	}
-	
+
 	c.JSON(http.StatusOK, organizations)
 }
 
 func GetOrganization(c *gin.Context) {
 	organizationId := c.Param("organizationId")
 
-	// Fetch the organization
 	doc, err := databases.Database.Client.
 		Collection("organizations").
 			Doc(organizationId).
@@ -56,24 +57,28 @@ func GetOrganization(c *gin.Context) {
 	c.JSON(http.StatusOK, organization)
 }
 
-func GetKeyVerification(c *gin.Context) {
-	// TODO
-}
-
 func PostOrganization(c *gin.Context) {
-	// Parse the body
+	// Create the organization
 	var newOrganization Organization
 	if err := c.BindJSON(&newOrganization); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
-	// TODO: Generate an API key
-	// Create the organization
-	_, _, err := databases.Database.Client.
-		Collection("organizations").
-			Add(databases.Database.Context, newOrganization)
+	key := uuid.New().String()
+	newOrganization.ApiKey = &key
+	var newOrganizationMap map[string]interface{}
+	inrec, err := json.Marshal(newOrganization)
 	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	json.Unmarshal(inrec, &newOrganizationMap)
+
+	// Create firestore entry
+	_, _, createError := databases.Database.Client.
+		Collection("organizations").
+			Add(databases.Database.Context, newOrganizationMap)
+	if createError != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -82,5 +87,9 @@ func PostOrganization(c *gin.Context) {
 }
 
 func PutOrganization(c *gin.Context) {
+	// TODO
+}
+
+func DeleteOrganization(c *gin.Context) {
 	// TODO
 }
