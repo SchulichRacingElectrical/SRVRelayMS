@@ -18,7 +18,6 @@ type Organization struct {
 	// Default Thing
 }
 
-
 func GetOrganizations(c *gin.Context) {
 	organizations := []Organization{}
 	iter := databases.Database.Client.
@@ -45,7 +44,6 @@ func GetOrganizations(c *gin.Context) {
 	c.JSON(http.StatusOK, organizations)
 }
 
-
 func GetOrganization(c *gin.Context) {
 	organization := c.GetStringMap("organization")
 	organizationId := organization["organizationId"].(string)
@@ -62,7 +60,6 @@ func GetOrganization(c *gin.Context) {
 	organization["organizationId"] = organizationId
 	c.JSON(http.StatusOK, organization)
 }
-
 
 type CreateOrganization struct {
 	Name			*string	`json:"name" firestore:"name" binding:"required"`
@@ -89,7 +86,6 @@ func PostOrganization(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-
 type PutOrganizationBody struct {
 	Name			*string	`json:"name" binding:"required"`
 	NewKey		*bool		`json:"newKey" binding:"required"`
@@ -105,13 +101,11 @@ func PutOrganization(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	if request.NewKey != nil && *request.NewKey {
+	if *request.NewKey {
 		key := uuid.New().String()
 		updated["apiKey"] = key
 	}
-	if request.Name != nil {
-		updated["name"] = *request.Name
-	}
+	updated["name"] = *request.Name
 	
 	_, err := databases.Database.Client.
 		Collection("organizations").
@@ -134,10 +128,33 @@ func PutOrganization(c *gin.Context) {
 	c.JSON(http.StatusOK, newOrganization.Data())
 }
 
-
 func DeleteOrganization(c *gin.Context) {
 	organization := c.GetStringMap("organization")
 	organizationId := organization["organizationId"].(string)
+
+	// Delete all of the associated users
+	userIds := []string{}
+	iter := databases.Database.Auth.Users(databases.Database.Context, "")
+	for {
+		user, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		if user.CustomClaims["organizationId"] == organizationId {
+			userIds = append(userIds, user.UID)
+		}
+	}
+	_, deletionError := databases.Database.Auth.DeleteUsers(databases.Database.Context, userIds)
+	if deletionError != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the organization
 	_, err := databases.Database.Client.
 		Collection("organizations").
 			Doc(organizationId).
@@ -146,5 +163,6 @@ func DeleteOrganization(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
 	c.Status(http.StatusOK)
 }

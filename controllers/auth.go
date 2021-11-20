@@ -25,7 +25,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 						Documents(databases.Database.Context).
 							GetAll()
 			if err != nil || len(organizations) == 0 {
-				c.Status(http.StatusForbidden)
+				c.Status(http.StatusUnauthorized)
 				return
 			}
 			organization := organizations[0].Data()
@@ -38,13 +38,13 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 		reqToken := c.Request.Header.Get("Authorization")
 		splitToken := strings.Split(reqToken, "Bearer ")
 		if len(splitToken) != 2 {
-			c.Status(http.StatusForbidden)
+			c.Status(http.StatusUnauthorized)
 			return
 		}
 		reqToken = splitToken[1]
 		token, err := databases.Database.Auth.VerifyIDToken(databases.Database.Context, reqToken)
 		if err != nil {
-			c.Status(http.StatusForbidden)
+			c.Status(http.StatusUnauthorized)
 			return
 		}
 		organizationId := token.Claims["organizationId"].(string)

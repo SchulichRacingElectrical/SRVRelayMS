@@ -105,7 +105,6 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-
 type PostUserBody struct {
 	OrganizationID 	*string	`json:"organizationId"`
 	Email						*string `json:"email"`
@@ -114,10 +113,17 @@ type PostUserBody struct {
 }
 
 func PostUser(c *gin.Context) {
-	// Parse the incoming body
 	var newUser PostUserBody
 	if err := c.BindJSON(&newUser); err != nil {
 		c.Status(http.StatusInternalServerError)
+	}
+
+	// Check if the organization exists
+	snapshot := databases.Database.Client.Collection("organizations").Doc(*newUser.OrganizationID)
+	organization, err := snapshot.Get(databases.Database.Context)
+	if !organization.Exists() || err != nil {
+		c.Status(http.StatusForbidden)
+		return
 	}
 
 	// Create the user
@@ -128,15 +134,21 @@ func PostUser(c *gin.Context) {
 		Disabled(true)
 	user, createError := databases.Database.Auth.CreateUser(databases.Database.Context, newUserParams)
 	if createError != nil {
-		// TODO: Send message indicating error, could be that email already taken, display name taken, etc
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusBadRequest, gin.H {
+			"error": createError.Error(),
+		})
 		return
 	}
 
 	// Create the custom claims for the user
+	role := "member"
+	users, err := snapshot.Collection("users").Documents(databases.Database.Context).GetAll()
+	if len(users) == 0 || err != nil {
+		role = "admin"
+	}
 	updateParams := (&auth.UserToUpdate{}).
 		CustomClaims(map[string]interface{} {
-			"role": "member", // New users will be members by default, TODO: Create an admin for the first user
+			"role": role,
 			"organziationId": *newUser.OrganizationID,
 		})
 	_, authUpdateError := databases.Database.Auth.
@@ -146,7 +158,7 @@ func PostUser(c *gin.Context) {
 		return
 	}
 
-	// Create a user record for the organization
+	// Create a user record in the organization
 	_, fetchError := databases.Database.Client.
 		Collection("organizations").
 			Doc(*newUser.OrganizationID).
@@ -167,9 +179,7 @@ func PostUser(c *gin.Context) {
 func PutUser(c *gin.Context) {
 	var updatedUser User
 	if err := c.BindJSON(&updatedUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H {
-			"message": "Body is incorrectly formatted.",
-		})
+		c.Status(http.StatusBadRequest)
 	}
 
 	// Update the auth data
@@ -184,8 +194,9 @@ func PutUser(c *gin.Context) {
 	_, authUpdateError := databases.Database.Auth.
 		UpdateUser(databases.Database.Context, *updatedUser.UserId, params)
 	if authUpdateError != nil {
-		// TODO: Send error message if display name is taken
-		c.Status(http.StatusOK)
+		c.JSON(http.StatusOK, gin.H {
+			"error": authUpdateError.Error(),
+		})
 		return
 	}
 
