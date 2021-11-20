@@ -48,7 +48,7 @@ func main() {
 		// Organization
 		privateEndpoints.GET("/organization", controllers.GetOrganization)
 		privateEndpoints.POST("/organization", controllers.PostOrganization)
-		privateEndpoints.PUT("/organizations", controllers.PutOrganization)
+		privateEndpoints.PUT("/organization", controllers.PutOrganization)
 		privateEndpoints.DELETE("/organization", controllers.DeleteOrganization)
 
 		// User

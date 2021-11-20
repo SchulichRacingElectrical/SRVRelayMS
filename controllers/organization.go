@@ -5,6 +5,7 @@ import (
 	utils "database-ms/util"
 	"net/http"
 
+	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"google.golang.org/api/iterator"
@@ -12,11 +13,6 @@ import (
 
 type Organization struct {
 	OrganizationId	*string	`json:"organizationId,omitempty"`
-	Name						*string	`json:"name" firestore:"name"`
-	ApiKey					*string `json:"apiKey,omitempty" firestore:"apiKey"`
-}
-
-type PostOrganizationBody struct {
 	Name						*string	`json:"name" firestore:"name"`
 	ApiKey					*string `json:"apiKey,omitempty" firestore:"apiKey"`
 }
@@ -37,8 +33,8 @@ func GetOrganizations(c *gin.Context) {
 			return
 		}
 		data := doc.Data()
-		delete(data, "ApiKey")
-		data["OrganizationId"] = doc.Ref.ID
+		delete(data, "apiKey")
+		data["organizationId"] = doc.Ref.ID
 		var organization Organization
 		utils.JsonToStruct(data, &organization)
 		organizations = append(organizations, organization)
@@ -48,17 +44,30 @@ func GetOrganizations(c *gin.Context) {
 }
 
 func GetOrganization(c *gin.Context) {
-	organization, exists := c.Get("organization")
-	if !exists {
+	organization := c.GetStringMap("organization")
+	organizationId := organization["organizationId"].(string)
+
+	snapshot, err := databases.Database.Client.
+		Collection("organizations").
+			Doc(organizationId).
+				Get(databases.Database.Context)
+	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
 	}
+	organization = snapshot.Data()
+	organization["organizationId"] = organizationId
 	c.JSON(http.StatusOK, organization)
 }
 
+
+type CreateOrganization struct {
+	Name						*string	`json:"name" firestore:"name"`
+	ApiKey					*string `json:"apiKey,omitempty" firestore:"apiKey"`
+}
+
 func PostOrganization(c *gin.Context) {
-	// Create the organization
-	var newOrganization PostOrganizationBody
+	var newOrganization CreateOrganization
 	if err := c.BindJSON(&newOrganization); err != nil {
 		c.Status(http.StatusBadRequest)
 		return
@@ -66,7 +75,6 @@ func PostOrganization(c *gin.Context) {
 	key := uuid.New().String()
 	newOrganization.ApiKey = &key
 
-	// Create firestore entry
 	_, _, createError := databases.Database.Client.
 		Collection("organizations").
 			Add(databases.Database.Context, newOrganization)
@@ -78,10 +86,61 @@ func PostOrganization(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+
+type PutOrganizationBody struct {
+	Name						*string	`json:"name" binding:"required"`
+	NewKey					*bool		`json:"newKey" binding:"required"`
+}
+
 func PutOrganization(c *gin.Context) {
-	// TODO
+	organization := c.GetStringMap("organization")
+	organizationId := organization["organizationId"].(string)
+
+	updated := map[string]interface{}{}
+	var request PutOrganizationBody
+	if err := c.BindJSON(&request); err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if request.NewKey != nil && *request.NewKey {
+		key := uuid.New().String()
+		updated["apiKey"] = key
+	}
+	if request.Name != nil {
+		updated["name"] = *request.Name
+	}
+	
+	_, err := databases.Database.Client.
+		Collection("organizations").
+			Doc(organizationId).
+				Set(databases.Database.Context, updated, firestore.MergeAll)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	newOrganization, err := databases.Database.Client.
+		Collection("organizations").
+			Doc(organizationId).
+				Get(databases.Database.Context)
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	c.JSON(http.StatusOK, newOrganization.Data())
 }
 
 func DeleteOrganization(c *gin.Context) {
-	// TODO
+	organization := c.GetStringMap("organization")
+	organizationId := organization["organizationId"].(string)
+	_, err := databases.Database.Client.
+		Collection("organizations").
+			Doc(organizationId).
+				Delete(databases.Database.Context)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Status(http.StatusOK)
 }

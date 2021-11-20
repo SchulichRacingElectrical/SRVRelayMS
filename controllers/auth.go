@@ -53,7 +53,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 				Doc(organizationId).
 					Get(databases.Database.Context)
 		organization := doc.Data()
-			organization["organizationId"] = organizationId
+		organization["organizationId"] = organizationId
 		success(c, &organization)
 	}
 }
