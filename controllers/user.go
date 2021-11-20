@@ -134,9 +134,7 @@ func PostUser(c *gin.Context) {
 		Disabled(true)
 	user, createError := databases.Database.Auth.CreateUser(databases.Database.Context, newUserParams)
 	if createError != nil {
-		c.JSON(http.StatusBadRequest, gin.H {
-			"error": createError.Error(),
-		})
+		c.Status(http.StatusBadRequest)
 		return
 	}
 

@@ -37,6 +37,7 @@ func main() {
 
 	defer databases.Database.Close()
 
+	// TODO: Create middle ware for just token, just key, or both
 	publicEndpoints := m.router.Group("/database")
 	{
 		// Organization
@@ -52,8 +53,8 @@ func main() {
 		privateEndpoints.DELETE("/organization", controllers.DeleteOrganization)
 
 		// User
-		privateEndpoints.GET("/users/:organizationId", controllers.GetUsers)
-		privateEndpoints.GET("/users/:organizationId/:userId", controllers.GetUser)
+		privateEndpoints.GET("/users", controllers.GetUsers)
+		privateEndpoints.GET("/users/:userId", controllers.GetUser)
 		privateEndpoints.POST("/users", controllers.PostUser)
 		privateEndpoints.PUT("/users", controllers.PutUser)
 

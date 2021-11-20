@@ -104,10 +104,7 @@ func GetSensor(c *gin.Context) {
 				Get(databases.Database.Context)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Sensor not found",
-				"error":   true,
-			})
+			c.Status(http.StatusNotFound)
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"message": err.Error(),
