@@ -13,16 +13,17 @@ import (
 )
 
 type Sensor struct {
-	Sid         *int    `json:"sid"`										// Document ID
-	Type        *string `json:"type,omitempty"`
-	LastUpdated *int    `json:"lastUpdated,omitempty"`
-	Group       *string `json:"group,omitempty"`
-	Category    *string `json:"category,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	Frequency   *int    `json:"frequency,omitempty"`
-	Unit        *string `json:"unit,omitempty"`
-	CanId       *string `json:"canId,omitempty"`    		//TODO: Comes in as hex but should be converted to longlong
-	Disabled    *bool   `json:"disabled,omitempty"` 		//TODO: Should have default when empty
+	// Add a document id
+	Sid         *int    `json:"sid" firestore:"sid"`
+	Type        *string `json:"type,omitempty" firestore:"type"`
+	LastUpdated *int    `json:"lastUpdated,omitempty" firestore:"lastUpdated"`
+	Group       *string `json:"group,omitempty" firestore:"group"`
+	Category    *string `json:"category,omitempty" firestore:"category"`
+	Name        *string `json:"name,omitempty" firestore:"name"`
+	Frequency   *int    `json:"frequency,omitempty" firestore:"frequency"`
+	Unit        *string `json:"unit,omitempty" firestore:"unit"`
+	CanId       *string `json:"canId,omitempty" firestore:"canId"`    		//TODO: Comes in as hex but should be converted to longlong
+	Disabled    *bool   `json:"disabled,omitempty" firestore:"disabled"` 		//TODO: Should have default when empty
 }
 
 func PostSensor(c *gin.Context) {

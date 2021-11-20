@@ -2,54 +2,58 @@ package controllers
 
 import (
 	"database-ms/databases"
-	"errors"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/api/iterator"
 )
 
-// Returns the organization associated with the authorization
-func Authorize(c *gin.Context) (map[string]interface{}, error){
-	// Handle API key
-	apiKey := c.Request.Header.Get("apiKey")
-	if apiKey != "" {
-		iter := databases.Database.Client.Collection("organizations").Documents(databases.Database.Context)
-		for {
-			doc, err := iter.Next()
-			if err == iterator.Done {
-				break
-			}
-			if err != nil {
-				return nil, errors.New("")
-			}
-			organization := doc.Data()
-			if organization["apiKey"].(string) == apiKey {
-				organization["organizationId"] = doc.Ref.ID
-				return organization, nil
-			}
-		}
-		return nil, errors.New("")
-	} 
+func success(c *gin.Context, organization *map[string]interface{}) {
+	c.Set("organization", *organization)
+	c.Next()
+}
 
-	// Handle regular authorization
-	// TODO: Send permissions too?
-	reqToken := c.Request.Header.Get("Authorization")
-	splitToken := strings.Split(reqToken, " Bearer")
-	if len(splitToken) != 2 {
-		return nil, errors.New("")
+// Returns the organization associated with the authorization
+func AuthorizationMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Handle API key
+		apiKey := c.Request.Header.Get("apiKey")
+		if apiKey != "" {
+			organizations, err := databases.Database.Client.
+				Collection("organizations").
+					Where("apiKey", "==", apiKey).
+						Documents(databases.Database.Context).
+							GetAll()
+			if err != nil || len(organizations) == 0 {
+				c.Status(http.StatusForbidden)
+				return
+			}
+			organization := organizations[0].Data()
+			organization["organizationId"] = organizations[0].Ref.ID
+			success(c, &organization)
+			return
+		} 
+
+		// Handle regular authorization // TODO: Send permissions too?
+		reqToken := c.Request.Header.Get("Authorization")
+		splitToken := strings.Split(reqToken, "Bearer ")
+		if len(splitToken) != 2 {
+			c.Status(http.StatusForbidden)
+			return
+		}
+		reqToken = splitToken[1]
+		token, err := databases.Database.Auth.VerifyIDToken(databases.Database.Context, reqToken)
+		if err != nil {
+			c.Status(http.StatusForbidden)
+			return
+		}
+		organizationId := token.Claims["organizationId"].(string)
+		doc, err := databases.Database.Client.
+			Collection("organizations").
+				Doc(organizationId).
+					Get(databases.Database.Context)
+		organization := doc.Data()
+			organization["organizationId"] = organizationId
+		success(c, &organization)
 	}
-	reqToken = splitToken[1]
-	token, err := databases.Database.Auth.VerifyIDToken(databases.Database.Context, reqToken)
-	if err != nil {
-		return nil, errors.New("")
-	}
-	organizationId := token.Claims["organizationId"].(string)
-	doc, err := databases.Database.Client.
-		Collection("organizations").
-			Doc(organizationId).
-				Get(databases.Database.Context)
-	organization := doc.Data()
-	organization["organizationId"] = organizationId
-	return organization, nil
 }

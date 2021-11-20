@@ -12,15 +12,15 @@ type Main struct {
 }
 
 func (m *Main) initServer() error {
-	//TODO: set config file for server info
+	// TODO: set config file for server info
 
-	//Initialiaze firebase database
+	// Initialiaze firebase database
 	err := databases.Database.Init()
 	if err != nil {
 		return err
 	}
 
-	//TODO: Set Gin logger
+	// TODO: Set Gin logger
 
 	m.router = gin.Default()
 
@@ -37,26 +37,31 @@ func main() {
 
 	defer databases.Database.Close()
 
-	databaseHandlers := m.router.Group("/database")
+	publicEndpoints := m.router.Group("/database")
 	{
 		// Organization
-		databaseHandlers.GET("/organizations", controllers.GetOrganizations)
-		databaseHandlers.GET("/organization", controllers.GetOrganization)
-		databaseHandlers.POST("/organization", controllers.PostOrganization)
-		databaseHandlers.PUT("/organizations", controllers.PutOrganization)
-		databaseHandlers.DELETE("/organization", controllers.DeleteOrganization)
+		publicEndpoints.GET("/organizations", controllers.GetOrganizations)
+	}
+
+	privateEndpoints := m.router.Group("/database", controllers.AuthorizationMiddleware())
+	{
+		// Organization
+		privateEndpoints.GET("/organization", controllers.GetOrganization)
+		privateEndpoints.POST("/organization", controllers.PostOrganization)
+		privateEndpoints.PUT("/organizations", controllers.PutOrganization)
+		privateEndpoints.DELETE("/organization", controllers.DeleteOrganization)
 
 		// User
-		databaseHandlers.GET("/users/:organizationId", controllers.GetUsers)
-		databaseHandlers.GET("/users/:organizationId/:userId", controllers.GetUser)
-		databaseHandlers.POST("/users", controllers.PostUser)
-		databaseHandlers.PUT("/users", controllers.PutUser)
+		privateEndpoints.GET("/users/:organizationId", controllers.GetUsers)
+		privateEndpoints.GET("/users/:organizationId/:userId", controllers.GetUser)
+		privateEndpoints.POST("/users", controllers.PostUser)
+		privateEndpoints.PUT("/users", controllers.PutUser)
 
 		// Sensor
-		databaseHandlers.GET("/sensors", controllers.GetSensors)
-		databaseHandlers.GET("/sensors/:sid", controllers.GetSensor)
-		databaseHandlers.POST("/sensors", controllers.PostSensor)
-		databaseHandlers.DELETE("/sensors/:sid", controllers.DeleteSensor)
+		privateEndpoints.GET("/sensors", controllers.GetSensors)
+		privateEndpoints.GET("/sensors/:sid", controllers.GetSensor)
+		privateEndpoints.POST("/sensors", controllers.PostSensor)
+		privateEndpoints.DELETE("/sensors/:sid", controllers.DeleteSensor)
 	}
 
 	m.router.Run(":8080")
