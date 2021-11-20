@@ -15,10 +15,12 @@ type Organization struct {
 	OrganizationId	*string	`json:"organizationId,omitempty"`
 	Name						*string	`json:"name" firestore:"name"`
 	ApiKey					*string `json:"apiKey,omitempty" firestore:"apiKey"`
+	// Default Thing
 }
 
+
 func GetOrganizations(c *gin.Context) {
-	organizations := make([]interface{}, 0)
+	organizations := []Organization{}
 	iter := databases.Database.Client.
 		Collection("organizations").
 			Documents(databases.Database.Context)
@@ -35,13 +37,14 @@ func GetOrganizations(c *gin.Context) {
 		data := doc.Data()
 		delete(data, "apiKey")
 		data["organizationId"] = doc.Ref.ID
-		var organization Organization
+		organization := Organization{}
 		utils.JsonToStruct(data, &organization)
 		organizations = append(organizations, organization)
 	}
 
 	c.JSON(http.StatusOK, organizations)
 }
+
 
 func GetOrganization(c *gin.Context) {
 	organization := c.GetStringMap("organization")
@@ -62,8 +65,8 @@ func GetOrganization(c *gin.Context) {
 
 
 type CreateOrganization struct {
-	Name						*string	`json:"name" firestore:"name"`
-	ApiKey					*string `json:"apiKey,omitempty" firestore:"apiKey"`
+	Name			*string	`json:"name" firestore:"name" binding:"required"`
+	ApiKey		*string `json:"apiKey,omitempty" firestore:"apiKey"`
 }
 
 func PostOrganization(c *gin.Context) {
@@ -88,8 +91,8 @@ func PostOrganization(c *gin.Context) {
 
 
 type PutOrganizationBody struct {
-	Name						*string	`json:"name" binding:"required"`
-	NewKey					*bool		`json:"newKey" binding:"required"`
+	Name			*string	`json:"name" binding:"required"`
+	NewKey		*bool		`json:"newKey" binding:"required"`
 }
 
 func PutOrganization(c *gin.Context) {
@@ -130,6 +133,7 @@ func PutOrganization(c *gin.Context) {
 
 	c.JSON(http.StatusOK, newOrganization.Data())
 }
+
 
 func DeleteOrganization(c *gin.Context) {
 	organization := c.GetStringMap("organization")

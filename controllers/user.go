@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"database-ms/databases"
-	"encoding/json"
+	utils "database-ms/util"
 	"net/http"
 
 	"firebase.google.com/go/auth"
@@ -21,15 +21,14 @@ type User struct {
 	Role 							*string						`json:"role"` // guest | admin | lead | member
 	Email           	*string   				`json:"email"`
 	Disabled					*bool 						`json:"disabled"`
-	FireStore					*UserFirestore		`json:"firestore"`
+	FireStore					*UserFirestore		`json:"firestore,omitempty"`
 }
 
 func GetUsers(c *gin.Context) {
-	organizationId := c.Param("organizationId")
+	organization := c.GetStringMap("organization")
+	organizationId := organization["organizationId"].(string)
 
 	users := []User{}
-
-	// Get all the user records
 	iter := databases.Database.Client.
 		Collection("organizations").
 			Doc(organizationId).
@@ -51,7 +50,6 @@ func GetUsers(c *gin.Context) {
 			return
 		}
 
-		// Append to the list
 		role := user.CustomClaims["role"].(string)
 		users = append(users, User {
 			UserId: &doc.Ref.ID,
@@ -68,7 +66,8 @@ func GetUsers(c *gin.Context) {
 }
 
 func GetUser(c *gin.Context) {
-	organizationId := c.Param("organizationId")
+	organization := c.GetStringMap("organization")
+	organizationId := organization["organizationId"].(string)
 	userId := c.Param("userId")
 
 	// Get the data from authentication
@@ -90,12 +89,7 @@ func GetUser(c *gin.Context) {
 		return
 	}
 	firestore := UserFirestore{}
-	data, parseError := json.Marshal(snapshot.Data())
-	if parseError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{})
-		return
-	}
-	json.Unmarshal(data, &firestore)
+	utils.JsonToStruct(snapshot.Data(), &firestore)
 
 	// Create the response
 	role := user.CustomClaims["role"].(string)
@@ -108,18 +102,18 @@ func GetUser(c *gin.Context) {
 		Disabled: &user.Disabled,
 		FireStore: &firestore,
 	}
-
 	c.JSON(http.StatusOK, response)
 }
 
-func PostUser(c *gin.Context) {
-	type PostUserBody struct {
-		OrganizationID 	*string	`json:"organizationId"`
-		Email						*string `json:"email"`
-		Password				*string `json:"password"`
-		DisplayName			*string `json:"displayName"`
-	}
 
+type PostUserBody struct {
+	OrganizationID 	*string	`json:"organizationId"`
+	Email						*string `json:"email"`
+	Password				*string `json:"password"`
+	DisplayName			*string `json:"displayName"`
+}
+
+func PostUser(c *gin.Context) {
 	// Parse the incoming body
 	var newUser PostUserBody
 	if err := c.BindJSON(&newUser); err != nil {
