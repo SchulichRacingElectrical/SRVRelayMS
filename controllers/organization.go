@@ -20,9 +20,9 @@ type Organization struct {
 
 func GetOrganizations(c *gin.Context) {
 	organizations := []Organization{}
-	iter := databases.Database.Client.
+	iter := databases.Firebase.Client.
 		Collection("organizations").
-			Documents(databases.Database.Context)
+			Documents(databases.Firebase.Context)
 
 	for {
 		doc, err := iter.Next()
@@ -48,10 +48,10 @@ func GetOrganization(c *gin.Context) {
 	organization := c.GetStringMap("organization")
 	organizationId := organization["organizationId"].(string)
 
-	snapshot, err := databases.Database.Client.
+	snapshot, err := databases.Firebase.Client.
 		Collection("organizations").
 			Doc(organizationId).
-				Get(databases.Database.Context)
+				Get(databases.Firebase.Context)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
@@ -75,9 +75,9 @@ func PostOrganization(c *gin.Context) {
 	key := uuid.New().String()
 	newOrganization.ApiKey = &key
 
-	_, _, createError := databases.Database.Client.
+	_, _, createError := databases.Firebase.Client.
 		Collection("organizations").
-			Add(databases.Database.Context, newOrganization)
+			Add(databases.Firebase.Context, newOrganization)
 	if createError != nil {
 		c.Status(http.StatusBadRequest)
 		return
@@ -107,19 +107,19 @@ func PutOrganization(c *gin.Context) {
 	}
 	updated["name"] = *request.Name
 	
-	_, err := databases.Database.Client.
+	_, err := databases.Firebase.Client.
 		Collection("organizations").
 			Doc(organizationId).
-				Set(databases.Database.Context, updated, firestore.MergeAll)
+				Set(databases.Firebase.Context, updated, firestore.MergeAll)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	newOrganization, err := databases.Database.Client.
+	newOrganization, err := databases.Firebase.Client.
 		Collection("organizations").
 			Doc(organizationId).
-				Get(databases.Database.Context)
+				Get(databases.Firebase.Context)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
@@ -134,7 +134,7 @@ func DeleteOrganization(c *gin.Context) {
 
 	// Delete all of the associated users
 	userIds := []string{}
-	iter := databases.Database.Auth.Users(databases.Database.Context, "")
+	iter := databases.Firebase.Auth.Users(databases.Firebase.Context, "")
 	for {
 		user, err := iter.Next()
 		if err == iterator.Done {
@@ -148,17 +148,17 @@ func DeleteOrganization(c *gin.Context) {
 			userIds = append(userIds, user.UID)
 		}
 	}
-	_, deletionError := databases.Database.Auth.DeleteUsers(databases.Database.Context, userIds)
+	_, deletionError := databases.Firebase.Auth.DeleteUsers(databases.Firebase.Context, userIds)
 	if deletionError != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
 	// Delete the organization
-	_, err := databases.Database.Client.
+	_, err := databases.Firebase.Client.
 		Collection("organizations").
 			Doc(organizationId).
-				Delete(databases.Database.Context)
+				Delete(databases.Firebase.Context)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return

@@ -19,10 +19,10 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 		// Handle API key
 		apiKey := c.Request.Header.Get("apiKey")
 		if apiKey != "" {
-			organizations, err := databases.Database.Client.
+			organizations, err := databases.Firebase.Client.
 				Collection("organizations").
 					Where("apiKey", "==", apiKey).
-						Documents(databases.Database.Context).
+						Documents(databases.Firebase.Context).
 							GetAll()
 			if err != nil || len(organizations) == 0 {
 				c.Status(http.StatusUnauthorized)
@@ -42,16 +42,16 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 			return
 		}
 		reqToken = splitToken[1]
-		token, err := databases.Database.Auth.VerifyIDToken(databases.Database.Context, reqToken)
+		token, err := databases.Firebase.Auth.VerifyIDToken(databases.Firebase.Context, reqToken)
 		if err != nil {
 			c.Status(http.StatusUnauthorized)
 			return
 		}
 		organizationId := token.Claims["organizationId"].(string)
-		doc, err := databases.Database.Client.
+		doc, err := databases.Firebase.Client.
 			Collection("organizations").
 				Doc(organizationId).
-					Get(databases.Database.Context)
+					Get(databases.Firebase.Context)
 		organization := doc.Data()
 		organization["organizationId"] = organizationId
 		success(c, &organization)

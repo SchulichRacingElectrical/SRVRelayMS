@@ -15,10 +15,13 @@ func (m *Main) initServer() error {
 	// TODO: set config file for server info
 
 	// Initialiaze firebase database
-	err := databases.Database.Init()
+	err := databases.Firebase.Init()
 	if err != nil {
 		return err
 	}
+
+	// Initialize MongoDB
+	
 
 	// TODO: Set Gin logger
 
@@ -35,7 +38,7 @@ func main() {
 		return
 	}
 
-	defer databases.Database.Close()
+	defer databases.Firebase.Close()
 
 	// TODO: Create middle ware for just token, just key, or both
 	publicEndpoints := m.router.Group("/database")

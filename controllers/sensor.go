@@ -27,7 +27,7 @@ type Sensor struct {
 }
 
 func PostSensor(c *gin.Context) {
-	dsnap := databases.Database.Client.Collection("sensors")
+	dsnap := databases.Firebase.Client.Collection("sensors")
 
 	var newSensor Sensor
 	if err := c.BindJSON(&newSensor); err != nil {
@@ -48,7 +48,7 @@ func PostSensor(c *gin.Context) {
 		return
 	}
 
-	_, err := dsnap.Doc(strconv.Itoa(*newSensor.Sid)).Create(databases.Database.Context, newSensor)
+	_, err := dsnap.Doc(strconv.Itoa(*newSensor.Sid)).Create(databases.Firebase.Context, newSensor)
 	if err != nil {
 		if status.Code(err) == codes.AlreadyExists {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -70,10 +70,10 @@ func PostSensor(c *gin.Context) {
 }
 
 func GetSensors(c *gin.Context) {
-	dsnap := databases.Database.Client.Collection("sensors")
+	dsnap := databases.Firebase.Client.Collection("sensors")
 
 	// TODO: check for last update queryparam
-	iter := dsnap.Documents(databases.Database.Context)
+	iter := dsnap.Documents(databases.Firebase.Context)
 	sensors := make([]interface{}, 0)
 	for {
 		doc, err := iter.Next()
@@ -98,10 +98,10 @@ func GetSensors(c *gin.Context) {
 func GetSensor(c *gin.Context) {
 	sid := c.Param("sid")
 
-	dsnap, err := databases.Database.Client.
+	dsnap, err := databases.Firebase.Client.
 		Collection("sensors").
 			Doc(sid).
-				Get(databases.Database.Context)
+				Get(databases.Firebase.Context)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
 			c.Status(http.StatusNotFound)
@@ -126,7 +126,7 @@ func PutSensor(c *gin.Context) {
 func DeleteSensor(c *gin.Context) {
 	sid := c.Param("sid")
 
-	_, err := databases.Database.Client.Collection("sensors").Doc(sid).Delete(databases.Database.Context)
+	_, err := databases.Firebase.Client.Collection("sensors").Doc(sid).Delete(databases.Firebase.Context)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),

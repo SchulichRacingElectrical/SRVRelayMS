@@ -1,5 +1,5 @@
 package databases
 
 var (
-	Database FirebaseDB
+	Firebase FirebaseDB
 )
