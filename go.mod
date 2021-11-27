@@ -5,7 +5,11 @@ go 1.17
 require (
 	cloud.google.com/go/firestore v1.6.1
 	firebase.google.com/go v3.13.0+incompatible
+	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/gin-gonic/gin v1.7.4
+	github.com/google/uuid v1.3.0
+	github.com/joho/godotenv v1.3.0
+	go.mongodb.org/mongo-driver v1.7.4
 	google.golang.org/api v0.60.0
 	google.golang.org/grpc v1.40.0
 )
@@ -28,7 +32,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.1.1 // indirect
 	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
@@ -42,7 +45,6 @@ require (
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.mongodb.org/mongo-driver v1.7.4 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.0.0-20210503060351-7fd8e65b6420 // indirect

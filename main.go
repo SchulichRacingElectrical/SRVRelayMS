@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database-ms/config"
 	"database-ms/controllers"
 	"database-ms/databases"
 
@@ -11,34 +12,32 @@ type Main struct {
 	router *gin.Engine
 }
 
-func (m *Main) initServer() error {
-	// TODO: set config file for server info
+func (m *Main) initServer(conf *config.Configuration) {
 
 	// Initialiaze firebase database
-	err := databases.Firebase.Init()
-	if err != nil {
-		return err
-	}
+	// err := databases.Firebase.Init()
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Initialize MongoDB
-	
+	databases.Mongo.Init(conf.AtlasUri, conf.MongoDbName)
 
-	// TODO: Set Gin logger
+	// TODO set Gin logger
 
 	m.router = gin.Default()
-
-	return nil
 }
 
 func main() {
 	m := Main{}
 
-	// Initialize server
-	if m.initServer() != nil {
-		return
-	}
+	conf := config.NewConfig("./env")
 
-	defer databases.Firebase.Close()
+	// Initialize server
+	m.initServer(conf)
+
+	// defer databases.Firebase.Close()
+	defer databases.Mongo.Close()
 
 	// TODO: Create middle ware for just token, just key, or both
 	publicEndpoints := m.router.Group("/database")
@@ -64,7 +63,7 @@ func main() {
 		// Sensor
 		privateEndpoints.GET("/sensors", controllers.GetSensors)
 		privateEndpoints.GET("/sensors/:sid", controllers.GetSensor)
-		privateEndpoints.POST("/sensors", controllers.PostSensor)
+		privateEndpoints.POST("/sensors", controllers.CreateSensor)
 		privateEndpoints.DELETE("/sensors/:sid", controllers.DeleteSensor)
 	}
 
