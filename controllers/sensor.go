@@ -1,141 +1,99 @@
 package controllers
 
 import (
+	"context"
 	"database-ms/databases"
-	"fmt"
+	"database-ms/models"
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/api/iterator"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Sensor struct {
-	// Add a document id
-	Sid         *int    `json:"sid" firestore:"sid"`
-	Type        *string `json:"type,omitempty" firestore:"type"`
-	LastUpdated *int    `json:"lastUpdated,omitempty" firestore:"lastUpdated"`
-	Group       *string `json:"group,omitempty" firestore:"group"`
-	Category    *string `json:"category,omitempty" firestore:"category"`
-	Name        *string `json:"name,omitempty" firestore:"name"`
-	Frequency   *int    `json:"frequency,omitempty" firestore:"frequency"`
-	Unit        *string `json:"unit,omitempty" firestore:"unit"`
-	CanId       *string `json:"canId,omitempty" firestore:"canId"`    		//TODO: Comes in as hex but should be converted to longlong
-	Disabled    *bool   `json:"disabled,omitempty" firestore:"disabled"` 		//TODO: Should have default when empty
-}
-
-func PostSensor(c *gin.Context) {
-	dsnap := databases.Firebase.Client.Collection("sensors")
-
-	var newSensor Sensor
-	if err := c.BindJSON(&newSensor); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+func CreateSensor(c *gin.Context) {
+	// decode body request param
+	var sensor models.Sensor
+	if err := c.BindJSON(&sensor); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 			"error":   true,
 		})
 		return
 	}
 
-	//TODO: required fields for a sensor; should create custom Unmarshall that checks for required fields
-	//TODO: verify how sid will be generated
-	if newSensor.Sid == nil {
-		c.JSON(http.StatusBadRequest, gin.H {
-			"message": "sid is required",
+	collection := databases.Mongo.Db.Collection("Sensor")
+
+	// TODO autogenerate sid
+	// validate sid is unique for all sensors in the thing
+	filter := bson.M{"thingId": sensor.ThingID, "sid": sensor.SID}
+	count, err := collection.CountDocuments(context.TODO(), filter)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+			"error":   true,
+		})
+		return
+	}
+	if count > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "sid already exist",
 			"error":   true,
 		})
 		return
 	}
 
-	_, err := dsnap.Doc(strconv.Itoa(*newSensor.Sid)).Create(databases.Firebase.Context, newSensor)
+	// generate create time
+	sensor.LastUpdate = primitive.NewDateTimeFromTime(time.Now())
+
+	// write to database
+	result, err := collection.InsertOne(context.TODO(), sensor)
 	if err != nil {
-		if status.Code(err) == codes.AlreadyExists {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"message": fmt.Sprintf("Sensor with sid %d already exists", *newSensor.Sid),
-				"error":   true,
-			})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-				"error":   true,
-			})
-		}
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": err.Error(),
+			"error":   true,
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("String with sid %d successfully created", *newSensor.Sid),
+		"error":   false,
+		"message": "created new sensor",
+		"data":    result,
 	})
+
 }
 
 func GetSensors(c *gin.Context) {
-	dsnap := databases.Firebase.Client.Collection("sensors")
-
-	// TODO: check for last update queryparam
-	iter := dsnap.Documents(databases.Firebase.Context)
-	sensors := make([]interface{}, 0)
-	for {
-		doc, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-				"error":   true,
-			})
-			return
-		}
-		sensors = append(sensors, doc.Data())
-	}
-
+	// last updated query param should be handled
 	c.JSON(http.StatusOK, gin.H{
-		"sensors": sensors,
+		"error":   false,
+		"message": "endpoint not available",
 	})
 }
 
 func GetSensor(c *gin.Context) {
-	sid := c.Param("sid")
-
-	dsnap, err := databases.Firebase.Client.
-		Collection("sensors").
-			Doc(sid).
-				Get(databases.Firebase.Context)
-	if err != nil {
-		if status.Code(err) == codes.NotFound {
-			c.Status(http.StatusNotFound)
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"message": err.Error(),
-				"error":   true,
-			})
-		}
-		return
-	}
-
-	sensor := dsnap.Data()
-	c.JSON(http.StatusOK, sensor)
-}
-
-func PutSensor(c *gin.Context) {
-
-}
-
-// DeleteSensor deletes a sensor document given the sid, if sensor does not exist then no error
-func DeleteSensor(c *gin.Context) {
-	sid := c.Param("sid")
-
-	_, err := databases.Firebase.Client.Collection("sensors").Doc(sid).Delete(databases.Firebase.Context)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-			"error":   true,
-		})
-		return
-	}
-
+	// sid := c.Param("sid")
 	c.JSON(http.StatusOK, gin.H{
-		"message": fmt.Sprintf("String with sid %s successfully deleted", sid),
+		"error":   false,
+		"message": "endpoint not available",
+	})
+
+}
+
+func UpdateSensor(c *gin.Context) {
+	// sid := c.Param("sid")
+	c.JSON(http.StatusOK, gin.H{
+		"error":   false,
+		"message": "endpoint not available",
+	})
+}
+
+func DeleteSensor(c *gin.Context) {
+	// sid := c.Param("sid")
+	c.JSON(http.StatusOK, gin.H{
+		"error":   false,
+		"message": "endpoint not available",
 	})
 }

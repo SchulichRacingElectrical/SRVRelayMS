@@ -11,7 +11,6 @@ require (
 	github.com/joho/godotenv v1.3.0
 	go.mongodb.org/mongo-driver v1.7.4
 	google.golang.org/api v0.60.0
-	google.golang.org/grpc v1.40.0
 )
 
 require (
@@ -55,6 +54,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20211028162531-8db9c33dc351 // indirect
+	google.golang.org/grpc v1.40.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
