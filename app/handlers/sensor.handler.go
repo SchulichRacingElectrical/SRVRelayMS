@@ -33,8 +33,6 @@ func (h *SensorHandler) Create(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("Sensor does not exists!")
-
 	// Generate last updated
 	newSensor.LastUpdate = utils.CurrentTimeInMilli()
 
