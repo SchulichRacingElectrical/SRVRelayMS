@@ -13,15 +13,16 @@ import (
 // Configuration contains static info required to run the apps
 // It contains DB info
 type Configuration struct {
-	Address     string `env:"ADDRESS" envDefault:":8080"`
-	AtlasUri    string `env:"ATLAS_URI,required"`
-	MongoDbName string `env:"MONGODB_NAME,required"`
+	Address       string `env:"ADDRESS" envDefault:":8080"`
+	AtlasUri      string `env:"ATLAS_URI,required"`
+	MongoDbName   string `env:"MONGODB_NAME,required"`
+	MongoCluster  string `env:"MONGO_CLUSTERS,required"`
+	MongoUsername string `env:"MONGO_USERNAME,required"`
+	MongoPassword string `env:"MONGO_PASSWORD,required"`
 }
 
 // NewConfig will read the config data from given .env file
 func NewConfig(files ...string) *Configuration {
-	// err := godotenv.Load(files...) // Loading config from env file
-
 	path, _ := os.Getwd()
 	fullpath := filepath.Join(path, ".env")
 	fmt.Println(fullpath)

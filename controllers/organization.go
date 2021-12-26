@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"database-ms/databases"
-	utils "database-ms/util"
+	utils "database-ms/utils"
 	"net/http"
 
 	"cloud.google.com/go/firestore"
@@ -12,9 +12,9 @@ import (
 )
 
 type Organization struct {
-	OrganizationId	*string	`json:"organizationId,omitempty"`
-	Name						*string	`json:"name" firestore:"name"`
-	ApiKey					*string `json:"apiKey,omitempty" firestore:"apiKey"`
+	OrganizationId *string `json:"organizationId,omitempty"`
+	Name           *string `json:"name" firestore:"name"`
+	ApiKey         *string `json:"apiKey,omitempty" firestore:"apiKey"`
 	// Default Thing
 }
 
@@ -22,7 +22,7 @@ func GetOrganizations(c *gin.Context) {
 	organizations := []Organization{}
 	iter := databases.Firebase.Client.
 		Collection("organizations").
-			Documents(databases.Firebase.Context)
+		Documents(databases.Firebase.Context)
 
 	for {
 		doc, err := iter.Next()
@@ -50,8 +50,8 @@ func GetOrganization(c *gin.Context) {
 
 	snapshot, err := databases.Firebase.Client.
 		Collection("organizations").
-			Doc(organizationId).
-				Get(databases.Firebase.Context)
+		Doc(organizationId).
+		Get(databases.Firebase.Context)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
@@ -62,8 +62,8 @@ func GetOrganization(c *gin.Context) {
 }
 
 type CreateOrganization struct {
-	Name			*string	`json:"name" firestore:"name" binding:"required"`
-	ApiKey		*string `json:"apiKey,omitempty" firestore:"apiKey"`
+	Name   *string `json:"name" firestore:"name" binding:"required"`
+	ApiKey *string `json:"apiKey,omitempty" firestore:"apiKey"`
 }
 
 func PostOrganization(c *gin.Context) {
@@ -77,18 +77,18 @@ func PostOrganization(c *gin.Context) {
 
 	_, _, createError := databases.Firebase.Client.
 		Collection("organizations").
-			Add(databases.Firebase.Context, newOrganization)
+		Add(databases.Firebase.Context, newOrganization)
 	if createError != nil {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	
+
 	c.Status(http.StatusOK)
 }
 
 type PutOrganizationBody struct {
-	Name			*string	`json:"name" binding:"required"`
-	NewKey		*bool		`json:"newKey" binding:"required"`
+	Name   *string `json:"name" binding:"required"`
+	NewKey *bool   `json:"newKey" binding:"required"`
 }
 
 func PutOrganization(c *gin.Context) {
@@ -106,11 +106,11 @@ func PutOrganization(c *gin.Context) {
 		updated["apiKey"] = key
 	}
 	updated["name"] = *request.Name
-	
+
 	_, err := databases.Firebase.Client.
 		Collection("organizations").
-			Doc(organizationId).
-				Set(databases.Firebase.Context, updated, firestore.MergeAll)
+		Doc(organizationId).
+		Set(databases.Firebase.Context, updated, firestore.MergeAll)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
@@ -118,8 +118,8 @@ func PutOrganization(c *gin.Context) {
 
 	newOrganization, err := databases.Firebase.Client.
 		Collection("organizations").
-			Doc(organizationId).
-				Get(databases.Firebase.Context)
+		Doc(organizationId).
+		Get(databases.Firebase.Context)
 	if err != nil {
 		c.Status(http.StatusNotFound)
 		return
@@ -157,8 +157,8 @@ func DeleteOrganization(c *gin.Context) {
 	// Delete the organization
 	_, err := databases.Firebase.Client.
 		Collection("organizations").
-			Doc(organizationId).
-				Delete(databases.Firebase.Context)
+		Doc(organizationId).
+		Delete(databases.Firebase.Context)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return

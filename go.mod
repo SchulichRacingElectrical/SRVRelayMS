@@ -9,8 +9,10 @@ require (
 	github.com/gin-gonic/gin v1.7.4
 	github.com/google/uuid v1.3.0
 	github.com/joho/godotenv v1.3.0
+	github.com/rs/cors v1.8.0
 	go.mongodb.org/mongo-driver v1.7.4
 	google.golang.org/api v0.60.0
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22
 )
 
 require (
