@@ -19,6 +19,7 @@ type SensorServiceInterface interface {
 	FindByThingIdAndLastUpdate(context.Context, string, int64) ([]*model.Sensor, error)
 	Update(context.Context, string, *model.SensorUpdate) error
 	IsSensorAlreadyExists(context.Context, bson.ObjectId, int) bool
+	Delete(context.Context, string) error
 }
 
 type SensorService struct {
@@ -76,4 +77,10 @@ func (service *SensorService) Update(ctx context.Context, id string, sensor *mod
 		return err
 	}
 	return service.repository.Update(ctx, query, change)
+}
+
+func (service *SensorService) Delete(ctx context.Context, id string) error {
+
+	return service.repository.Delete(ctx, id)
+
 }

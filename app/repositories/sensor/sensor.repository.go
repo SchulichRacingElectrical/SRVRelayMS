@@ -119,7 +119,8 @@ func (service *SensorRepositoryImp) Update(ctx context.Context, query interface{
 
 func (service *SensorRepositoryImp) Delete(ctx context.Context, id string) error {
 	// TODO Delete from Thing document
-	return nil
+	err := service.collection().RemoveId(bson.ObjectIdHex(id))
+	return err
 }
 
 func (service *SensorRepositoryImp) IsSensorAlreadyExisits(ctx context.Context, thingId bson.ObjectId, sid int) bool {

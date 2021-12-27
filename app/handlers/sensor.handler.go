@@ -158,3 +158,18 @@ func (h *SensorHandler) Update(c *gin.Context) {
 	utils.Response(c, http.StatusOK, result)
 
 }
+
+func (h *SensorHandler) Delete(c *gin.Context) {
+	id := c.Param("id")
+	result := make(map[string]interface{})
+	err := h.snsr.Delete(c.Request.Context(), id)
+	if err != nil {
+		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		utils.Response(c, http.StatusBadRequest, result)
+		return
+	}
+
+	result = utils.SuccessPayload(nil, "Successfully deleted")
+	utils.Response(c, http.StatusOK, result)
+
+}

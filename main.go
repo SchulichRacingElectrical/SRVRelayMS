@@ -2,7 +2,7 @@ package main
 
 import (
 	"database-ms/config"
-	"database-ms/db"
+	"database-ms/databases"
 	"database-ms/routes"
 	"log"
 	"net/http"
@@ -19,7 +19,7 @@ func main() {
 	conf := config.NewConfig("./env")
 
 	// Connect to DB
-	mongoConn := db.GetInstance(conf)
+	mongoConn := databases.GetInstance(conf)
 
 	dbSession := mongoConn.Copy()
 	dbSession.SetSafe(&mgo.Safe{})
@@ -31,6 +31,7 @@ func main() {
 	router.Use(cors.Default())
 
 	// TODO setup Swagger
+	// TODO setup logging
 
 	// Server config
 	srv := &http.Server{
