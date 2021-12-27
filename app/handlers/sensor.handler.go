@@ -6,6 +6,7 @@ import (
 	"database-ms/utils"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
@@ -53,4 +54,88 @@ func (h *SensorHandler) Create(c *gin.Context) {
 		status = http.StatusOK
 	}
 	utils.Response(c, status, result)
+}
+
+func (h *SensorHandler) FindByThingId(c *gin.Context) {
+
+	thingId := c.Param("thingId")
+	sensors, err := h.snsr.FindByThingId(c.Request.Context(), thingId)
+
+	result := make(map[string]interface{})
+
+	if err != nil {
+		result = utils.NewHTTPError(utils.SensorsNotFound)
+		utils.Response(c, http.StatusBadRequest, result)
+	} else {
+		result = utils.SuccessPayload(sensors, "Succesfully retrieved sensors")
+		utils.Response(c, http.StatusOK, result)
+	}
+
+}
+
+func (h *SensorHandler) FindById(c *gin.Context) {
+
+	id := c.Param("id")
+	sensor, err := h.snsr.FindById(c.Request.Context(), id)
+
+	result := make(map[string]interface{})
+
+	if err != nil {
+		result = utils.NewHTTPError(utils.SensorNotFound)
+		utils.Response(c, http.StatusBadRequest, result)
+	} else {
+		result = utils.SuccessPayload(sensor, "Succesfully retrieved sensor")
+		utils.Response(c, http.StatusOK, result)
+	}
+
+}
+
+func (h *SensorHandler) FindByThingIdAndSid(c *gin.Context) {
+
+	result := make(map[string]interface{})
+
+	thingId := c.Param("thingId")
+	sidStr := c.Param("sid")
+	sid, err := strconv.Atoi(sidStr)
+	if err != nil {
+		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		utils.Response(c, http.StatusBadRequest, result)
+		return
+	}
+
+	sensor, err := h.snsr.FindByThingIdAndSid(c.Request.Context(), thingId, sid)
+
+	if err != nil {
+		result = utils.NewHTTPError(utils.SensorNotFound)
+		utils.Response(c, http.StatusBadRequest, result)
+	} else {
+		result = utils.SuccessPayload(sensor, "Succesfully retrieved sensor")
+		utils.Response(c, http.StatusOK, result)
+	}
+
+}
+
+func (h *SensorHandler) FindByThingIdAndLastUpdate(c *gin.Context) {
+
+	result := make(map[string]interface{})
+
+	thingId := c.Param("thingId")
+	lastUpdateStr := c.Param("lastUpdate")
+	lastUpdate, err := strconv.ParseInt(lastUpdateStr, 10, 64)
+	if err != nil {
+		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		utils.Response(c, http.StatusBadRequest, result)
+		return
+	}
+
+	sensors, err := h.snsr.FindByThingIdAndLastUpdate(c.Request.Context(), thingId, lastUpdate)
+
+	if err != nil {
+		result = utils.NewHTTPError(utils.SensorsNotFound)
+		utils.Response(c, http.StatusBadRequest, result)
+	} else {
+		result = utils.SuccessPayload(sensors, "Succesfully retrieved sensors")
+		utils.Response(c, http.StatusOK, result)
+	}
+
 }

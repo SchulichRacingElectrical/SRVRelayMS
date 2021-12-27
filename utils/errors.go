@@ -23,6 +23,8 @@ const (
 	SensorAlreadyExists = "sensorAlreadyExists"
 	EntityCreationError = "entityCreationError"
 	BadRequest          = "badRequest"
+	SensorsNotFound     = "sensorsNotFound"
+	SensorNotFound      = "sensorNotFound"
 )
 
 // Error code with description
@@ -31,4 +33,6 @@ var errorMessage = map[string]string{
 	"invalidBindingModel": "model could not be bound",
 	"entityCreationError": "could not create entity",
 	"sensorAlreadyExists": "sensor already exists",
+	"sensorsNotFound":     "sensors could not be found",
+	"sensorNotFound":      "sensor could not be found",
 }

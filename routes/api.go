@@ -30,10 +30,20 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 		// Sensor
 		// TODO move later as private endpoint
 		publicEndpoints.POST("/sensors", sensorAPI.Create)
+		publicEndpoints.GET("/sensors/id/:id", sensorAPI.FindById)
+		thingIdEndpoints := publicEndpoints.Group("/sensors/thingId")
+		{
+			thingIdEndpoints.GET("/:thingId", sensorAPI.FindByThingId)
+			thingIdEndpoints.GET("/:thingId/sid/:sid", sensorAPI.FindByThingIdAndSid)
+			thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindByThingIdAndLastUpdate)
+		}
 	}
 
+	// TODO move middleware to middleware folder
 	privateEndpoints := c.Group(DbRoute, controllers.AuthorizationMiddleware())
 	{
+
+		// TODO refactor these endpoints to use multitier pattern
 
 		// Organization
 		privateEndpoints.GET("/organization", controllers.GetOrganization)
