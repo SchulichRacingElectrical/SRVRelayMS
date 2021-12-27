@@ -1,4 +1,4 @@
-package controllers
+package middleware
 
 import (
 	"database-ms/databases"
@@ -21,9 +21,9 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 		if apiKey != "" {
 			organizations, err := databases.Firebase.Client.
 				Collection("organizations").
-					Where("apiKey", "==", apiKey).
-						Documents(databases.Firebase.Context).
-							GetAll()
+				Where("apiKey", "==", apiKey).
+				Documents(databases.Firebase.Context).
+				GetAll()
 			if err != nil || len(organizations) == 0 {
 				c.Status(http.StatusUnauthorized)
 				return
@@ -32,7 +32,7 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 			organization["organizationId"] = organizations[0].Ref.ID
 			success(c, &organization)
 			return
-		} 
+		}
 
 		// Handle regular authorization // TODO: Send permissions too?
 		reqToken := c.Request.Header.Get("Authorization")
@@ -50,8 +50,8 @@ func AuthorizationMiddleware() gin.HandlerFunc {
 		organizationId := token.Claims["organizationId"].(string)
 		doc, err := databases.Firebase.Client.
 			Collection("organizations").
-				Doc(organizationId).
-					Get(databases.Firebase.Context)
+			Doc(organizationId).
+			Get(databases.Firebase.Context)
 		organization := doc.Data()
 		organization["organizationId"] = organizationId
 		success(c, &organization)

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"database-ms/app/handlers"
+	"database-ms/app/middleware"
 	sensorRepo "database-ms/app/repositories/sensor"
 	sensorSrv "database-ms/app/services/sensor"
 	"database-ms/config"
@@ -40,7 +41,7 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 	}
 
 	// TODO move middleware to middleware folder
-	privateEndpoints := c.Group(DbRoute, controllers.AuthorizationMiddleware())
+	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware())
 	{
 
 		// TODO refactor these endpoints to use multitier pattern
