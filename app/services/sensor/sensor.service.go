@@ -5,6 +5,7 @@ import (
 	model "database-ms/app/models"
 	repository "database-ms/app/repositories/sensor"
 	"database-ms/config"
+	"database-ms/utils"
 
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -12,11 +13,12 @@ import (
 
 type SensorServiceInterface interface {
 	Create(context.Context, *model.Sensor) error
-	IsSensorAlreadyExists(context.Context, bson.ObjectId, int) bool
 	FindByThingId(context.Context, string) ([]*model.Sensor, error)
 	FindById(context.Context, string) (*model.Sensor, error)
 	FindByThingIdAndSid(context.Context, string, int) (*model.Sensor, error)
 	FindByThingIdAndLastUpdate(context.Context, string, int64) ([]*model.Sensor, error)
+	Update(context.Context, string, *model.SensorUpdate) error
+	IsSensorAlreadyExists(context.Context, bson.ObjectId, int) bool
 }
 
 type SensorService struct {
@@ -63,4 +65,15 @@ func (service *SensorService) FindByThingIdAndLastUpdate(ctx context.Context, th
 
 	return service.repository.FindByThingIdAndLastUpdate(ctx, thingId, lastUpdate)
 
+}
+
+func (service *SensorService) Update(ctx context.Context, id string, sensor *model.SensorUpdate) error {
+	// TODO handle id and thingId + sid
+	query := bson.M{"_id": bson.ObjectIdHex(id)}
+	CustomBson := &utils.CustomBson{}
+	change, err := CustomBson.Set(sensor)
+	if err != nil {
+		return err
+	}
+	return service.repository.Update(ctx, query, change)
 }

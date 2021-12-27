@@ -37,7 +37,7 @@ type SensorRepository interface {
 	FindOne(context.Context, interface{}) (*model.Sensor, error)
 
 	// Update
-	Update(context.Context, string, interface{}) error
+	Update(context.Context, interface{}, interface{}) error
 
 	// Delete
 	Delete(context.Context, string) error
@@ -113,8 +113,8 @@ func (service *SensorRepositoryImp) FindByThingIdAndLastUpdate(ctx context.Conte
 
 }
 
-func (service *SensorRepositoryImp) Update(ctx context.Context, id string, update interface{}) error {
-	return nil
+func (service *SensorRepositoryImp) Update(ctx context.Context, query interface{}, change interface{}) error {
+	return service.collection().Update(query, change)
 }
 
 func (service *SensorRepositoryImp) Delete(ctx context.Context, id string) error {

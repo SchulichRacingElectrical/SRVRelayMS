@@ -34,6 +34,8 @@ func (h *SensorHandler) Create(c *gin.Context) {
 		return
 	}
 
+	// TODO Check if Thing exists
+
 	// Generate last updated
 	newSensor.LastUpdate = utils.CurrentTimeInMilli()
 
@@ -137,5 +139,22 @@ func (h *SensorHandler) FindByThingIdAndLastUpdate(c *gin.Context) {
 		result = utils.SuccessPayload(sensors, "Succesfully retrieved sensors")
 		utils.Response(c, http.StatusOK, result)
 	}
+
+}
+
+func (h *SensorHandler) Update(c *gin.Context) {
+	id := c.Param("id")
+	var updateSensor models.SensorUpdate
+	c.BindJSON(&updateSensor)
+	result := make(map[string]interface{})
+	err := h.snsr.Update(c.Request.Context(), id, &updateSensor)
+	if err != nil {
+		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		utils.Response(c, http.StatusBadRequest, result)
+		return
+	}
+
+	result = utils.SuccessPayload(nil, "Successfully updated")
+	utils.Response(c, http.StatusOK, result)
 
 }

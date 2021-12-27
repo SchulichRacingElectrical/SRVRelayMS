@@ -38,6 +38,7 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 			thingIdEndpoints.GET("/:thingId/sid/:sid", sensorAPI.FindByThingIdAndSid)
 			thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindByThingIdAndLastUpdate)
 		}
+		publicEndpoints.PUT("/sensors/id/:id", sensorAPI.Update)
 	}
 
 	// TODO move middleware to middleware folder
