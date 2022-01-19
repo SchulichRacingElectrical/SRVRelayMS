@@ -16,8 +16,8 @@
         bsonType: [
           'int'
         ],
-        minimum: 0,
-        maximum: 256,
+        minimum: -1,
+        maximum: 255,
         description: '\'sid\' is required and must be an integer between 0 and 256'
       },
       type: {
@@ -119,6 +119,11 @@
         ]
       },
       upperDanger: {
+        bsonType: [
+          'double'
+        ]
+      },
+      lowerDanger: {
         bsonType: [
           'double'
         ]

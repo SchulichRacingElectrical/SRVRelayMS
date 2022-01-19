@@ -38,3 +38,19 @@ func (customBson *CustomBson) Set(data interface{}) (map[string]interface{}, err
 	s := BsonWrapper{Set: data}
 	return ToMap(s)
 }
+
+// Removes duplicates from a int slice
+// source: https://www.golangprograms.com/remove-duplicate-values-from-slice.html
+// @params - integer slice
+// return - integers slice without duplicates
+func Unique(intSlice []int) []int {
+	keys := make(map[int]bool)
+	list := []int{}
+	for _, entry := range intSlice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}

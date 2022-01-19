@@ -3,7 +3,6 @@ package routes
 import (
 	"database-ms/app/handlers"
 	"database-ms/app/middleware"
-	sensorRepo "database-ms/app/repositories/sensor"
 	sensorSrv "database-ms/app/services/sensor"
 	"database-ms/config"
 	"database-ms/controllers"
@@ -17,8 +16,7 @@ var (
 )
 
 func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Configuration) {
-	sensorRepository := sensorRepo.New(dbSession, conf)
-	sensorService := sensorSrv.New(sensorRepository)
+	sensorService := sensorSrv.NewSensorService(dbSession, conf)
 	sensorAPI := handlers.NewSensorAPI(sensorService)
 
 	// Routes
@@ -31,15 +29,14 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 		// Sensor
 		// TODO move later as private endpoint
 		publicEndpoints.POST("/sensors", sensorAPI.Create)
-		publicEndpoints.GET("/sensors/id/:id", sensorAPI.FindById)
+		publicEndpoints.GET("/sensors/sensorId/:sensorId", sensorAPI.FindBySensorId)
 		thingIdEndpoints := publicEndpoints.Group("/sensors/thingId")
 		{
-			thingIdEndpoints.GET("/:thingId", sensorAPI.FindByThingId)
-			thingIdEndpoints.GET("/:thingId/sid/:sid", sensorAPI.FindByThingIdAndSid)
-			thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindByThingIdAndLastUpdate)
+			thingIdEndpoints.GET("/:thingId", sensorAPI.FindThingSensors)
+			thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)
 		}
-		publicEndpoints.PUT("/sensors/id/:id", sensorAPI.Update)
-		publicEndpoints.DELETE("/sensors/id/:id", sensorAPI.Delete)
+		publicEndpoints.PUT("/sensors/sensorId/:sensorId", sensorAPI.Update)
+		publicEndpoints.DELETE("/sensors/sensorId/:sensorId", sensorAPI.Delete)
 	}
 
 	// TODO move middleware to middleware folder
