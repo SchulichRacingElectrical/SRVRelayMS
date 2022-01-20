@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  srv-database-ms:
+    # use dockerfile to build image
+    build:
+      context: .
+    # map the container port to the host
+    container_name: srv-database-ms
+    ports:
+      - 8080:8080
+    # use our code as local volume so watcher can run
+    volumes:
+      - .:/go/src/github.com/SchulichRacingElectrical/srv-database-ms
+    working_dir: /go/src/github.com/SchulichRacingElectrical/srv-database-ms
