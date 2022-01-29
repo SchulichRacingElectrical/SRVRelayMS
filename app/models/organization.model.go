@@ -9,3 +9,8 @@ type Organization struct {
 	Name   string        `json:"name,omitempty" bson:"name,omitempty"`
 	ApiKey string        `json:"api_key,omitempty" bson:"api_key,omitempty"`
 }
+
+type OrganizationUpdate struct {
+	Name   string `json:"name,omitempty" bson:"name,omitempty"`
+	ApiKey string `json:"api_key,omitempty" bson:"api_key,omitempty"`
+}

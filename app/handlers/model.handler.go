@@ -7,3 +7,7 @@ import (
 type createSensorRes struct {
 	ID bson.ObjectId `json:"_id"`
 }
+
+type createOrganizationRes struct {
+	ID bson.ObjectId `json:"_id"`
+}

@@ -3,6 +3,7 @@ package routes
 import (
 	"database-ms/app/handlers"
 	"database-ms/app/middleware"
+	organizationSrv "database-ms/app/services/organization"
 	sensorSrv "database-ms/app/services/sensor"
 	"database-ms/config"
 	"database-ms/controllers"
@@ -19,12 +20,15 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 	sensorService := sensorSrv.NewSensorService(dbSession, conf)
 	sensorAPI := handlers.NewSensorAPI(sensorService)
 
+	organizationService := organizationSrv.NewOrganizationService(dbSession, conf)
+	organizationAPI := handlers.NewOrganizationAPI(organizationService)
+
 	// Routes
 	// TODO: Create middle ware for just token, just key, or both
 	publicEndpoints := c.Group("/database")
 	{
 		// Organization
-		publicEndpoints.GET("/organizations", controllers.GetOrganizations)
+		publicEndpoints.GET("/organizations", organizationAPI.GetOrganizations)
 
 		// Sensor
 		// TODO move later as private endpoint
