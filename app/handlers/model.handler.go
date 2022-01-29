@@ -11,3 +11,7 @@ type createSensorRes struct {
 type createOrganizationRes struct {
 	ID bson.ObjectId `json:"_id"`
 }
+
+type createUserRes struct {
+	ID bson.ObjectId `json:"_id"`
+}

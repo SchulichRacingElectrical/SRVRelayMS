@@ -4,6 +4,7 @@ import (
 	"database-ms/app/handlers"
 	organizationSrv "database-ms/app/services/organization"
 	sensorSrv "database-ms/app/services/sensor"
+	userSrv "database-ms/app/services/user"
 	"database-ms/config"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,9 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 
 	organizationService := organizationSrv.NewOrganizationService(dbSession, conf)
 	organizationAPI := handlers.NewOrganizationAPI(organizationService)
+
+	userService := userSrv.NewUserService(dbSession, conf)
+	userApi := handlers.NewUserAPI(userService)
 
 	// Routes
 	// TODO: Create middle ware for just token, just key, or both
@@ -53,9 +57,9 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 	// privateEndpoints.DELETE("/organization", controllers.DeleteOrganization)
 
 	// // User
-	// privateEndpoints.GET("/users", controllers.GetUsers)
-	// privateEndpoints.GET("/users/:userId", controllers.GetUser)
-	// privateEndpoints.POST("/users", controllers.PostUser)
+	publicEndpoints.GET("/users", userApi.GetUsers)
+	//publicEndpoints.GET("/users/:userId", controllers.GetUser)
+	publicEndpoints.POST("/users", userApi.Create)
 	// privateEndpoints.PUT("/users", controllers.PutUser)
 
 	// }
