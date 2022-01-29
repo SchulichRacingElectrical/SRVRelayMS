@@ -6,6 +6,7 @@ import (
 	"database-ms/config"
 	"database-ms/utils"
 
+	"github.com/google/uuid"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -29,6 +30,7 @@ func NewOrganizationService(db *mgo.Session, c *config.Configuration) Organizati
 
 func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) error {
 	organization.ID = bson.NewObjectId()
+	organization.ApiKey = uuid.NewString()
 	return service.addOrganization(ctx, organization)
 }
 

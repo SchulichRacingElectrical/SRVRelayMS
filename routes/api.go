@@ -2,11 +2,9 @@ package routes
 
 import (
 	"database-ms/app/handlers"
-	"database-ms/app/middleware"
 	organizationSrv "database-ms/app/services/organization"
 	sensorSrv "database-ms/app/services/sensor"
 	"database-ms/config"
-	"database-ms/controllers"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
@@ -44,22 +42,21 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 	}
 
 	// TODO move middleware to middleware folder
-	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware())
-	{
+	// privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware())
+	// {
 
-		// TODO refactor these endpoints to use multitier pattern
+	// TODO create authorizaion middleware
+	// Organization
+	// privateEndpoints.GET("/organization", controllers.GetOrganization)
+	publicEndpoints.POST("/organizations", organizationAPI.Create)
+	// privateEndpoints.PUT("/organization", controllers.PutOrganization)
+	// privateEndpoints.DELETE("/organization", controllers.DeleteOrganization)
 
-		// Organization
-		privateEndpoints.GET("/organization", controllers.GetOrganization)
-		privateEndpoints.POST("/organization", controllers.PostOrganization)
-		privateEndpoints.PUT("/organization", controllers.PutOrganization)
-		privateEndpoints.DELETE("/organization", controllers.DeleteOrganization)
+	// // User
+	// privateEndpoints.GET("/users", controllers.GetUsers)
+	// privateEndpoints.GET("/users/:userId", controllers.GetUser)
+	// privateEndpoints.POST("/users", controllers.PostUser)
+	// privateEndpoints.PUT("/users", controllers.PutUser)
 
-		// User
-		privateEndpoints.GET("/users", controllers.GetUsers)
-		privateEndpoints.GET("/users/:userId", controllers.GetUser)
-		privateEndpoints.POST("/users", controllers.PostUser)
-		privateEndpoints.PUT("/users", controllers.PutUser)
-
-	}
+	// }
 }
