@@ -1,3 +1,4 @@
 /config/firebase_config.json
 .env
 .DS_Store
+.vscode/
