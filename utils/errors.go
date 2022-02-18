@@ -29,10 +29,17 @@ const (
 
 // Error code with description
 var errorMessage = map[string]string{
-	"internalError":       "an internal error occured",
+
+	// Generic errors
+	"internalError":       "an internal error occurred",
 	"invalidBindingModel": "model could not be bound",
 	"entityCreationError": "could not create entity",
+
+	// Sensor errors
 	"sensorAlreadyExists": "sensor already exists",
 	"sensorsNotFound":     "sensors could not be found",
 	"sensorNotFound":      "sensor could not be found",
+
+	// User errors
+
 }
