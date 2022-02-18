@@ -8,7 +8,7 @@ func NewHTTPError(errorCode string) map[string]interface{} {
 	return m
 }
 
-func NewHTTCustomError(errorCode, errorMsg string) map[string]interface{} {
+func NewHTTPCustomError(errorCode, errorMsg string) map[string]interface{} {
 	m := make(map[string]interface{})
 	m["error"] = errorCode
 	m["error_description"] = errorMsg

@@ -59,7 +59,7 @@ func (handler *OrganizationHandler) Create(c *gin.Context) {
 // 	result := make(map[string]interface{})
 // 	err := handler.organization.Update(c.Request.Context(), c.Param("organizationId"), &updateOrganization)
 // 	if err != nil {
-// 		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+// 		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 // 		utils.Response(c, http.StatusBadRequest, result)
 // 		return
 // 	}
@@ -72,7 +72,7 @@ func (handler *OrganizationHandler) Delete(c *gin.Context) {
 	result := make(map[string]interface{})
 	err := handler.organization.Delete(c.Request.Context(), c.Param("organizationId"))
 	if err != nil {
-		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}

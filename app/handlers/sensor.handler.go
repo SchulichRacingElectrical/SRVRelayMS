@@ -71,7 +71,7 @@ func (handler *SensorHandler) FindUpdatedSensor(c *gin.Context) {
 
 	lastUpdate, err := strconv.ParseInt(c.Param("lastUpdate"), 10, 64)
 	if err != nil {
-		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}
@@ -93,7 +93,7 @@ func (handler *SensorHandler) Update(c *gin.Context) {
 	result := make(map[string]interface{})
 	err := handler.sensor.Update(c.Request.Context(), c.Param("sensorId"), &updateSensor)
 	if err != nil {
-		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}
@@ -106,7 +106,7 @@ func (handler *SensorHandler) Delete(c *gin.Context) {
 	result := make(map[string]interface{})
 	err := handler.sensor.Delete(c.Request.Context(), c.Param("sensorId"))
 	if err != nil {
-		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}

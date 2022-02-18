@@ -59,7 +59,7 @@ func (handler *UserHandler) Create(c *gin.Context) {
 // 	result := make(map[string]interface{})
 // 	err := handler.user.Update(c.Request.Context(), c.Param("userId"), &updateUser)
 // 	if err != nil {
-// 		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+// 		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 // 		utils.Response(c, http.StatusBadRequest, result)
 // 		return
 // 	}
@@ -72,7 +72,7 @@ func (handler *UserHandler) Delete(c *gin.Context) {
 	result := make(map[string]interface{})
 	err := handler.user.Delete(c.Request.Context(), c.Param("userId"))
 	if err != nil {
-		result = utils.NewHTTCustomError(utils.BadRequest, err.Error())
+		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}
