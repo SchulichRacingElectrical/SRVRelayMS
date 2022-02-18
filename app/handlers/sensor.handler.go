@@ -32,7 +32,7 @@ func (handler *SensorHandler) Create(c *gin.Context) {
 		res := &createSensorRes{
 			ID: newSensor.ID,
 		}
-		result = utils.SuccessPayload(res, "Succesfully created sensor")
+		result = utils.SuccessPayload(res, "Successfully created sensor")
 		status = http.StatusOK
 	} else {
 		fmt.Println(err)
@@ -46,7 +46,7 @@ func (handler *SensorHandler) FindThingSensors(c *gin.Context) {
 	result := make(map[string]interface{})
 	sensors, err := handler.sensor.FindByThingId(c.Request.Context(), c.Param("thingId"))
 	if err == nil {
-		result = utils.SuccessPayload(sensors, "Succesfully retrieved sensors")
+		result = utils.SuccessPayload(sensors, "Successfully retrieved sensors")
 		utils.Response(c, http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.SensorsNotFound)
@@ -58,7 +58,7 @@ func (handler *SensorHandler) FindBySensorId(c *gin.Context) {
 	result := make(map[string]interface{})
 	sensor, err := handler.sensor.FindBySensorId(c.Request.Context(), c.Param("sensorId"))
 	if err == nil {
-		result = utils.SuccessPayload(sensor, "Succesfully retrieved sensor")
+		result = utils.SuccessPayload(sensor, "Successfully retrieved sensor")
 		utils.Response(c, http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.SensorNotFound)
@@ -79,7 +79,7 @@ func (handler *SensorHandler) FindUpdatedSensor(c *gin.Context) {
 	sensors, err := handler.sensor.FindUpdatedSensor(c.Request.Context(), c.Param("thingId"), lastUpdate)
 
 	if err == nil {
-		result = utils.SuccessPayload(sensors, "Succesfully retrieved sensors")
+		result = utils.SuccessPayload(sensors, "Successfully retrieved sensors")
 		utils.Response(c, http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.SensorsNotFound)
