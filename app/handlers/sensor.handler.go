@@ -29,7 +29,7 @@ func (handler *SensorHandler) Create(c *gin.Context) {
 	err := handler.sensor.Create(c.Request.Context(), &newSensor)
 	var status int
 	if err == nil {
-		res := &createSensorRes{
+		res := &createEntityRes{
 			ID: newSensor.ID,
 		}
 		result = utils.SuccessPayload(res, "Succesfully created sensor")

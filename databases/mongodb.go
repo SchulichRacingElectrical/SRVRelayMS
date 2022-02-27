@@ -44,3 +44,31 @@ func (db *MongoDB) Init(dbUri string, dbName string) {
 func (db *MongoDB) Close() {
 	db.Client.Disconnect(db.Context)
 }
+
+func GetDBClient(mongoDbURI string, ctx context.Context) (*mongo.Client, error) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoDbURI))
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
+}
+
+func WithTransaction(client *mongo.Client, ctx context.Context, callback func(sessCtx mongo.SessionContext) (interface{}, error)) (interface{}, error) {
+	// Start session
+	session, err := client.StartSession()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = client.Disconnect(ctx)
+		session.EndSession(ctx)
+	}()
+
+	// run operations with Transaction
+	result, err := session.WithTransaction(ctx, callback)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}

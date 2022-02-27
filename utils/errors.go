@@ -25,6 +25,7 @@ const (
 	BadRequest          = "badRequest"
 	SensorsNotFound     = "sensorsNotFound"
 	SensorNotFound      = "sensorNotFound"
+	ThingNotFound       = "thingNotFound"
 )
 
 // Error code with description
@@ -33,6 +34,9 @@ var errorMessage = map[string]string{
 	"invalidBindingModel": "model could not be bound",
 	"entityCreationError": "could not create entity",
 	"sensorAlreadyExists": "sensor already exists",
-	"sensorsNotFound":     "sensors could not be found",
-	"sensorNotFound":      "sensor could not be found",
+	// Sensors
+	"sensorsNotFound": "sensors could not be found",
+	"sensorNotFound":  "sensor could not be found",
+	// Thing
+	"thingNotFound": "thing could not be found",
 }
