@@ -2,6 +2,7 @@ package routes
 
 import (
 	"database-ms/app/handlers"
+	"database-ms/app/middleware"
 	organizationSrv "database-ms/app/services/organization"
 	sensorSrv "database-ms/app/services/sensor"
 	userSrv "database-ms/app/services/user"
@@ -46,15 +47,16 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 		publicEndpoints.DELETE("/sensors/sensorId/:sensorId", sensorAPI.Delete)
 	}
 
-	// Temp endpoints
-	tempEndpoints := c.Group("/temp")
-	{
+	// make an api key first you dingus!!!
 
+	// Temp endpoints
+	privateEndpoints := c.Group("/temp", middleware.AuthorizationMiddleware(conf))
+	{
 		// Organizations
-		tempEndpoints.POST("/organizations", organizationAPI.Create)
+		privateEndpoints.POST("/organizations", organizationAPI.Create)
 
 		// Users
-		tempEndpoints.POST("/users", userAPI.Create)
+		privateEndpoints.POST("/users", userAPI.Create)
 	}
 
 	// TODO move middleware to middleware folder

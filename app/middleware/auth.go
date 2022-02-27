@@ -1,59 +1,36 @@
 package middleware
 
 import (
-	"database-ms/databases"
-	"net/http"
-	"strings"
+	"database-ms/config"
 
 	"github.com/gin-gonic/gin"
 )
 
-func success(c *gin.Context, organization *map[string]interface{}) {
-	c.Set("organization", *organization)
-	c.Next()
+// func success(c *gin.Context, organization *map[string]interface{}) {
+// 	c.Set("organization", *organization)
+// 	c.Next()
+// }
+
+func respondWithError(c *gin.Context, code int, message interface{}) {
+	c.AbortWithStatusJSON(code, gin.H{"error": message})
 }
 
 // Returns the organization associated with the authorization
-func AuthorizationMiddleware() gin.HandlerFunc {
+func AuthorizationMiddleware(conf *config.Configuration) gin.HandlerFunc {
+
+	adminToken := conf.AdminKey
+
 	return func(c *gin.Context) {
-		// Handle API key
-		apiKey := c.Request.Header.Get("apiKey")
-		if apiKey != "" {
-			organizations, err := databases.Firebase.Client.
-				Collection("organizations").
-				Where("apiKey", "==", apiKey).
-				Documents(databases.Firebase.Context).
-				GetAll()
-			if err != nil || len(organizations) == 0 {
-				c.Status(http.StatusUnauthorized)
-				return
-			}
-			organization := organizations[0].Data()
-			organization["organizationId"] = organizations[0].Ref.ID
-			success(c, &organization)
+
+		token := c.Request.Header.Get("api_token")
+
+		if token == "" {
+			respondWithError(c, 401, "API token required")
 			return
 		}
 
-		// Handle regular authorization // TODO: Send permissions too?
-		reqToken := c.Request.Header.Get("Authorization")
-		splitToken := strings.Split(reqToken, "Bearer ")
-		if len(splitToken) != 2 {
-			c.Status(http.StatusUnauthorized)
-			return
+		if token == adminToken {
+			c.Next()
 		}
-		reqToken = splitToken[1]
-		token, err := databases.Firebase.Auth.VerifyIDToken(databases.Firebase.Context, reqToken)
-		if err != nil {
-			c.Status(http.StatusUnauthorized)
-			return
-		}
-		organizationId := token.Claims["organizationId"].(string)
-		doc, err := databases.Firebase.Client.
-			Collection("organizations").
-			Doc(organizationId).
-			Get(databases.Firebase.Context)
-		organization := doc.Data()
-		organization["organizationId"] = organizationId
-		success(c, &organization)
 	}
 }
