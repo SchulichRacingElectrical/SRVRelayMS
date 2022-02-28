@@ -7,7 +7,6 @@ import (
 	sensorSrv "database-ms/app/services/sensor"
 	userSrv "database-ms/app/services/user"
 	"database-ms/config"
-	"database-ms/controllers"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
@@ -31,9 +30,6 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 	// TODO: Create middle ware for just token, just key, or both
 	publicEndpoints := c.Group("/database")
 	{
-		// Organization
-		publicEndpoints.GET("/organizations", controllers.GetOrganizations)
-
 		// Sensor
 		// TODO move later as private endpoint
 		publicEndpoints.POST("/sensors", sensorAPI.Create)
@@ -50,7 +46,7 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 	// make an api key first you dingus!!!
 
 	// Temp endpoints
-	privateEndpoints := c.Group("/temp", middleware.AuthorizationMiddleware(conf))
+	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf))
 	{
 		// Organizations
 		privateEndpoints.POST("/organizations", organizationAPI.Create)
