@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type UserHandler struct {
@@ -25,6 +27,8 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	c.BindJSON(&newUser)
 	result := make(map[string]interface{})
 
+	newUser.Password = hashPassword(newUser.Password)
+	newUser.ID = bson.NewObjectId()
 	err := handler.user.Create(c.Request.Context(), &newUser)
 	var status int
 	if err == nil {
@@ -41,32 +45,43 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	utils.Response(c, status, result)
 }
 
-// func (handler *UserHandler) FindByUserId(c *gin.Context) {
-// 	result := make(map[string]interface{})
-// 	user, err := handler.user.FindByUserId(c.Request.Context(), c.Param("userId"))
-// 	if err == nil {
-// 		result = utils.SuccessPayload(user, "Successfully retrieved user")
-// 		utils.Response(c, http.StatusOK, result)
-// 	} else {
-// 		result = utils.NewHTTPError(utils.UserNotFound)
-// 		utils.Response(c, http.StatusBadRequest, result)
-// 	}
-// }
+func (handler *UserHandler) GetUser(c *gin.Context) {
+	result := make(map[string]interface{})
+	user, err := handler.user.FindByUserId(c.Request.Context(), c.Param("userId"))
+	if err == nil {
+		user.Password = ""
+		result = utils.SuccessPayload(user, "Successfully retrieved user")
+		utils.Response(c, http.StatusOK, result)
+	} else {
+		result = utils.NewHTTPError(utils.UserNotFound)
+		utils.Response(c, http.StatusBadRequest, result)
+	}
+}
 
-// func (handler *UserHandler) Update(c *gin.Context) {
-// 	var updateUser models.UserUpdate
-// 	c.BindJSON(&updateUser)
-// 	result := make(map[string]interface{})
-// 	err := handler.user.Update(c.Request.Context(), c.Param("userId"), &updateUser)
-// 	if err != nil {
-// 		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-// 		utils.Response(c, http.StatusBadRequest, result)
-// 		return
-// 	}
+func (handler *UserHandler) Login(c *gin.Context) {
+	var loggingInUser models.User
+	c.BindJSON(&loggingInUser)
+	result := make(map[string]interface{})
 
-// 	result = utils.SuccessPayload(nil, "Successfully updated")
-// 	utils.Response(c, http.StatusOK, result)
-// }
+	DBuser, err := handler.user.FindByUserEmail(c.Request.Context(), loggingInUser.Email)
+	if err != nil {
+		result = utils.NewHTTPError(utils.UserNotFound)
+		utils.Response(c, http.StatusBadRequest, result)
+	}
+
+	// Check password match
+	if checkPasswordHash(loggingInUser.Password, DBuser.Password) {
+		token, err := handler.user.CreateToken(c, DBuser)
+		if err != nil {
+			c.JSON(http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		c.JSON(http.StatusOK, token)
+	} else {
+		result = utils.NewHTTPError(utils.UserNotFound)
+		utils.Response(c, http.StatusBadRequest, result)
+	}
+}
 
 func (handler *UserHandler) Delete(c *gin.Context) {
 	result := make(map[string]interface{})
@@ -79,4 +94,19 @@ func (handler *UserHandler) Delete(c *gin.Context) {
 
 	result = utils.SuccessPayload(nil, "Successfully deleted")
 	utils.Response(c, http.StatusOK, result)
+}
+
+// Password hashing and verification functions
+
+func hashPassword(password string) string {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		panic("Hashing password failed")
+	}
+	return string(bytes)
+}
+
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

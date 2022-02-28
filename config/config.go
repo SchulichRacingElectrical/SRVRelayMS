@@ -19,7 +19,8 @@ type Configuration struct {
 	MongoCluster  string `env:"MONGO_CLUSTERS,required"`
 	MongoUsername string `env:"MONGO_USERNAME,required"`
 	MongoPassword string `env:"MONGO_PASSWORD,required"`
-	AdminKey      string `env:"ADMIN_API_KEY, required"`
+	AdminKey      string `env:"ADMIN_API_KEY,required"`
+	AccessSecret  string `env:"ACCESS_SECRET,required"`
 }
 
 // NewConfig will read the config data from given .env file

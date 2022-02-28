@@ -43,34 +43,20 @@ func InitializeRoutes(c *gin.Engine, dbSession *mgo.Session, conf *config.Config
 		publicEndpoints.DELETE("/sensors/sensorId/:sensorId", sensorAPI.Delete)
 	}
 
-	// make an api key first you dingus!!!
+	authEndpoints := c.Group("/auth")
+	{
+		// Authentication
+		authEndpoints.POST("/login", userAPI.Login)
+		authEndpoints.POST("/signup", userAPI.Create)
+	}
 
 	// Temp endpoints
-	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf))
+	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf, dbSession))
 	{
 		// Organizations
 		privateEndpoints.POST("/organizations", organizationAPI.Create)
 
 		// Users
-		privateEndpoints.POST("/users", userAPI.Create)
+		privateEndpoints.GET("/users/userId/:userId", userAPI.GetUser)
 	}
-
-	// TODO move middleware to middleware folder
-	// privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware())
-	// {
-	// 	// TODO refactor these endpoints to use multitier pattern
-
-	// 	// Organization
-	// 	privateEndpoints.GET("/organization", controllers.GetOrganization)
-	// 	privateEndpoints.POST("/organization", controllers.PostOrganization)
-	// 	privateEndpoints.PUT("/organization", controllers.PutOrganization)
-	// 	privateEndpoints.DELETE("/organization", controllers.DeleteOrganization)
-
-	// 	// User
-	// 	privateEndpoints.GET("/users", controllers.GetUsers)
-	// 	privateEndpoints.GET("/users/:userId", controllers.GetUser)
-	// 	privateEndpoints.POST("/users", controllers.PostUser)
-	// 	privateEndpoints.PUT("/users", controllers.PutUser)
-
-	// }
 }

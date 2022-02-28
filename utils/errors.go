@@ -18,13 +18,20 @@ func NewHTTPCustomError(errorCode, errorMsg string) map[string]interface{} {
 
 //Error codes
 const (
+
+	// Other errors
 	InternalError       = "internalError"
 	InvalidBindingModel = "invalidBindingModel"
 	SensorAlreadyExists = "sensorAlreadyExists"
 	EntityCreationError = "entityCreationError"
 	BadRequest          = "badRequest"
-	SensorsNotFound     = "sensorsNotFound"
-	SensorNotFound      = "sensorNotFound"
+
+	// Sensor errors
+	SensorsNotFound = "sensorsNotFound"
+	SensorNotFound  = "sensorNotFound"
+
+	// User error
+	UserNotFound = "userNotFound"
 )
 
 // Error code with description
@@ -41,5 +48,5 @@ var errorMessage = map[string]string{
 	"sensorNotFound":      "sensor could not be found",
 
 	// User errors
-
+	"userNotFound": "user could not be found",
 }
