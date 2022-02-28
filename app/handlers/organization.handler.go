@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type OrganizationHandler struct {
@@ -24,7 +25,7 @@ func (handler *OrganizationHandler) Create(c *gin.Context) {
 	var newOrganization models.Organization
 	c.BindJSON(&newOrganization)
 	result := make(map[string]interface{})
-
+	newOrganization.ID = bson.NewObjectId()
 	err := handler.organization.Create(c.Request.Context(), &newOrganization)
 	var status int
 	if err == nil {

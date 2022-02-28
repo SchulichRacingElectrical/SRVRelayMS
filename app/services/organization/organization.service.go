@@ -13,6 +13,7 @@ import (
 type OrganizationServiceInterface interface {
 	Create(context.Context, *model.Organization) error
 	FindByOrganizationId(context.Context, string) (*model.Organization, error)
+	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
 	// FindUpdatedOrganization(context.Context, string, int64) ([]*model.Organization, error)
 	// Update(context.Context, string, *model.OrganizationUpdate) error
 	Delete(context.Context, string) error
@@ -28,15 +29,16 @@ func NewOrganizationService(db *mgo.Session, c *config.Configuration) Organizati
 }
 
 func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) error {
-	organization.ID = bson.NewObjectId()
 	organization.ApiKey = uuid.NewString()
 	return service.addOrganization(ctx, organization)
 }
 
 func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId string) (*model.Organization, error) {
-
 	return service.getOrganization(ctx, bson.M{"thingId": bson.ObjectIdHex(organizationId)})
+}
 
+func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, api_key string) (*model.Organization, error) {
+	return service.getOrganization(ctx, bson.M{"api_key": bson.ObjectIdHex(api_key)})
 }
 
 func (service *OrganizationService) Delete(ctx context.Context, organizationId string) error {
