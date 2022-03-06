@@ -42,33 +42,6 @@ func (handler *OrganizationHandler) Create(c *gin.Context) {
 	utils.Response(c, status, result)
 }
 
-// func (handler *OrganizationHandler) FindByOrganizationId(c *gin.Context) {
-// 	result := make(map[string]interface{})
-// 	organization, err := handler.organization.FindByOrganizationId(c.Request.Context(), c.Param("organizationId"))
-// 	if err == nil {
-// 		result = utils.SuccessPayload(organization, "Successfully retrieved organization")
-// 		utils.Response(c, http.StatusOK, result)
-// 	} else {
-// 		result = utils.NewHTTPError(utils.OrganizationNotFound)
-// 		utils.Response(c, http.StatusBadRequest, result)
-// 	}
-// }
-
-// func (handler *OrganizationHandler) Update(c *gin.Context) {
-// 	var updateOrganization models.OrganizationUpdate
-// 	c.BindJSON(&updateOrganization)
-// 	result := make(map[string]interface{})
-// 	err := handler.organization.Update(c.Request.Context(), c.Param("organizationId"), &updateOrganization)
-// 	if err != nil {
-// 		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-// 		utils.Response(c, http.StatusBadRequest, result)
-// 		return
-// 	}
-
-// 	result = utils.SuccessPayload(nil, "Successfully updated")
-// 	utils.Response(c, http.StatusOK, result)
-// }
-
 func (handler *OrganizationHandler) Delete(c *gin.Context) {
 	result := make(map[string]interface{})
 	err := handler.organization.Delete(c.Request.Context(), c.Param("organizationId"))

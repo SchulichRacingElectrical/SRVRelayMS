@@ -14,8 +14,6 @@ type OrganizationServiceInterface interface {
 	Create(context.Context, *model.Organization) error
 	FindByOrganizationId(context.Context, string) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
-	// FindUpdatedOrganization(context.Context, string, int64) ([]*model.Organization, error)
-	// Update(context.Context, string, *model.OrganizationUpdate) error
 	Delete(context.Context, string) error
 }
 
@@ -42,11 +40,7 @@ func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context
 }
 
 func (service *OrganizationService) Delete(ctx context.Context, organizationId string) error {
-
-	// TODO Delete organizationId from Thing OrganizationId list
-
 	return service.collection().RemoveId(bson.ObjectIdHex(organizationId))
-
 }
 
 // ============== Service Helper Method(s) ================
