@@ -18,9 +18,9 @@ func main() {
 	// Initialize config
 	conf := config.NewConfig("./env")
 
-	// Connect to DB
+	// Connect to DB using mgov2
+	// TODO remove this later after refactoring to using mongo-go-driver
 	mongoConn := databases.GetInstance(conf)
-
 	dbSession := mongoConn.Copy()
 	dbSession.SetSafe(&mgo.Safe{})
 	defer dbSession.Close()

@@ -1,0 +1,40 @@
+{
+  $jsonSchema: {
+    required: [
+      'name'
+    ],
+    properties: {
+      _id: {},
+      name: {
+        bsonType: [
+          'string'
+        ],
+        description: '\'name\' is required'
+      },
+      operators: {
+        bsonType: [
+          'array'
+        ],
+        minItems: 0,
+        uniqueItems: true,
+        items: {
+          bsonType: [
+            'objectId'
+          ]
+        }
+      },
+      sensors: {
+        bsonType: [
+          'array'
+        ],
+        minItems: 0,
+        uniqueItems: true,
+        items: {
+          bsonType: [
+            'objectId'
+          ]
+        }
+      }
+    }
+  }
+}
