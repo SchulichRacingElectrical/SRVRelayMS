@@ -10,6 +10,7 @@ import (
 
 	model "database-ms/app/models"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -52,7 +53,7 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 				respondWithError(c, http.StatusUnauthorized, "User not found.")
 				return
 			}
-			organization, err := getOrganizationInfo(user.OrganizationId, conf, dbSession)
+			organization, err := getOrganizationInfo(user.OrganizationId.String(), conf, dbSession)
 			if err != nil {
 				respondWithError(c, http.StatusUnauthorized, "Organization not found.")
 				return
@@ -79,8 +80,12 @@ func getUserInfo(userId string, conf *config.Configuration, dbSession *mgo.Sessi
 	return &user, err
 }
 
-func getOrganizationInfo(organizationId bson.ObjectId, conf *config.Configuration, dbSession *mgo.Session) (*model.Organization, error) {
+func getOrganizationInfo(organizationId string, conf *config.Configuration, dbSession *mgo.Session) (*model.Organization, error) {
+	bsonOrganizationId, err := primitive.ObjectIDFromHex(organizationId)
+	if err != nil {
+		return nil, err
+	}
 	var organization model.Organization
-	err := dbSession.DB(conf.MongoDbName).C("Organization").Find(bson.M{"_id": organizationId}).One(&organization)
+	err = dbSession.DB(conf.MongoDbName).C("Organization").Find(bson.M{"_id": bsonOrganizationId}).One(&organization)
 	return &organization, err
 }

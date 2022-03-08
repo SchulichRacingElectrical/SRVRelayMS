@@ -1,15 +1,20 @@
-package user
+package sensor
 
 import (
 	"context"
 	model "database-ms/app/models"
 	"database-ms/config"
+	"database-ms/databases"
 	"database-ms/utils"
 	"errors"
+	"fmt"
 	"sort"
 
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"gopkg.in/mgo.v2"
 )
 
 type SensorServiceInterface interface {
@@ -31,74 +36,175 @@ func NewSensorService(db *mgo.Session, c *config.Configuration) SensorServiceInt
 }
 
 func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) error {
-	newSmallId, err := service.findAvailableSmallId(sensor.ThingID)
+	newSmallId, err := service.findAvailableSmallId(sensor.ThingID, ctx)
 	if err != nil {
 		return err
 	}
+
 	sensor.SmallId = &newSmallId
-	sensor.ID = bson.NewObjectId()
+	sensor.ID = primitive.NewObjectID()
 	sensor.LastUpdate = utils.CurrentTimeInMilli()
 
-	// TODO add new sensor to Thing SensorId list
+	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		return err
+	}
 
-	return service.addSensor(ctx, sensor)
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		db := client.Database(service.config.MongoDbName)
+
+		// Check if thing exists
+		thingCollection := db.Collection("Thing")
+		if count, err := thingCollection.CountDocuments(sessCtx, bson.M{"_id": sensor.ThingID}); err != nil || count < 1 {
+			return nil, errors.New("could not find thing")
+		}
+
+		// Insert new sensor
+		fmt.Println("Inserting new sensor...")
+		sensorCollection := db.Collection("Sensor")
+		_, err := sensorCollection.InsertOne(ctx, sensor)
+		if err != nil {
+			return nil, err
+		}
+
+		// Add sensor id to thing sensor list
+		fmt.Println("Adding sensor to thing...")
+		updpate := bson.M{"$push": bson.M{"sensors": sensor.ID}}
+		if _, err := thingCollection.UpdateByID(ctx, sensor.ThingID, updpate); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	if _, err := databases.WithTransaction(client, ctx, callback); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (service *SensorService) FindByThingId(ctx context.Context, thingId string) ([]*model.Sensor, error) {
+	bsonThingId, err := primitive.ObjectIDFromHex(thingId)
+	if err != nil {
+		return nil, err
+	}
 
-	return service.getSensors(ctx, bson.M{"thingId": bson.ObjectIdHex(thingId)})
+	var sensors []*model.Sensor
+	cursor, err := service.sensorCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}})
+	if err = cursor.All(ctx, &sensors); err != nil {
+		return nil, err
+	}
 
+	return sensors, nil
 }
 
 func (service *SensorService) FindBySensorId(ctx context.Context, sensorId string) (*model.Sensor, error) {
+	bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
+	if err != nil {
+		return nil, err
+	}
 
-	return service.getSensor(ctx, bson.M{"thingId": bson.ObjectIdHex(sensorId)})
-
+	var sensor model.Sensor
+	if err = service.sensorCollection(ctx).FindOne(ctx, bson.M{"_id": bsonSensorId}).Decode(&sensor); err != nil {
+		return nil, err
+	}
+	return &sensor, nil
 }
 
 func (service *SensorService) FindUpdatedSensor(ctx context.Context, thingId string, lastUpdate int64) ([]*model.Sensor, error) {
+	bsonThingId, err := primitive.ObjectIDFromHex(thingId)
+	if err != nil {
+		return nil, err
+	}
 
-	return service.getSensors(ctx, bson.M{
-		"thingId": bson.ObjectIdHex(thingId),
-		"lastUpdate": bson.M{
-			"$gt": lastUpdate,
-		},
-	})
+	var sensors []*model.Sensor
+	cursor, err := service.sensorCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}, {"lastUpdate", bson.D{{"$gt", lastUpdate}}}})
+	if err = cursor.All(ctx, &sensors); err != nil {
+		return nil, err
+	}
 
+	return sensors, nil
 }
 
-func (service *SensorService) Update(ctx context.Context, sensorId string, sensor *model.SensorUpdate) error {
-	query := bson.M{"_id": bson.ObjectIdHex(sensorId)}
-	CustomBson := &utils.CustomBson{}
-	change, err := CustomBson.Set(sensor)
+func (service *SensorService) Update(ctx context.Context, sensorId string, updates *model.SensorUpdate) error {
+	bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
+	if err != nil {
+		return err
+	}
+	_, err = service.sensorCollection(ctx).UpdateOne(ctx, bson.M{"_id": bsonSensorId}, bson.M{"$set": updates})
+	return err
+}
+
+func (service *SensorService) Delete(ctx context.Context, sensorId string) error {
+	bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
 	if err != nil {
 		return err
 	}
 
-	return service.collection().Update(query, change)
-}
+	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		return err
+	}
 
-func (service *SensorService) Delete(ctx context.Context, sensorId string) error {
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		db := client.Database(service.config.MongoDbName)
 
-	// TODO Delete sensorId from Thing SensorId list
+		sensorCollection := db.Collection("Sensor")
+		// Get sensor
+		fmt.Println("Getting sensor...")
+		var sensor model.Sensor
+		if err = service.sensorCollection(ctx).FindOne(ctx, bson.M{"_id": bsonSensorId}).Decode(&sensor); err != nil {
+			return nil, err
+		}
 
-	return service.collection().RemoveId(bson.ObjectIdHex(sensorId))
+		// Delete sensor from thing sensors list
+		thingCollection := db.Collection("Thing")
+		fmt.Println("Removing sensor from thing...")
+		updpate := bson.M{"$pull": bson.M{"sensors": bsonSensorId}}
+		if _, err := thingCollection.UpdateByID(ctx, sensor.ThingID, updpate); err != nil {
+			return nil, err
+		}
 
+		// Delete sensor
+		fmt.Println("Deleting sensor...")
+		_, err := sensorCollection.DeleteOne(ctx, bson.M{"_id": bsonSensorId})
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	}
+
+	if _, err := databases.WithTransaction(client, ctx, callback); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ============== Service Helper Method(s) ================
+type SmallId struct {
+	SmallId int
+}
 
-func (service *SensorService) findAvailableSmallId(thingId bson.ObjectId) (int, error) {
-	var result []*model.Sensor
-	err := service.collection().Find(bson.M{"thingId": thingId}).Select(bson.M{"smallId": 1}).All(&result)
+func (service *SensorService) findAvailableSmallId(thingId primitive.ObjectID, ctx context.Context) (int, error) {
+	opts := options.Find().SetProjection(bson.D{{"smallId", 1}, {"_id", 0}})
+	filterCursor, err := service.sensorCollection(ctx).Find(ctx, bson.D{{"thingId", thingId}}, opts)
 	if err != nil {
 		return -1, err
 	}
 
-	var smallIds []int
-	for _, record := range result {
-		smallIds = append(smallIds, *record.SmallId)
+	var results []SmallId
+	if err = filterCursor.All(ctx, &results); err != nil {
+		return -1, err
 	}
+
+	var smallIds []int
+	for _, record := range results {
+		smallIds = append(smallIds, record.SmallId)
+	}
+
 	smallIds = utils.Unique(smallIds)
 	sort.Ints(smallIds)
 
@@ -119,22 +225,11 @@ func (service *SensorService) findAvailableSmallId(thingId bson.ObjectId) (int, 
 
 // ============== Common DB Operations ===================
 
-func (service *SensorService) addSensor(ctx context.Context, sensor *model.Sensor) error {
-	return service.collection().Insert(sensor)
-}
+func (service *SensorService) sensorCollection(ctx context.Context) *mongo.Collection {
+	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		panic(err)
+	}
 
-func (service *SensorService) getSensor(ctx context.Context, query interface{}) (*model.Sensor, error) {
-	var sensor model.Sensor
-	err := service.collection().Find(query).One(&sensor)
-	return &sensor, err
-}
-
-func (service *SensorService) getSensors(ctx context.Context, query interface{}) ([]*model.Sensor, error) {
-	var sensors []*model.Sensor
-	err := service.collection().Find(query).All(&sensors)
-	return sensors, err
-}
-
-func (service *SensorService) collection() *mgo.Collection {
-	return service.db.DB(service.config.MongoDbName).C("Sensor")
+	return dbClient.Database(service.config.MongoDbName).Collection("Sensor")
 }

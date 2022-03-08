@@ -32,6 +32,9 @@ const (
 
 	// User error
 	UserNotFound = "userNotFound"
+
+	// Thing error
+	ThingNotFound = "thingNotFound"
 )
 
 // Error code with description
@@ -49,4 +52,7 @@ var errorMessage = map[string]string{
 
 	// User errors
 	"userNotFound": "user could not be found",
+
+	// Thing
+	"thingNotFound": "thing could not be found",
 }

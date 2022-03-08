@@ -1,11 +1,11 @@
 package models
 
 import (
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Organization struct {
-	ID     bson.ObjectId `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name   string        `json:"name,omitempty" bson:"name,omitempty"`
-	ApiKey string        `json:"api_key,omitempty" bson:"api_key,omitempty"`
+	ID     primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name   string             `json:"name,omitempty" bson:"name,omitempty"`
+	ApiKey string             `json:"api_key,omitempty" bson:"api_key,omitempty"`
 }

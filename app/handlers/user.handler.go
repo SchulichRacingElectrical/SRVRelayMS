@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2/bson"
 )
 
 type UserHandler struct {
@@ -28,11 +27,11 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	result := make(map[string]interface{})
 
 	newUser.Password = hashPassword(newUser.Password)
-	newUser.ID = bson.NewObjectId()
+	newUser.Roles = "Guest"
 	err := handler.user.Create(c.Request.Context(), &newUser)
 	var status int
 	if err == nil {
-		res := &createUserRes{
+		res := &createEntityRes{
 			ID: newUser.ID,
 		}
 		result = utils.SuccessPayload(res, "Successfully created user")

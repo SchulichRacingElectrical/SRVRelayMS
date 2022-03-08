@@ -1,17 +1,9 @@
 package handlers
 
 import (
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type createSensorRes struct {
-	ID bson.ObjectId `json:"_id"`
-}
-
-type createUserRes struct {
-	ID bson.ObjectId `json:"_id"`
-}
-
-type createOrganizationRes struct {
-	ID bson.ObjectId `json:"_id"`
+type createEntityRes struct {
+	ID primitive.ObjectID `json:"_id"`
 }

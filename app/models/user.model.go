@@ -1,14 +1,14 @@
 package models
 
 import (
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type User struct {
-	ID             bson.ObjectId `json:"_id,omitempty" bson:"_id,omitempty"`
-	DisplayName    string        `json:"name,omitempty" bson:"name,omitempty"`
-	Email          string        `json:"email,omitempty" bson:"email,omitempty"`
-	Password       string        `json:"password,omitempty" bson:"password,omitempty"`
-	OrganizationId bson.ObjectId `json:"organizationId,omitempty" bson:"organizationId,omitempty"`
-	Roles          string        `json:"roles,omitempty" bson:"roles,omitempty"`
+	ID             primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	DisplayName    string             `json:"name,omitempty" bson:"name,omitempty"`
+	Email          string             `json:"email,omitempty" bson:"email,omitempty"`
+	Password       string             `json:"password,omitempty" bson:"password,omitempty"`
+	OrganizationId primitive.ObjectID `json:"organizationId,omitempty" bson:"organizationId,omitempty"`
+	Roles          string             `json:"roles,omitempty" bson:"roles,omitempty"`
 }
