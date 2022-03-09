@@ -28,12 +28,9 @@ func (handler *UserHandler) Create(c *gin.Context) {
 
 	newUser.Password = hashPassword(newUser.Password)
 	newUser.Roles = "Guest"
-	err := handler.user.Create(c.Request.Context(), &newUser)
+	res, err := handler.user.Create(c.Request.Context(), &newUser)
 	var status int
 	if err == nil {
-		res := &createEntityRes{
-			ID: newUser.ID,
-		}
 		result = utils.SuccessPayload(res, "Successfully created user")
 		status = http.StatusOK
 	} else {
@@ -66,6 +63,7 @@ func (handler *UserHandler) Login(c *gin.Context) {
 	if err != nil {
 		result = utils.NewHTTPError(utils.UserNotFound)
 		utils.Response(c, http.StatusBadRequest, result)
+		return
 	}
 
 	// Check password match
@@ -77,22 +75,9 @@ func (handler *UserHandler) Login(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, token)
 	} else {
-		result = utils.NewHTTPError(utils.UserNotFound)
-		utils.Response(c, http.StatusBadRequest, result)
+		result = utils.NewHTTPError(utils.WrongPassword)
+		utils.Response(c, http.StatusForbidden, result)
 	}
-}
-
-func (handler *UserHandler) Delete(c *gin.Context) {
-	result := make(map[string]interface{})
-	err := handler.user.Delete(c.Request.Context(), c.Param("userId"))
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(c, http.StatusBadRequest, result)
-		return
-	}
-
-	result = utils.SuccessPayload(nil, "Successfully deleted")
-	utils.Response(c, http.StatusOK, result)
 }
 
 // Password hashing and verification functions

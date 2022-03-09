@@ -73,9 +73,16 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf, mgoDbSession))
 	{
 		// Organizations
-		privateEndpoints.POST("/organizations", organizationAPI.Create)
+		organizationEndpoints := privateEndpoints.Group("/organizations")
+		{
+			organizationEndpoints.POST("", organizationAPI.Create)
+			organizationEndpoints.GET("organizationId/:organizationId", organizationAPI.FindByOrganizationId)
+		}
 
 		// Users
-		privateEndpoints.GET("/users/userId/:userId", userAPI.GetUser)
+		userEndpoints := privateEndpoints.Group("/users")
+		{
+			userEndpoints.GET("/userId/:userId", userAPI.GetUser)
+		}
 	}
 }

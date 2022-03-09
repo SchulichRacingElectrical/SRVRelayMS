@@ -25,12 +25,9 @@ func (handler *OrganizationHandler) Create(c *gin.Context) {
 	c.BindJSON(&newOrganization)
 	result := make(map[string]interface{})
 
-	err := handler.organization.Create(c.Request.Context(), &newOrganization)
+	res, err := handler.organization.Create(c.Request.Context(), &newOrganization)
 	var status int
 	if err == nil {
-		res := &createEntityRes{
-			ID: newOrganization.ID,
-		}
 		result = utils.SuccessPayload(res, "Successfully created organization")
 		status = http.StatusOK
 	} else {
@@ -41,15 +38,14 @@ func (handler *OrganizationHandler) Create(c *gin.Context) {
 	utils.Response(c, status, result)
 }
 
-func (handler *OrganizationHandler) Delete(c *gin.Context) {
+func (handler *OrganizationHandler) FindByOrganizationId(c *gin.Context) {
 	result := make(map[string]interface{})
-	err := handler.organization.Delete(c.Request.Context(), c.Param("organizationId"))
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
+	organization, err := handler.organization.FindByOrganizationId(c.Request.Context(), c.Param("organizationId"))
+	if err == nil {
+		result = utils.SuccessPayload(organization, "Successfully retrieved organization")
+		utils.Response(c, http.StatusOK, result)
+	} else {
+		result = utils.NewHTTPError(utils.OrganizationNotFound)
 		utils.Response(c, http.StatusBadRequest, result)
-		return
 	}
-
-	result = utils.SuccessPayload(nil, "Successfully deleted")
-	utils.Response(c, http.StatusOK, result)
 }
