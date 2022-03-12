@@ -76,7 +76,7 @@ func (handler *UserHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusOK, token)
 	} else {
 		result = utils.NewHTTPError(utils.WrongPassword)
-		utils.Response(c, http.StatusForbidden, result)
+		utils.Response(c, http.StatusUnauthorized, result)
 	}
 }
 
