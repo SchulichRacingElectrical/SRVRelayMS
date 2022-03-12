@@ -17,6 +17,7 @@ type OrganizationServiceInterface interface {
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
 	FindByOrganizationId(context.Context, string) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
+	FindAllOrganizations(ctx context.Context) (*[]model.Organization, error)
 }
 
 type OrganizationService struct {
@@ -49,6 +50,25 @@ func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context
 	var organization model.Organization
 	err := service.organizationCollection(ctx).FindOne(ctx, bson.M{"api_key": api_key}).Decode(&organization)
 	return &organization, err
+}
+
+func (service *OrganizationService) FindAllOrganizations(ctx context.Context) (*[]model.Organization, error) {
+	var organizations []model.Organization
+	cursor, err := service.organizationCollection(ctx).Find(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &organizations)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove ApiKey from organization list as its a secret.
+	for i, _ := range organizations {
+		organizations[i].ApiKey = ""
+	}
+
+	return &organizations, err
 }
 
 // ============== Service Helper Method(s) ================

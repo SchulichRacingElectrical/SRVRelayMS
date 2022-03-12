@@ -39,7 +39,8 @@ const (
 	ThingNotFound = "thingNotFound"
 
 	// Organization error
-	OrganizationNotFound = "organizationNotFound"
+	OrganizationNotFound  = "organizationNotFound"
+	OrganizationsNotFound = "organizationsNotFound"
 )
 
 // Error code with description
@@ -64,5 +65,6 @@ var errorMessage = map[string]string{
 	"thingNotFound": "thing could not be found",
 
 	// Organization
-	"organizationNotFound": "organization could not be found",
+	"organizationNotFound":  "organization could not be found",
+	"organizationsNotFound": "organizations could not be found",
 }

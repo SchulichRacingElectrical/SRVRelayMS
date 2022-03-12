@@ -49,3 +49,15 @@ func (handler *OrganizationHandler) FindByOrganizationId(c *gin.Context) {
 		utils.Response(c, http.StatusBadRequest, result)
 	}
 }
+
+func (handler *OrganizationHandler) FindAllOrganizations(c *gin.Context) {
+	result := make(map[string]interface{})
+	organizations, err := handler.organization.FindAllOrganizations(c.Request.Context())
+	if err == nil {
+		result = utils.SuccessPayload(organizations, "Successfully retrieved organizations")
+		utils.Response(c, http.StatusOK, result)
+	} else {
+		result = utils.NewHTTPError(utils.OrganizationsNotFound)
+		utils.Response(c, http.StatusNotFound, result)
+	}
+}
