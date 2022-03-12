@@ -25,11 +25,20 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	var newUser models.User
 	c.BindJSON(&newUser)
 	result := make(map[string]interface{})
+	var status int
+
+	// Check if this email already exists
+	_, err := handler.user.FindByUserEmail(c.Request.Context(), newUser.Email)
+	if err == nil {
+		result = utils.NewHTTPError(utils.UserAlreadyExists)
+		status = http.StatusConflict
+		utils.Response(c, status, result)
+		return
+	}
 
 	newUser.Password = hashPassword(newUser.Password)
 	newUser.Roles = "Guest"
 	res, err := handler.user.Create(c.Request.Context(), &newUser)
-	var status int
 	if err == nil {
 		result = utils.SuccessPayload(res, "Successfully created user")
 		status = http.StatusOK
