@@ -15,7 +15,8 @@ import (
 
 type OrganizationServiceInterface interface {
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
-	FindByOrganizationId(context.Context, string) (*model.Organization, error)
+	FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*model.Organization, error)
+	FindByOrganizationIdString(context.Context, string) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
 	FindAllOrganizations(ctx context.Context) (*[]model.Organization, error)
 }
@@ -35,7 +36,7 @@ func (service *OrganizationService) Create(ctx context.Context, organization *mo
 	return service.organizationCollection(ctx).InsertOne(ctx, organization)
 }
 
-func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId string) (*model.Organization, error) {
+func (service *OrganizationService) FindByOrganizationIdString(ctx context.Context, organizationId string) (*model.Organization, error) {
 	bsonOrganizationId, err := primitive.ObjectIDFromHex(organizationId)
 	if err != nil {
 		return nil, err
@@ -43,6 +44,12 @@ func (service *OrganizationService) FindByOrganizationId(ctx context.Context, or
 
 	var organization model.Organization
 	err = service.organizationCollection(ctx).FindOne(ctx, bson.M{"_id": bsonOrganizationId}).Decode(&organization)
+	return &organization, err
+}
+
+func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*model.Organization, error) {
+	var organization model.Organization
+	err := service.organizationCollection(ctx).FindOne(ctx, bson.M{"_id": organizationId}).Decode(&organization)
 	return &organization, err
 }
 
@@ -63,8 +70,8 @@ func (service *OrganizationService) FindAllOrganizations(ctx context.Context) (*
 		return nil, err
 	}
 
-	// Remove ApiKey from organization list as its a secret.
-	for i, _ := range organizations {
+	// Remove ApiKey from organization list as it's a secret.
+	for i := range organizations {
 		organizations[i].ApiKey = ""
 	}
 

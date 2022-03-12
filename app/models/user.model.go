@@ -10,5 +10,6 @@ type User struct {
 	Email          string             `json:"email,omitempty" bson:"email,omitempty"`
 	Password       string             `json:"password,omitempty" bson:"password,omitempty"`
 	OrganizationId primitive.ObjectID `json:"organizationId,omitempty" bson:"organizationId,omitempty"`
-	Roles          string             `json:"roles,omitempty" bson:"roles,omitempty"`
+	// These roles are: Admin, Lead, Member, Guest, Pending
+	Roles string `json:"roles,omitempty" bson:"roles,omitempty"`
 }

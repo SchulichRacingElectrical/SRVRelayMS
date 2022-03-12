@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"database-ms/config"
 	"fmt"
 	"net/http"
@@ -8,15 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 
-	model "database-ms/app/models"
+	organizationSrv "database-ms/app/services/organization"
+	userSrv "database-ms/app/services/user"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // Returns the organization associated with the authorization
 func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session) gin.HandlerFunc {
+
+	userInterface := userSrv.NewUserService(dbSession, conf)
+	organizationInterface := organizationSrv.NewOrganizationService(dbSession, conf)
 
 	return func(c *gin.Context) {
 
@@ -48,12 +51,12 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			userId := fmt.Sprintf("%s", claims["userId"])
-			user, err := getUserInfo(userId, conf, dbSession)
+			user, err := userInterface.FindByUserId(context.TODO(), userId)
 			if err != nil {
 				respondWithError(c, http.StatusUnauthorized, "User not found.")
 				return
 			}
-			organization, err := getOrganizationInfo(user.OrganizationId.String(), conf, dbSession)
+			organization, err := organizationInterface.FindByOrganizationId(context.TODO(), user.OrganizationId)
 			if err != nil {
 				respondWithError(c, http.StatusUnauthorized, "Organization not found.")
 				return
@@ -71,21 +74,4 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 func respondWithError(c *gin.Context, httpErrorCode int, message string) {
 	c.Status(httpErrorCode)
 	c.AbortWithStatusJSON(httpErrorCode, message)
-}
-
-func getUserInfo(userId string, conf *config.Configuration, dbSession *mgo.Session) (*model.User, error) {
-	var user model.User
-	err := dbSession.DB(conf.MongoDbName).C("User").Find(bson.M{"_id": bson.ObjectIdHex(userId)}).One(&user)
-	user.Password = ""
-	return &user, err
-}
-
-func getOrganizationInfo(organizationId string, conf *config.Configuration, dbSession *mgo.Session) (*model.Organization, error) {
-	bsonOrganizationId, err := primitive.ObjectIDFromHex(organizationId)
-	if err != nil {
-		return nil, err
-	}
-	var organization model.Organization
-	err = dbSession.DB(conf.MongoDbName).C("Organization").Find(bson.M{"_id": bsonOrganizationId}).One(&organization)
-	return &organization, err
 }
