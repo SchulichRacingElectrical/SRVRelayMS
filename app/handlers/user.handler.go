@@ -37,7 +37,7 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	}
 
 	newUser.Password = hashPassword(newUser.Password)
-	newUser.Roles = "Guest"
+	newUser.Roles = "Pending"
 	res, err := handler.user.Create(c.Request.Context(), &newUser)
 	if err == nil {
 		result = utils.SuccessPayload(res, "Successfully created user")
