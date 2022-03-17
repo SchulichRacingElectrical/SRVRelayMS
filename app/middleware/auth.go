@@ -74,7 +74,7 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 			if err != nil {
 				return
 			}
-			organization, err := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId.String())
+			organization, err := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId)
 			if err != nil {
 				return
 			}
