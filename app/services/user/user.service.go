@@ -38,7 +38,7 @@ func (service *UserService) Create(ctx context.Context, user *model.User) (*mong
 
 func (service *UserService) FindByUserEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
-	err := service.userCollection(ctx).FindOne(ctx, bson.M{"email:": email}).Decode(&user)
+	err := service.userCollection(ctx).FindOne(ctx, bson.M{"email": email}).Decode(&user)
 	return &user, err
 }
 
@@ -48,7 +48,7 @@ func (service *UserService) FindByUserId(ctx context.Context, userId string) (*m
 		return nil, err
 	}
 	var user model.User
-	err = service.userCollection(ctx).FindOne(ctx, bson.M{"_id:": bsonUserId}).Decode(&user)
+	err = service.userCollection(ctx).FindOne(ctx, bson.M{"_id": bsonUserId}).Decode(&user)
 	return &user, err
 }
 
