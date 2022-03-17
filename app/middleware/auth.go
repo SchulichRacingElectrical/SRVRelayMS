@@ -4,13 +4,12 @@ import (
 	"context"
 	"database-ms/config"
 	"fmt"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
 
 	organizationSrv "database-ms/app/services/organization"
 	userSrv "database-ms/app/services/user"
+
+	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt"
 
 	"gopkg.in/mgo.v2"
 )
@@ -18,15 +17,36 @@ import (
 // Returns the organization associated with the authorization
 func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session) gin.HandlerFunc {
 
-	userInterface := userSrv.NewUserService(dbSession, conf)
-	organizationInterface := organizationSrv.NewOrganizationService(dbSession, conf)
+	organizationService := organizationSrv.NewOrganizationService(dbSession, conf)
+	userService := userSrv.NewUserService(dbSession, conf)
 
 	return func(c *gin.Context) {
 
-		// Check Admin API Key
-		apiToken := c.Request.Header.Get("api_token")
-		if apiToken == conf.AdminKey {
+		// Initialize admin flags to false.
+		c.Set("admin", false)
+		c.Set("org-admin", false)
+
+		// Check API Key
+		apiKey := c.Request.Header.Get("apiKey")
+
+		// Check if API Key is the admin secret.
+		switch apiKey {
+		case "":
+			break
+		case conf.AdminKey:
 			c.Set("admin", true)
+			c.Next()
+			return
+		default:
+			// Check if Api Key matches an organization.
+			organization, err := organizationService.FindByOrganizationApiKey(context.TODO(), apiKey)
+			if err != nil {
+				println(err.Error())
+				return
+			}
+			// If an org is found, grant admin permissions on that org.
+			c.Set("organization", organization)
+			c.Set("org-admin", true)
 			c.Next()
 			return
 		}
@@ -34,7 +54,6 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 		// Check JWT token
 		tokenString, err := c.Cookie("Authorization")
 		if tokenString == "" || err != nil {
-			respondWithError(c, http.StatusUnauthorized, "No authorization detected.")
 			return
 		}
 
@@ -51,27 +70,16 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			userId := fmt.Sprintf("%s", claims["userId"])
-			user, err := userInterface.FindByUserId(context.TODO(), userId)
+			user, err := userService.FindByUserId(context.TODO(), userId)
 			if err != nil {
-				respondWithError(c, http.StatusUnauthorized, "User not found.")
 				return
 			}
-			organization, err := organizationInterface.FindByOrganizationId(context.TODO(), user.OrganizationId)
+			organization, err := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId.String())
 			if err != nil {
-				respondWithError(c, http.StatusUnauthorized, "Organization not found.")
 				return
 			}
-			c.Set("admin", false)
 			c.Set("user", user)
 			c.Set("organization", organization)
-		} else {
-			fmt.Println(err)
-			respondWithError(c, http.StatusInternalServerError, "Decrypting Token Failed.")
 		}
 	}
-}
-
-func respondWithError(c *gin.Context, httpErrorCode int, message string) {
-	c.Status(httpErrorCode)
-	c.AbortWithStatusJSON(httpErrorCode, message)
 }
