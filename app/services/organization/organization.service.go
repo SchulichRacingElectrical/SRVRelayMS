@@ -15,8 +15,10 @@ import (
 
 type OrganizationServiceInterface interface {
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
-	FindByOrganizationId(context.Context, string) (*model.Organization, error)
+	FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*model.Organization, error)
+	FindByOrganizationIdString(context.Context, string) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
+	FindAllOrganizations(ctx context.Context) (*[]model.Organization, error)
 }
 
 type OrganizationService struct {
@@ -34,7 +36,7 @@ func (service *OrganizationService) Create(ctx context.Context, organization *mo
 	return service.organizationCollection(ctx).InsertOne(ctx, organization)
 }
 
-func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId string) (*model.Organization, error) {
+func (service *OrganizationService) FindByOrganizationIdString(ctx context.Context, organizationId string) (*model.Organization, error) {
 	bsonOrganizationId, err := primitive.ObjectIDFromHex(organizationId)
 	if err != nil {
 		return nil, err
@@ -45,10 +47,35 @@ func (service *OrganizationService) FindByOrganizationId(ctx context.Context, or
 	return &organization, err
 }
 
+func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*model.Organization, error) {
+	var organization model.Organization
+	err := service.organizationCollection(ctx).FindOne(ctx, bson.M{"_id": organizationId}).Decode(&organization)
+	return &organization, err
+}
+
 func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, api_key string) (*model.Organization, error) {
 	var organization model.Organization
 	err := service.organizationCollection(ctx).FindOne(ctx, bson.M{"api_key": api_key}).Decode(&organization)
 	return &organization, err
+}
+
+func (service *OrganizationService) FindAllOrganizations(ctx context.Context) (*[]model.Organization, error) {
+	var organizations []model.Organization
+	cursor, err := service.organizationCollection(ctx).Find(ctx, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &organizations)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove ApiKey from organization list as it's a secret.
+	for i := range organizations {
+		organizations[i].ApiKey = ""
+	}
+
+	return &organizations, err
 }
 
 // ============== Service Helper Method(s) ================

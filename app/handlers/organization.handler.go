@@ -40,12 +40,24 @@ func (handler *OrganizationHandler) Create(c *gin.Context) {
 
 func (handler *OrganizationHandler) FindByOrganizationId(c *gin.Context) {
 	result := make(map[string]interface{})
-	organization, err := handler.organization.FindByOrganizationId(c.Request.Context(), c.Param("organizationId"))
+	organization, err := handler.organization.FindByOrganizationIdString(c.Request.Context(), c.Param("organizationId"))
 	if err == nil {
 		result = utils.SuccessPayload(organization, "Successfully retrieved organization")
 		utils.Response(c, http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.OrganizationNotFound)
 		utils.Response(c, http.StatusBadRequest, result)
+	}
+}
+
+func (handler *OrganizationHandler) FindAllOrganizations(c *gin.Context) {
+	result := make(map[string]interface{})
+	organizations, err := handler.organization.FindAllOrganizations(c.Request.Context())
+	if err == nil {
+		result = utils.SuccessPayload(organizations, "Successfully retrieved organizations")
+		utils.Response(c, http.StatusOK, result)
+	} else {
+		result = utils.NewHTTPError(utils.OrganizationsNotFound)
+		utils.Response(c, http.StatusNotFound, result)
 	}
 }

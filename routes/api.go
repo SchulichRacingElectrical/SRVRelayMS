@@ -60,16 +60,20 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 				thingIdEndpoints.DELETE("", thingAPI.Delete)
 			}
 		}
+
+		// Organizations
+		organizationEndpoints := publicEndpoints.Group("/organizations")
+		{
+			organizationEndpoints.GET("", organizationAPI.FindAllOrganizations)
+		}
 	}
 
 	authEndpoints := c.Group("/auth")
 	{
-		// Authentication
 		authEndpoints.POST("/login", userAPI.Login)
 		authEndpoints.POST("/signup", userAPI.Create)
 	}
 
-	// Temp endpoints
 	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf, mgoDbSession))
 	{
 		// Organizations

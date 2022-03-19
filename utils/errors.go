@@ -31,14 +31,16 @@ const (
 	SensorNotFound  = "sensorNotFound"
 
 	// User error
-	UserNotFound  = "userNotFound"
-	WrongPassword = "wrongPassword"
+	UserNotFound      = "userNotFound"
+	WrongPassword     = "wrongPassword"
+	UserAlreadyExists = "userAlreadyExists"
 
 	// Thing error
 	ThingNotFound = "thingNotFound"
 
 	// Organization error
-	OrganizationNotFound = "organizationNotFound"
+	OrganizationNotFound  = "organizationNotFound"
+	OrganizationsNotFound = "organizationsNotFound"
 )
 
 // Error code with description
@@ -55,12 +57,14 @@ var errorMessage = map[string]string{
 	"sensorNotFound":      "sensor could not be found",
 
 	// User errors
-	"userNotFound":  "user could not be found",
-	"wrongPassword": "password was incorrect",
+	"userNotFound":      "user could not be found",
+	"wrongPassword":     "password was incorrect",
+	"userAlreadyExists": "email is already being used",
 
 	// Thing
 	"thingNotFound": "thing could not be found",
 
 	// Organization
-	"organizationNotFound": "organization could not be found",
+	"organizationNotFound":  "organization could not be found",
+	"organizationsNotFound": "organizations could not be found",
 }

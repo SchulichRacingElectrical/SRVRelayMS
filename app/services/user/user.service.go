@@ -5,6 +5,7 @@ import (
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -52,7 +53,7 @@ func (service *UserService) FindByUserId(ctx context.Context, userId string) (*m
 	return &user, err
 }
 
-// User auth services
+// User auth methods
 
 func (service *UserService) CreateToken(c *gin.Context, user *model.User) (string, error) {
 	var err error
@@ -64,7 +65,8 @@ func (service *UserService) CreateToken(c *gin.Context, user *model.User) (strin
 	if err != nil {
 		return "", err
 	}
-	c.SetCookie("Authorization", token, -1, "/", "", false, true)
+	var expirationDate int = int(time.Now().Add(5 * time.Hour).Unix())
+	c.SetCookie("Authorization", token, expirationDate, "/", "", false, true)
 	return token, nil
 }
 
