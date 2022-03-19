@@ -38,6 +38,28 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		publicEndpoints.POST("/login", userAPI.Login)
 		publicEndpoints.POST("/signup", userAPI.Create)
 
+		// Organizations
+		organizationEndpoints := publicEndpoints.Group("/organizations")
+		{
+			organizationEndpoints.GET("", organizationAPI.FindAllOrganizations)
+		}
+	}
+
+	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf, mgoDbSession))
+	{
+		// Organizations
+		organizationEndpoints := privateEndpoints.Group("/organizations")
+		{
+			organizationEndpoints.POST("", organizationAPI.Create)
+			organizationEndpoints.GET("organizationId/:organizationId", organizationAPI.FindByOrganizationId)
+		}
+
+		// Users
+		userEndpoints := privateEndpoints.Group("/users")
+		{
+			userEndpoints.GET("/userId/:userId", userAPI.GetUser)
+		}
+
 		// Sensor
 		sensorsEndpoints := publicEndpoints.Group("/sensors")
 		{
@@ -63,28 +85,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 				thingIdEndpoints.PUT("", thingAPI.UpdateThing)
 				thingIdEndpoints.DELETE("", thingAPI.Delete)
 			}
-		}
-
-		// Organizations
-		organizationEndpoints := publicEndpoints.Group("/organizations")
-		{
-			organizationEndpoints.GET("", organizationAPI.FindAllOrganizations)
-		}
-	}
-
-	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf, mgoDbSession))
-	{
-		// Organizations
-		organizationEndpoints := privateEndpoints.Group("/organizations")
-		{
-			organizationEndpoints.POST("", organizationAPI.Create)
-			organizationEndpoints.GET("organizationId/:organizationId", organizationAPI.FindByOrganizationId)
-		}
-
-		// Users
-		userEndpoints := privateEndpoints.Group("/users")
-		{
-			userEndpoints.GET("/userId/:userId", userAPI.GetUser)
 		}
 	}
 }
