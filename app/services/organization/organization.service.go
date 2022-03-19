@@ -15,10 +15,10 @@ import (
 
 type OrganizationServiceInterface interface {
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
-	FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*model.Organization, error)
+	FindByOrganizationId(context.Context, primitive.ObjectID) (*model.Organization, error)
 	FindByOrganizationIdString(context.Context, string) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
-	FindAllOrganizations(ctx context.Context) (*[]model.Organization, error)
+	FindAllOrganizations(context.Context) (*[]model.Organization, error)
 }
 
 type OrganizationService struct {

@@ -20,6 +20,7 @@ type UserServiceInterface interface {
 	Create(context.Context, *model.User) (*mongo.InsertOneResult, error)
 	FindByUserEmail(context.Context, string) (*model.User, error)
 	FindByUserId(context.Context, string) (*model.User, error)
+	FindUsersByOrganizationId(context.Context, primitive.ObjectID) (*[]model.User, error)
 
 	CreateToken(*gin.Context, *model.User) (string, error)
 }
@@ -51,6 +52,26 @@ func (service *UserService) FindByUserId(ctx context.Context, userId string) (*m
 	var user model.User
 	err = service.userCollection(ctx).FindOne(ctx, bson.M{"_id": bsonUserId}).Decode(&user)
 	return &user, err
+}
+
+func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*[]model.User, error) {
+
+	var users []model.User
+	cursor, err := service.userCollection(ctx).Find(ctx, bson.M{"organizationId": organizationId})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove un from users list as it's a secret.
+	for i := range users {
+		users[i].Password = ""
+	}
+
+	return &users, err
 }
 
 // User auth methods

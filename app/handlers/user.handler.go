@@ -38,6 +38,13 @@ func (handler *UserHandler) Create(c *gin.Context) {
 
 	newUser.Password = hashPassword(newUser.Password)
 	newUser.Roles = "Pending"
+
+	// Check if the organization already has members
+	usersInOrg, err := handler.user.FindUsersByOrganizationId(c.Request.Context(), newUser.OrganizationId)
+	if len(*usersInOrg) == 0 {
+		newUser.Roles = "Admin"
+	}
+
 	res, err := handler.user.Create(c.Request.Context(), &newUser)
 	if err == nil {
 		result = utils.SuccessPayload(res, "Successfully created user")
