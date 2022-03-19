@@ -60,6 +60,10 @@ func (service *UserService) CreateToken(c *gin.Context, user *model.User) (strin
 	//Creating Access Token
 	atClaims := jwt.MapClaims{}
 	atClaims["userId"] = user.ID
+	atClaims["name"] = user.DisplayName
+	atClaims["email"] = user.Email
+	atClaims["role"] = user.Roles
+
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	token, err := at.SignedString([]byte(service.config.AccessSecret))
 	if err != nil {
