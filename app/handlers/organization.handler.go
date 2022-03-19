@@ -41,11 +41,6 @@ func (handler *OrganizationHandler) Create(c *gin.Context) {
 func (handler *OrganizationHandler) FindByOrganizationId(c *gin.Context) {
 	result := make(map[string]interface{})
 	organization, err := handler.organization.FindByOrganizationIdString(c.Request.Context(), c.Param("organizationId"))
-	curr_user, exists := c.Get("user")
-	if !exists {
-		println("it aint real")
-	}
-	print(curr_user)
 	if err == nil {
 		result = utils.SuccessPayload(organization, "Successfully retrieved organization")
 		utils.Response(c, http.StatusOK, result)
