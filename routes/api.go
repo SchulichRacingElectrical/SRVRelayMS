@@ -34,6 +34,10 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	// TODO move later as private endpoint
 	publicEndpoints := c.Group("/database")
 	{
+		// Auth
+		publicEndpoints.POST("/login", userAPI.Login)
+		publicEndpoints.POST("/signup", userAPI.Create)
+
 		// Sensor
 		sensorsEndpoints := publicEndpoints.Group("/sensors")
 		{
@@ -66,12 +70,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		{
 			organizationEndpoints.GET("", organizationAPI.FindAllOrganizations)
 		}
-	}
-
-	authEndpoints := c.Group("/auth")
-	{
-		authEndpoints.POST("/login", userAPI.Login)
-		authEndpoints.POST("/signup", userAPI.Create)
 	}
 
 	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf, mgoDbSession))
