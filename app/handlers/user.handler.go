@@ -89,7 +89,11 @@ func (handler *UserHandler) Login(c *gin.Context) {
 			c.JSON(http.StatusUnprocessableEntity, err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, token)
+		result["token"] = token
+		result["email"] = DBuser.Email
+		result["name"] = DBuser.DisplayName
+		result["role"] = DBuser.Roles
+		c.JSON(http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.WrongPassword)
 		utils.Response(c, http.StatusUnauthorized, result)
