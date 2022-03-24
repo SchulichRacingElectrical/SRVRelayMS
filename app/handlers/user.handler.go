@@ -77,12 +77,14 @@ func (handler *UserHandler) Login(c *gin.Context) {
 
 	// Check password match
 	if checkPasswordHash(loggingInUser.Password, DBuser.Password) {
-		token, err := handler.user.CreateToken(c, DBuser)
+		_, err := handler.user.CreateToken(c, DBuser)
 		if err != nil {
 			c.JSON(http.StatusUnprocessableEntity, err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, token)
+		DBuser.Password = ""
+		result = utils.SuccessPayload(DBuser, "Successfully signed user in.")
+		c.JSON(http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.WrongPassword)
 		utils.Response(c, http.StatusUnauthorized, result)
