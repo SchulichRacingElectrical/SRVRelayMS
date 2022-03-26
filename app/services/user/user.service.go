@@ -5,6 +5,7 @@ import (
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ type UserServiceInterface interface {
 	FindUsersByOrganizationId(context.Context, primitive.ObjectID) (*[]model.User, error)
 
 	CreateToken(*gin.Context, *model.User) (string, error)
+	DecodeToken(context.Context, string) (*model.User, error)
 }
 
 type UserService struct {
@@ -93,6 +95,30 @@ func (service *UserService) CreateToken(c *gin.Context, user *model.User) (strin
 	var expirationDate int = int(time.Now().Add(5 * time.Hour).Unix())
 	c.SetCookie("Authorization", token, expirationDate, "/", "", false, true)
 	return token, nil
+}
+
+func (service *UserService) DecodeToken(ctx context.Context, tokenString string) (*model.User, error) {
+	var hmacSampleSecret = []byte(service.config.AccessSecret)
+	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
+		// Don't forget to validate the alg is what you expect:
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
+		return hmacSampleSecret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	var user model.User
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		user.DisplayName = fmt.Sprintf("%s", claims["name"])
+		user.Email = fmt.Sprintf("%s", claims["email"])
+		user.Roles = fmt.Sprintf("%s", claims["role"])
+	} else {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // ============== Service Helper Method(s) ================

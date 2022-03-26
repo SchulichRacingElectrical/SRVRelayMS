@@ -100,6 +100,20 @@ func (handler *UserHandler) Login(c *gin.Context) {
 	}
 }
 
+func (handler *UserHandler) GetUserRole(c *gin.Context) {
+	result := make(map[string]interface{})
+	user, err := handler.user.DecodeToken(c.Request.Context(), c.Param("jwtString"))
+	if err == nil {
+		result["role"] = user.Roles
+		result["success"] = true
+		utils.Response(c, http.StatusAccepted, result)
+	} else {
+		result["role"] = ""
+		result["success"] = false
+		utils.Response(c, http.StatusBadRequest, result)
+	}
+}
+
 // Password hashing and verification functions
 
 func hashPassword(password string) string {

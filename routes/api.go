@@ -36,6 +36,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		// Auth
 		publicEndpoints.POST("/login", userAPI.Login)
 		publicEndpoints.POST("/signup", userAPI.Create)
+		publicEndpoints.GET("/user/role/:jwtString", userAPI.GetUserRole)
 
 		// Organizations
 		organizationEndpoints := publicEndpoints.Group("/organizations")
