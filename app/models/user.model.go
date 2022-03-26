@@ -10,6 +10,6 @@ type User struct {
 	Email          string             `json:"email,omitempty" bson:"email,omitempty"`
 	Password       string             `json:"password,omitempty" bson:"password,omitempty"`
 	OrganizationId primitive.ObjectID `json:"organizationId,omitempty" bson:"organizationId,omitempty"`
-	Roles          string             `json:"role,omitempty" bson:"roles,omitempty"`
-	// Roles should be changed to just "role" for name and bson
+	Role           string             `json:"role,omitempty" bson:"roles,omitempty"`
+	// Role should be changed to just "role" for name and bson
 }

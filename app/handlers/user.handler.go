@@ -37,12 +37,12 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	}
 
 	newUser.Password = hashPassword(newUser.Password)
-	newUser.Roles = "Pending"
+	newUser.Role = "Pending"
 
 	// Check if the organization already has members
 	usersInOrg, err := handler.user.FindUsersByOrganizationId(c.Request.Context(), newUser.OrganizationId)
 	if len(*usersInOrg) == 0 {
-		newUser.Roles = "Admin"
+		newUser.Role = "Admin"
 	}
 
 	res, err := handler.user.Create(c.Request.Context(), &newUser)
@@ -92,7 +92,7 @@ func (handler *UserHandler) Login(c *gin.Context) {
 		result["token"] = token
 		result["email"] = DBuser.Email
 		result["name"] = DBuser.DisplayName
-		result["role"] = DBuser.Roles
+		result["role"] = DBuser.Role
 		c.JSON(http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.WrongPassword)
@@ -104,7 +104,7 @@ func (handler *UserHandler) GetUserRole(c *gin.Context) {
 	result := make(map[string]interface{})
 	user, err := handler.user.DecodeToken(c.Request.Context(), c.Param("jwtString"))
 	if err == nil {
-		result["role"] = user.Roles
+		result["role"] = user.Role
 		result["success"] = true
 		utils.Response(c, http.StatusAccepted, result)
 	} else {

@@ -85,7 +85,7 @@ func (service *UserService) CreateToken(c *gin.Context, user *model.User) (strin
 	atClaims["userId"] = user.ID
 	atClaims["name"] = user.DisplayName
 	atClaims["email"] = user.Email
-	atClaims["role"] = user.Roles
+	atClaims["role"] = user.Role
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	token, err := at.SignedString([]byte(service.config.AccessSecret))
@@ -114,7 +114,7 @@ func (service *UserService) DecodeToken(ctx context.Context, tokenString string)
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		user.DisplayName = fmt.Sprintf("%s", claims["name"])
 		user.Email = fmt.Sprintf("%s", claims["email"])
-		user.Roles = fmt.Sprintf("%s", claims["role"])
+		user.Role = fmt.Sprintf("%s", claims["role"])
 	} else {
 		return nil, err
 	}
