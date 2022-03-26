@@ -1,0 +1,29 @@
+{
+  $jsonSchema: {
+    required: [
+      'thingId',
+      'startTime',
+      'endTime',
+      'comments'
+    ],
+    properties: {
+      _id: {},
+      thingId: {
+        bsonType: 'objectId'
+      },
+      startTime: {
+        bsonType: 'long'
+      },
+      endTime: {
+        bsonType: 'long'
+      },
+      comments: {
+        bsonType: 'array',
+        minItems: 0,
+        items: {
+          bsonType: 'objectId'
+        }
+      }
+    }
+  }
+}

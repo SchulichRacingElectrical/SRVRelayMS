@@ -1,0 +1,35 @@
+{
+  $jsonSchema: {
+    required: [
+      'startDate',
+      'endDate',
+      'runs',
+      'comments'
+    ],
+    properties: {
+      _id: {},
+      startDate: {
+        bsonType: 'long'
+      },
+      endDate: {
+        bsonType: 'long'
+      },
+      runs: {
+        bsonType: 'array',
+        minItems: 0,
+        uniqueItems: true,
+        items: {
+          bsonType: 'objectId'
+        }
+      },
+      comments: {
+        bsonType: 'array',
+        minItems: 0,
+        uniqueItems: true,
+        items: {
+          bsonType: 'objectId'
+        }
+      }
+    }
+  }
+}

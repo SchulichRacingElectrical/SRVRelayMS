@@ -1,0 +1,25 @@
+{
+  $jsonSchema: {
+    required: [
+      'creationDate',
+      'content',
+      'userId',
+      'isSession'
+    ],
+    properties: {
+      _id: {},
+      creationDate: {
+        bsonType: 'long'
+      },
+      userId: {
+        bsonType: 'objectId'
+      },
+      content: {
+        bsonType: 'string'
+      },
+      isSession: {
+        bsonType: 'bool'
+      }
+    }
+  }
+}
