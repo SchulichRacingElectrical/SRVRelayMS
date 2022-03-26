@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	DbRoute = "/database"
+	DbRoute = ""
 )
 
 func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Configuration) {
@@ -31,8 +31,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	thingAPI := handlers.NewThingAPI(thingService)
 
 	// Routes
-	// TODO move later as private endpoint
-	publicEndpoints := c.Group("/database")
+	publicEndpoints := c.Group("")
 	{
 		// Auth
 		publicEndpoints.POST("/login", userAPI.Login)

@@ -78,7 +78,7 @@ func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organ
 
 func (service *UserService) CreateToken(c *gin.Context, user *model.User) (string, error) {
 	var err error
-	//Creating Access Token
+	// Creating Access Token, do we need more claims?
 	atClaims := jwt.MapClaims{}
 	atClaims["userId"] = user.ID
 	atClaims["name"] = user.DisplayName
