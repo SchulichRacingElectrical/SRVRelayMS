@@ -44,8 +44,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 
 		userEndpoints := privateEndpoints.Group("/users")
 		{
-			// Don't use /userId, just /:userId
-			userEndpoints.GET("/userId/:userId", userAPI.GetUser)
+			userEndpoints.GET("", userAPI.GetUsers)
 		}
 
 		thingEndpoints := privateEndpoints.Group("/things")
@@ -62,7 +61,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		sensorEndpoints := privateEndpoints.Group("/sensors")
 		{
 			sensorEndpoints.POST("", sensorAPI.Create)
-			sensorEndpoints.GET("/:sensorId", sensorAPI.FindBySensorId) // Do we need this?
 			sensorEndpoints.PUT("", sensorAPI.Update)
 			sensorEndpoints.DELETE("/:sensorId", sensorAPI.Delete)
 
