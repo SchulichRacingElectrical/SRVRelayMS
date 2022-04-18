@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	middleware "database-ms/app/middleware"
 	"database-ms/app/models"
 	services "database-ms/app/services"
 	"database-ms/utils"
@@ -53,20 +54,21 @@ func (handler *UserHandler) Create(ctx *gin.Context) {
 }
 
 func (handler *UserHandler) GetUsers(ctx *gin.Context) {
-	// Create auth functions to check permissions
-	userInterface, _ := ctx.Get("user")
-	user := userInterface.(*models.User)
-	permitted := user.Role == "Admin" || user.Role == "Lead"
-	if permitted {
-		users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), user.OrganizationId)
-		if err != nil {
-			utils.Response(ctx, http.StatusInternalServerError, "")
-		} else {
-			result := utils.SuccessPayload(users, "Successfully retrieved users.")
-			utils.Response(ctx, http.StatusOK, result)
-		}
+	organization, err := middleware.GetOrganizationClaim(ctx)
+	if err != nil {
+		utils.Response(ctx, http.StatusUnauthorized, "")
 	} else {
-		utils.Response(ctx, http.StatusBadRequest, "")
+		if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+			users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), organization.ID)
+			if err != nil {
+				utils.Response(ctx, http.StatusInternalServerError, "")
+			} else {
+				result := utils.SuccessPayload(users, "Successfully retrieved users.")
+				utils.Response(ctx, http.StatusOK, result)
+			}
+		} else {
+			utils.Response(ctx, http.StatusUnauthorized, "")
+		}
 	}
 }
 

@@ -1,10 +1,10 @@
 package routes
 
 import (
-	"database-ms/app/handlers"
-	"database-ms/app/middleware"
+	handlers "database-ms/app/handlers"
+	middleware "database-ms/app/middleware"
 	services "database-ms/app/services"
-	"database-ms/config"
+	config "database-ms/config"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
