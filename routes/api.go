@@ -3,94 +3,74 @@ package routes
 import (
 	"database-ms/app/handlers"
 	"database-ms/app/middleware"
-	organizationSrv "database-ms/app/services/organization"
-	sensorSrv "database-ms/app/services/sensor"
-	thingSrv "database-ms/app/services/thing"
-	userSrv "database-ms/app/services/user"
+	services "database-ms/app/services"
 	"database-ms/config"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2"
 )
 
-var (
-	DbRoute = ""
-)
-
 func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Configuration) {
-	sensorService := sensorSrv.NewSensorService(mgoDbSession, conf)
-	sensorAPI := handlers.NewSensorAPI(sensorService)
+	// Initialize APIs
+	organizationAPI := handlers.NewOrganizationAPI(services.NewOrganizationService(mgoDbSession, conf))
+	userAPI := handlers.NewUserAPI(services.NewUserService(mgoDbSession, conf))
+	thingAPI := handlers.NewThingAPI(services.NewThingService(mgoDbSession, conf))
+	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf))
 
-	organizationService := organizationSrv.NewOrganizationService(mgoDbSession, conf)
-	organizationAPI := handlers.NewOrganizationAPI(organizationService)
-
-	userService := userSrv.NewUserService(mgoDbSession, conf)
-	userAPI := handlers.NewUserAPI(userService)
-
-	thingService := thingSrv.NewThingService(mgoDbSession, conf)
-	thingAPI := handlers.NewThingAPI(thingService)
-
-	// Routes
-	publicEndpoints := c.Group("")
+	// Declare public endpoints
+	publicEndpoints := c.Group("") 
 	{
-		// Most of these need to be private endpoints
-		// Sensor
-		sensorsEndpoints := publicEndpoints.Group("/sensors")
+		organizationEndpoints := publicEndpoints.Group("/organizations") 
 		{
-			sensorsEndpoints.POST("", sensorAPI.Create)
-			// No need for /sensorId, just use /:sensorId, do we even need this endpoint?
-			sensorsEndpoints.GET("/:sensorId", sensorAPI.FindBySensorId)
-			// Don't need any route at all, the sensor Id will be in the body
-			sensorsEndpoints.PUT("/:sensorId", sensorAPI.Update)
-			// Don't need /sensorId/:sensorId at all, the sensor id will be in the body
-			sensorsEndpoints.DELETE("/:sensorId", sensorAPI.Delete)
-
-			thingIdEndpoints := sensorsEndpoints.Group("/thing/sensors")
-			{
-				thingIdEndpoints.GET("/:thingId", sensorAPI.FindThingSensors)
-				thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)
-			}
-		}
-
-		// Thing
-		thingEndpoints := publicEndpoints.Group("/thing")
-		{
-			thingEndpoints.POST("", thingAPI.Create)
-			thingIdEndpoints := thingEndpoints.Group("/:thingId")
-			{
-				thingIdEndpoints.GET("", thingAPI.GetThings)
-				thingIdEndpoints.PUT("", thingAPI.UpdateThing)
-				thingIdEndpoints.DELETE("", thingAPI.Delete)
-			}
-		}
-
-		// Organizations
-		organizationEndpoints := publicEndpoints.Group("/organizations")
-		{
-			organizationEndpoints.GET("", organizationAPI.FindAllOrganizations)
+			organizationEndpoints.GET("", organizationAPI.GetOrganizations)
+			organizationEndpoints.POST("", organizationAPI.Create)
 		}
 	}
 
+	// Declare auth endpoints
 	authEndpoints := c.Group("/auth")
 	{
 		authEndpoints.POST("/login", userAPI.Login)
 		authEndpoints.POST("/signup", userAPI.Create)
 	}
 
-	privateEndpoints := c.Group(DbRoute, middleware.AuthorizationMiddleware(conf, mgoDbSession))
+	// Declare private (auth required) endpoints
+	privateEndpoints := c.Group("", middleware.AuthorizationMiddleware(conf, mgoDbSession)) 
 	{
-		// Organizations
 		organizationEndpoints := privateEndpoints.Group("/organizations")
 		{
-			organizationEndpoints.POST("", organizationAPI.Create)
-			organizationEndpoints.GET("organizationId/:organizationId", organizationAPI.FindByOrganizationId)
-		}
+			organizationEndpoints.GET("organizationId/:organizationId", organizationAPI.GetOrganization)
+		}	
 
-		// Users
 		userEndpoints := privateEndpoints.Group("/users")
 		{
 			// Don't use /userId, just /:userId
 			userEndpoints.GET("/userId/:userId", userAPI.GetUser)
 		}
-	}
+
+		thingEndpoints := privateEndpoints.Group("/things")
+		{
+			thingEndpoints.POST("", thingAPI.Create)	
+			thingIdEndpoints := thingEndpoints.Group("/:thingId")
+			{
+				thingIdEndpoints.GET("", thingAPI.GetThings)
+				thingIdEndpoints.PUT("", thingAPI.UpdateThing)
+				thingIdEndpoints.DELETE("", thingAPI.Delete)	
+			}
+		}
+
+		sensorEndpoints := privateEndpoints.Group("/sensors")
+		{
+			sensorEndpoints.POST("", sensorAPI.Create)
+			sensorEndpoints.GET("/:sensorId", sensorAPI.FindBySensorId) // Do we need this?
+			sensorEndpoints.PUT("", sensorAPI.Update)
+			sensorEndpoints.DELETE("/:sensorId", sensorAPI.Delete)
+
+			thingIdEndpoints := sensorEndpoints.Group("/thing/sensors")
+			{
+				thingIdEndpoints.GET("/:thingId", sensorAPI.FindThingSensors)
+				thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)
+			}	
+		}
+	}	
 }

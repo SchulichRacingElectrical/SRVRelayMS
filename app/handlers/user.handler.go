@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"database-ms/app/models"
-	userSrv "database-ms/app/services/user"
+	services "database-ms/app/services"
 	"database-ms/utils"
 	"net/http"
 
@@ -11,10 +11,10 @@ import (
 )
 
 type UserHandler struct {
-	user userSrv.UserServiceInterface
+	user services.UserServiceInterface
 }
 
-func NewUserAPI(userService userSrv.UserServiceInterface) *UserHandler {
+func NewUserAPI(userService services.UserServiceInterface) *UserHandler {
 	return &UserHandler{
 		user: userService,
 	}

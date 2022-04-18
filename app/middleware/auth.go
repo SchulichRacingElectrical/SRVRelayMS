@@ -5,8 +5,7 @@ import (
 	"database-ms/config"
 	"fmt"
 
-	organizationSrv "database-ms/app/services/organization"
-	userSrv "database-ms/app/services/user"
+	services "database-ms/app/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -16,12 +15,10 @@ import (
 
 // Returns the organization associated with the authorization
 func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session) gin.HandlerFunc {
-
-	organizationService := organizationSrv.NewOrganizationService(dbSession, conf)
-	userService := userSrv.NewUserService(dbSession, conf)
+	organizationService := services.NewOrganizationService(dbSession, conf)
+	userService := services.NewUserService(dbSession, conf)
 
 	return func(c *gin.Context) {
-
 		// Initialize admin flags to false.
 		c.Set("admin", false)
 		c.Set("org-admin", false)
@@ -41,7 +38,6 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 			// Check if Api Key matches an organization.
 			organization, err := organizationService.FindByOrganizationApiKey(context.TODO(), apiKey)
 			if err != nil {
-				println(err.Error())
 				return
 			}
 			// If an org is found, grant admin permissions on that org.

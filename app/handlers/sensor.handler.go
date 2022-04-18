@@ -2,9 +2,8 @@ package handlers
 
 import (
 	"database-ms/app/models"
-	sensorSrv "database-ms/app/services/sensor"
+	services "database-ms/app/services"
 	"database-ms/utils"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -12,10 +11,10 @@ import (
 )
 
 type SensorHandler struct {
-	sensor sensorSrv.SensorServiceInterface
+	sensor services.SensorServiceInterface
 }
 
-func NewSensorAPI(sensorService sensorSrv.SensorServiceInterface) *SensorHandler {
+func NewSensorAPI(sensorService services.SensorServiceInterface) *SensorHandler {
 	return &SensorHandler{
 		sensor: sensorService,
 	}
@@ -25,17 +24,13 @@ func (handler *SensorHandler) Create(c *gin.Context) {
 	var newSensor models.Sensor
 	c.BindJSON(&newSensor)
 	result := make(map[string]interface{})
-
 	err := handler.sensor.Create(c.Request.Context(), &newSensor)
 	var status int
 	if err == nil {
-		res := &createEntityRes{
-			ID: newSensor.ID,
-		}
+		res := &createEntityRes{ID: newSensor.ID}
 		result = utils.SuccessPayload(res, "Successfully created sensor")
 		status = http.StatusOK
 	} else {
-		fmt.Println(err)
 		result = utils.NewHTTPError(utils.EntityCreationError)
 		status = http.StatusBadRequest
 	}
@@ -68,16 +63,13 @@ func (handler *SensorHandler) FindBySensorId(c *gin.Context) {
 
 func (handler *SensorHandler) FindUpdatedSensor(c *gin.Context) {
 	result := make(map[string]interface{})
-
 	lastUpdate, err := strconv.ParseInt(c.Param("lastUpdate"), 10, 64)
 	if err != nil {
 		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}
-
 	sensors, err := handler.sensor.FindUpdatedSensor(c.Request.Context(), c.Param("thingId"), lastUpdate)
-
 	if err == nil {
 		result = utils.SuccessPayload(sensors, "Successfully retrieved sensors")
 		utils.Response(c, http.StatusOK, result)
@@ -97,7 +89,6 @@ func (handler *SensorHandler) Update(c *gin.Context) {
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}
-
 	result = utils.SuccessPayload(nil, "Successfully updated")
 	utils.Response(c, http.StatusOK, result)
 }
@@ -110,7 +101,6 @@ func (handler *SensorHandler) Delete(c *gin.Context) {
 		utils.Response(c, http.StatusBadRequest, result)
 		return
 	}
-
 	result = utils.SuccessPayload(nil, "Successfully deleted")
 	utils.Response(c, http.StatusOK, result)
 }

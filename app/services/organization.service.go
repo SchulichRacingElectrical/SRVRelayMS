@@ -1,4 +1,4 @@
-package organization
+package services
 
 import (
 	"context"
@@ -41,7 +41,6 @@ func (service *OrganizationService) FindByOrganizationIdString(ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
-
 	var organization model.Organization
 	err = service.organizationCollection(ctx).FindOne(ctx, bson.M{"_id": bsonOrganizationId}).Decode(&organization)
 	return &organization, err
@@ -62,19 +61,13 @@ func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context
 func (service *OrganizationService) FindAllOrganizations(ctx context.Context) (*[]model.Organization, error) {
 	var organizations []model.Organization
 	cursor, err := service.organizationCollection(ctx).Find(ctx, bson.D{})
-	if err != nil {
+	if err != nil || cursor.All(ctx, &organizations) != nil {
 		return nil, err
 	}
-	err = cursor.All(ctx, &organizations)
-	if err != nil {
-		return nil, err
-	}
-
 	// Remove ApiKey from organization list as it's a secret.
 	for i := range organizations {
 		organizations[i].ApiKey = ""
 	}
-
 	return &organizations, err
 }
 

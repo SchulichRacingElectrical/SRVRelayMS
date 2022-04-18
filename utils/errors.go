@@ -4,7 +4,6 @@ func NewHTTPError(errorCode string) map[string]interface{} {
 	m := make(map[string]interface{})
 	m["error"] = errorCode
 	m["error_description"] = errorMessage[errorCode]
-
 	return m
 }
 
@@ -12,13 +11,11 @@ func NewHTTPCustomError(errorCode, errorMsg string) map[string]interface{} {
 	m := make(map[string]interface{})
 	m["error"] = errorCode
 	m["error_description"] = errorMsg
-
 	return m
 }
 
-//Error codes
+// Error codes
 const (
-
 	// Other errors
 	InternalError       = "internalError"
 	InvalidBindingModel = "invalidBindingModel"

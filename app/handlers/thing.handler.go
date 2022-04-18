@@ -2,19 +2,18 @@ package handlers
 
 import (
 	"database-ms/app/models"
-	thingSrv "database-ms/app/services/thing"
+	services "database-ms/app/services"
 	"database-ms/utils"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ThingHandler struct {
-	thing thingSrv.ThingServiceInterface
+	thing services.ThingServiceInterface
 }
 
-func NewThingAPI(thingService thingSrv.ThingServiceInterface) *ThingHandler {
+func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
 	return &ThingHandler{
 		thing: thingService,
 	}
@@ -24,26 +23,22 @@ func (handler *ThingHandler) Create(c *gin.Context) {
 	var newThing models.Thing
 	c.BindJSON(&newThing)
 	result := make(map[string]interface{})
-
 	err := handler.thing.Create(c.Request.Context(), &newThing)
 	var status int
 	if err == nil {
-		res := &createEntityRes{
-			ID: newThing.ID,
-		}
+		res := &createEntityRes{ID: newThing.ID}
 		result = utils.SuccessPayload(res, "Succesfully created thing")
 	} else {
-		fmt.Println(err)
 		result = utils.NewHTTPError(utils.EntityCreationError)
 		status = http.StatusBadRequest
 	}
 	utils.Response(c, status, result)
-
 }
 
 // Need to get ALL the things, not just by the ID
 func (handler *ThingHandler) GetThings(c *gin.Context) {
 	result := make(map[string]interface{})
+	// The organization Id does not come from params
 	things, err := handler.thing.FindByOrganizationId(c.Request.Context(), c.Param("organizationId"))
 	if err == nil {
 		result = utils.SuccessPayload(things, "Successfully retrieved things.")
