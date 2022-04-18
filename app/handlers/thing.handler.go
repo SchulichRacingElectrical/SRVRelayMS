@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"database-ms/app/models"
+	models "database-ms/app/models"
 	services "database-ms/app/services"
-	"database-ms/utils"
+	utils "database-ms/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

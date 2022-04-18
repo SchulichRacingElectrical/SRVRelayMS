@@ -2,9 +2,9 @@ package handlers
 
 import (
 	middleware "database-ms/app/middleware"
-	"database-ms/app/models"
+	models "database-ms/app/models"
 	services "database-ms/app/services"
-	"database-ms/utils"
+	utils "database-ms/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -123,17 +123,17 @@ func (handler *UserHandler) Update(ctx *gin.Context) {
 func (handler *UserHandler) Delete(ctx *gin.Context) {
 	userToDeleteId := ctx.Param("userId")
 	user, err := middleware.GetUserClaim(ctx)
+	completion := func (ctx *gin.Context, userId string) {
+		err := handler.service.Delete(ctx, userToDeleteId)
+		if err != nil {
+			utils.Response(ctx, http.StatusOK, "User deleted successfully.")
+		} else {
+			utils.Response(ctx, http.StatusInternalServerError, "")	
+		}
+	}
 	if err != nil {
 		utils.Response(ctx, http.StatusUnauthorized, "")
 	} else {
-		completion := func (ctx *gin.Context, userId string) {
-			err := handler.service.Delete(ctx, userToDeleteId)
-			if err != nil {
-				utils.Response(ctx, http.StatusOK, "User deleted successfully.")
-			} else {
-				utils.Response(ctx, http.StatusInternalServerError, "")	
-			}
-		}
 		if user.ID.String() == userToDeleteId {
 			completion(ctx, userToDeleteId)
 		} else {
