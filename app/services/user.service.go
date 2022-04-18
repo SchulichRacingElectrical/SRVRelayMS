@@ -23,6 +23,8 @@ type UserServiceInterface interface {
 	FindByUserId(ctx context.Context, userId string) (*model.User, error)
 	IsUserUnique(ctx context.Context, newUser *model.User) bool
 	FindUsersByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.User, error)
+	Update(ctx context.Context, user *model.User) error
+	Delete(ctx context.Context, userId string) error
 	CreateToken(*gin.Context, *model.User) (string, error)
 	HashPassword(password string) string
 	CheckPasswordHash(password, hash string) bool	
@@ -69,7 +71,25 @@ func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organ
 	if err = cursor.All(ctx, &users); err != nil {
 		return nil, err
 	}
+	for _, user := range users {
+		user.Password = ""
+	}
 	return users, nil
+}
+
+func (service *UserService) Update(ctx context.Context, user *model.User) error {
+	_, err := service.UserCollection(ctx).UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{"$set": user})
+	return err
+}
+
+func (service *UserService) Delete(ctx context.Context, userId string) error {
+	bsonUserId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		return err
+	} else {
+		_, err := service.UserCollection(ctx).DeleteOne(ctx, bson.M{"_id":bsonUserId})
+		return err
+	}
 }
 
 // ============== Service Helper Method(s) ================

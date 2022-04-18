@@ -45,11 +45,13 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		userEndpoints := privateEndpoints.Group("/users")
 		{
 			userEndpoints.GET("", userAPI.GetUsers)
+			userEndpoints.PUT("", userAPI.Update)
+			userEndpoints.DELETE("/:userId", userAPI.Delete)
 		}
 
 		thingEndpoints := privateEndpoints.Group("/things")
 		{
-			thingEndpoints.POST("", thingAPI.Create)	
+			thingEndpoints.POST("", thingAPI.Create)
 			thingIdEndpoints := thingEndpoints.Group("/:thingId")
 			{
 				thingIdEndpoints.GET("", thingAPI.GetThings)
@@ -63,11 +65,10 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			sensorEndpoints.POST("", sensorAPI.Create)
 			sensorEndpoints.PUT("", sensorAPI.Update)
 			sensorEndpoints.DELETE("/:sensorId", sensorAPI.Delete)
-
-			thingIdEndpoints := sensorEndpoints.Group("/thing/sensors")
+			thingIdEndpoints := sensorEndpoints.Group("/thing/sensors/:thingId")
 			{
-				thingIdEndpoints.GET("/:thingId", sensorAPI.FindThingSensors)
-				thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)
+				thingIdEndpoints.GET("", sensorAPI.FindThingSensors)
+				thingIdEndpoints.GET("/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)
 			}	
 		}
 	}	

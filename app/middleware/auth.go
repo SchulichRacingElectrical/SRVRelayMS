@@ -65,12 +65,9 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 
 		var hmacSampleSecret = []byte(conf.AccessSecret)
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
-			// Don't forget to validate the alg is what you expect:
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", t.Header["alg"])
 			}
-
-			// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
 			return hmacSampleSecret, nil
 		})
 
