@@ -4,7 +4,6 @@ import (
 	"database-ms/app/models"
 	userSrv "database-ms/app/services/user"
 	"database-ms/utils"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,9 +26,9 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	result := make(map[string]interface{})
 	var status int
 
-	// Check if this email already exists
-	_, err := handler.user.FindByUserEmail(c.Request.Context(), newUser.Email)
-	if err == nil {
+	// Check if this email or username already exists
+	user, err := handler.user.FindByUserEmail(c.Request.Context(), newUser.Email)
+	if err == nil || user.DisplayName == newUser.DisplayName {
 		result = utils.NewHTTPError(utils.UserAlreadyExists)
 		status = http.StatusConflict
 		utils.Response(c, status, result)
@@ -37,13 +36,12 @@ func (handler *UserHandler) Create(c *gin.Context) {
 	}
 
 	newUser.Password = hashPassword(newUser.Password)
-	newUser.Roles = "Pending"
+	newUser.Role = "Pending"
 	res, err := handler.user.Create(c.Request.Context(), &newUser)
 	if err == nil {
 		result = utils.SuccessPayload(res, "Successfully created user")
 		status = http.StatusOK
 	} else {
-		fmt.Println(err)
 		result = utils.NewHTTPError(utils.EntityCreationError)
 		status = http.StatusBadRequest
 	}
@@ -73,6 +71,10 @@ func (handler *UserHandler) Login(c *gin.Context) {
 		result = utils.NewHTTPError(utils.UserNotFound)
 		utils.Response(c, http.StatusBadRequest, result)
 		return
+	} else if DBuser.Role == "Pending" {
+		result = utils.NewHTTPError(utils.UserNotApproved)
+		utils.Response(c, http.StatusUnauthorized, result)
+		return
 	}
 
 	// Check password match
@@ -91,7 +93,7 @@ func (handler *UserHandler) Login(c *gin.Context) {
 	}
 }
 
-// Password hashing and verification functions
+/* Password hashing and verification functions */
 
 func hashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)

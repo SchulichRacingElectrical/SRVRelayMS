@@ -41,15 +41,16 @@ func (handler *ThingHandler) Create(c *gin.Context) {
 
 }
 
-func (handler *ThingHandler) GetThing(c *gin.Context) {
+// Need to get ALL the things, not just by the ID
+func (handler *ThingHandler) GetThings(c *gin.Context) {
 	result := make(map[string]interface{})
-	thing, err := handler.thing.FindById(c.Request.Context(), c.Param("thingId"))
+	things, err := handler.thing.FindByOrganizationId(c.Request.Context(), c.Param("organizationId"))
 	if err == nil {
-		result = utils.SuccessPayload(thing, "Succesfully retrieved thing")
+		result = utils.SuccessPayload(things, "Successfully retrieved things.")
 		utils.Response(c, http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.ThingNotFound)
-		utils.Response(c, http.StatusBadRequest, result)
+		utils.Response(c, http.StatusBadRequest, result)	
 	}
 }
 

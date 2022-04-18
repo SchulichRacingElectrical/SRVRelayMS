@@ -16,24 +16,40 @@ import (
 
 type ThingServiceInterface interface {
 	Create(context.Context, *model.Thing) error
+	FindByOrganizationId(context.Context, string) ([]*model.Thing, error)
 	FindById(context.Context, string) (*model.Thing, error)
 	Update(context.Context, string, *model.ThingUpdate) error
 	Delete(context.Context, string) error
 }
 
 type ThingService struct {
-	mgoDB  *mgo.Session
+	db  	 *mgo.Session
 	config *config.Configuration
 }
 
 func NewThingService(db *mgo.Session, c *config.Configuration) ThingServiceInterface {
-	return &ThingService{config: c, mgoDB: db}
+	return &ThingService{config: c, db: db}
 }
 
 func (service *ThingService) Create(ctx context.Context, thing *model.Thing) error {
 	thing.ID = primitive.NewObjectID()
-	_, err := service.thingCollection2(ctx).InsertOne(ctx, thing)
+	_, err := service.thingCollection(ctx).InsertOne(ctx, thing)
 	return err
+}
+
+func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId string) ([]*model.Thing, error) {
+	bsonOrganizationId, err := primitive.ObjectIDFromHex(organizationId)
+	if err != nil {
+		return nil, err
+	}
+
+	var things []*model.Thing
+	cursor, err := service.thingCollection(ctx).Find(ctx, bson.D{{"organizationId", bsonOrganizationId}})
+	if err = cursor.All(ctx, &things); err != nil {
+		return nil, err
+	}
+
+	return things, nil
 }
 
 func (service *ThingService) FindById(ctx context.Context, thingId string) (*model.Thing, error) {
@@ -42,7 +58,7 @@ func (service *ThingService) FindById(ctx context.Context, thingId string) (*mod
 	if err != nil {
 		return nil, err
 	}
-	err = service.thingCollection2(ctx).FindOne(ctx, bson.M{"_id": bsonThingId}).Decode(&thing)
+	err = service.thingCollection(ctx).FindOne(ctx, bson.M{"_id": bsonThingId}).Decode(&thing)
 	return &thing, err
 }
 
@@ -51,7 +67,7 @@ func (service *ThingService) Update(ctx context.Context, thingId string, updates
 	if err != nil {
 		return err
 	}
-	_, err = service.thingCollection2(ctx).UpdateOne(ctx, bson.M{"_id": bsonThingId}, bson.M{"$set": updates})
+	_, err = service.thingCollection(ctx).UpdateOne(ctx, bson.M{"_id": bsonThingId}, bson.M{"$set": updates})
 	return err
 }
 
@@ -72,11 +88,9 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 
 		// Get all related Sensor Id
 		fmt.Println("Getting related sensors...")
-		thingProjection := bson.D{{"sensors", 1}}
-		thingFilter := bson.M{"_id": objectId}
-		thingOpts := options.FindOne().SetProjection(thingProjection)
+		thingOpts := options.FindOne().SetProjection(bson.D{{"sensors", 1}})
 		var thingEntity map[string]interface{}
-		if err := thingCollection.FindOne(ctx, thingFilter, thingOpts).Decode(&thingEntity); err != nil {
+		if err := thingCollection.FindOne(ctx, bson.M{"_id": objectId}, thingOpts).Decode(&thingEntity); err != nil {
 			return nil, err
 		}
 
@@ -90,7 +104,7 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		}
 
 		// Delete thing
-		if _, err := thingCollection.DeleteOne(ctx, thingFilter); err != nil {
+		if _, err := thingCollection.DeleteOne(ctx, bson.M{"_id": objectId}); err != nil {
 			return nil, err
 		}
 
@@ -104,11 +118,10 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 	return nil
 }
 
-func (service *ThingService) thingCollection2(ctx context.Context) *mongo.Collection {
+func (service *ThingService) thingCollection(ctx context.Context) *mongo.Collection {
 	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
 	if err != nil {
 		panic(err)
 	}
-
 	return dbClient.Database(service.config.MongoDbName).Collection("Thing")
 }

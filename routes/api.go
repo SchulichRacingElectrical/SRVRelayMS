@@ -33,15 +33,19 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	// Routes
 	publicEndpoints := c.Group("")
 	{
+		// Most of these need to be private endpoints
 		// Sensor
 		sensorsEndpoints := publicEndpoints.Group("/sensors")
 		{
 			sensorsEndpoints.POST("", sensorAPI.Create)
-			sensorsEndpoints.GET("/sensorId/:sensorId", sensorAPI.FindBySensorId)
-			sensorsEndpoints.PUT("/sensorId/:sensorId", sensorAPI.Update)
-			sensorsEndpoints.DELETE("/sensorId/:sensorId", sensorAPI.Delete)
+			// No need for /sensorId, just use /:sensorId, do we even need this endpoint?
+			sensorsEndpoints.GET("/:sensorId", sensorAPI.FindBySensorId)
+			// Don't need any route at all, the sensor Id will be in the body
+			sensorsEndpoints.PUT("/:sensorId", sensorAPI.Update)
+			// Don't need /sensorId/:sensorId at all, the sensor id will be in the body
+			sensorsEndpoints.DELETE("/:sensorId", sensorAPI.Delete)
 
-			thingIdEndpoints := sensorsEndpoints.Group("/thingId")
+			thingIdEndpoints := sensorsEndpoints.Group("/thing/sensors")
 			{
 				thingIdEndpoints.GET("/:thingId", sensorAPI.FindThingSensors)
 				thingIdEndpoints.GET("/:thingId/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)
@@ -54,7 +58,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			thingEndpoints.POST("", thingAPI.Create)
 			thingIdEndpoints := thingEndpoints.Group("/:thingId")
 			{
-				thingIdEndpoints.GET("", thingAPI.GetThing)
+				thingIdEndpoints.GET("", thingAPI.GetThings)
 				thingIdEndpoints.PUT("", thingAPI.UpdateThing)
 				thingIdEndpoints.DELETE("", thingAPI.Delete)
 			}
@@ -85,6 +89,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		// Users
 		userEndpoints := privateEndpoints.Group("/users")
 		{
+			// Don't use /userId, just /:userId
 			userEndpoints.GET("/userId/:userId", userAPI.GetUser)
 		}
 	}

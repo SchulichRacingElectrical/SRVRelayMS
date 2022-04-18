@@ -33,9 +33,11 @@ const (
 	// User error
 	UserNotFound      = "userNotFound"
 	WrongPassword     = "wrongPassword"
+	UserNotApproved		= "userPendingApproval"
 	UserAlreadyExists = "userAlreadyExists"
 
 	// Thing error
+	ThingsNotFound = "thingsNotFound"
 	ThingNotFound = "thingNotFound"
 
 	// Organization error
