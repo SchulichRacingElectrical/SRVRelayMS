@@ -126,21 +126,19 @@ func (handler *UserHandler) Delete(ctx *gin.Context) {
 	if err != nil {
 		utils.Response(ctx, http.StatusUnauthorized, "")
 	} else {
-		if user.ID.String() == userToDeleteId {
+		completion := func (ctx *gin.Context, userId string) {
 			err := handler.service.Delete(ctx, userToDeleteId)
 			if err != nil {
 				utils.Response(ctx, http.StatusOK, "User deleted successfully.")
 			} else {
 				utils.Response(ctx, http.StatusInternalServerError, "")	
 			}
+		}
+		if user.ID.String() == userToDeleteId {
+			completion(ctx, userToDeleteId)
 		} else {
 			if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-				err := handler.service.Delete(ctx, userToDeleteId)
-				if err != nil {
-					utils.Response(ctx, http.StatusOK, "User deleted successfully.")
-				} else {
-					utils.Response(ctx, http.StatusInternalServerError, "")	
-				}
+				completion(ctx, userToDeleteId)
 			} else {
 				utils.Response(ctx, http.StatusUnauthorized, "")	
 			}
