@@ -23,7 +23,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		organizationEndpoints := publicEndpoints.Group("/organizations") 
 		{
 			organizationEndpoints.GET("", organizationAPI.GetOrganizations)
-			organizationEndpoints.POST("", organizationAPI.Create)
+			organizationEndpoints.POST("", organizationAPI.CreateOrganization)
 		}
 	}
 
@@ -31,33 +31,33 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	authEndpoints := c.Group("/auth")
 	{
 		authEndpoints.POST("/login", userAPI.Login)
-		authEndpoints.POST("/signup", userAPI.Create)
+		authEndpoints.POST("/signup", userAPI.CreateUser)
 	}
 
 	// Declare private (auth required) endpoints
 	privateEndpoints := c.Group("", middleware.AuthorizationMiddleware(conf, mgoDbSession)) 
 	{
-		organizationEndpoints := privateEndpoints.Group("/organizations")
+		organizationEndpoints := privateEndpoints.Group("/organization")
 		{
-			organizationEndpoints.GET("organizationId/:organizationId", organizationAPI.GetOrganization)
+			organizationEndpoints.GET("", organizationAPI.GetOrganization)
+			organizationEndpoints.PUT("", organizationAPI.UpdateOrganization)
+			organizationEndpoints.DELETE("/:organizationId", organizationAPI.DeleteOrganization)
 		}	
 
 		userEndpoints := privateEndpoints.Group("/users")
 		{
 			userEndpoints.GET("", userAPI.GetUsers)
-			userEndpoints.PUT("", userAPI.Update)
-			userEndpoints.DELETE("/:userId", userAPI.Delete)
+			userEndpoints.PUT("", userAPI.UpdateUser)
+			userEndpoints.PUT("/promote", userAPI.ChangeUserRole)
+			userEndpoints.DELETE("/:userId", userAPI.DeleteUser)
 		}
 
 		thingEndpoints := privateEndpoints.Group("/things")
 		{
+			thingEndpoints.GET("", thingAPI.GetThings)
 			thingEndpoints.POST("", thingAPI.Create)
-			thingIdEndpoints := thingEndpoints.Group("/:thingId")
-			{
-				thingIdEndpoints.GET("", thingAPI.GetThings)
-				thingIdEndpoints.PUT("", thingAPI.UpdateThing)
-				thingIdEndpoints.DELETE("", thingAPI.Delete)	
-			}
+			thingEndpoints.PUT("", thingAPI.UpdateThing)
+			thingEndpoints.DELETE("/:thingId", thingAPI.Delete)	
 		}
 
 		sensorEndpoints := privateEndpoints.Group("/sensors")
@@ -65,7 +65,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			sensorEndpoints.POST("", sensorAPI.Create)
 			sensorEndpoints.PUT("", sensorAPI.Update)
 			sensorEndpoints.DELETE("/:sensorId", sensorAPI.Delete)
-			thingIdEndpoints := sensorEndpoints.Group("/thing/sensors/:thingId")
+			thingIdEndpoints := sensorEndpoints.Group("/thing/:thingId")
 			{
 				thingIdEndpoints.GET("", sensorAPI.FindThingSensors)
 				thingIdEndpoints.GET("/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)

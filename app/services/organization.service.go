@@ -31,9 +31,10 @@ func NewOrganizationService(db *mgo.Session, c *config.Configuration) Organizati
 }
 
 func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) (*mongo.InsertOneResult, error) {
-	organization.ID = primitive.NewObjectID()
 	organization.ApiKey = uuid.NewString()
-	return service.OrganizationCollection(ctx).InsertOne(ctx, organization)
+	res, err := service.OrganizationCollection(ctx).InsertOne(ctx, organization)
+	organization.ID = (res.InsertedID).(primitive.ObjectID)
+	return res, err
 }
 
 func (service *OrganizationService) FindByOrganizationIdString(ctx context.Context, organizationId string) (*model.Organization, error) {

@@ -27,21 +27,21 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 	organizationService := services.NewOrganizationService(dbSession, conf)
 	userService := services.NewUserService(dbSession, conf)
 
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		// Initialize admin flags to false.
-		c.Set("super-admin", false)
-		c.Set("org-admin", false)
+		ctx.Set("super-admin", false)
+		ctx.Set("org-admin", false)
 
 		// Check API Key
-		apiKey := c.Request.Header.Get("apiKey")
+		apiKey := ctx.Request.Header.Get("apiKey")
 
 		// Check if API Key is the admin secret.
 		switch apiKey {
 			case "":
 				break
 			case conf.AdminKey:
-				c.Set("super-admin", true)
-				c.Next()
+				ctx.Set("super-admin", true)
+				ctx.Next()
 				return
 			default:
 				// Check if Api Key matches an organization.
@@ -51,14 +51,14 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 				}
 				
 				// If an org is found, grant admin permissions on that org.
-				c.Set("organization", organization)
-				c.Set("org-admin", true)
-				c.Next()
+				ctx.Set("organization", organization)
+				ctx.Set("org-admin", true)
+				ctx.Next()
 				return
 		}
 
 		// Check JWT token
-		tokenString, err := c.Cookie("Authorization")
+		tokenString, err := ctx.Cookie("Authorization")
 		if tokenString == "" || err != nil {
 			return
 		}
@@ -81,14 +81,14 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 			if err != nil {
 				return
 			}
-			c.Set("user", user)
-			c.Set("organization", organization)
+			ctx.Set("user", user)
+			ctx.Set("organization", organization)
 		}
 	}
 }
 
 func GetOrganizationClaim(ctx *gin.Context) (*models.Organization, error) {
-	organizationInterface, organizationExists := ctx.Get("user")
+	organizationInterface, organizationExists := ctx.Get("organization")
 	if organizationExists {
 		return organizationInterface.(*models.Organization), nil
 	} else {

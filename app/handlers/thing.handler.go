@@ -14,9 +14,7 @@ type ThingHandler struct {
 }
 
 func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
-	return &ThingHandler{
-		thing: thingService,
-	}
+	return &ThingHandler{thing: thingService}
 }
 
 func (handler *ThingHandler) Create(c *gin.Context) {
@@ -24,15 +22,13 @@ func (handler *ThingHandler) Create(c *gin.Context) {
 	c.BindJSON(&newThing)
 	result := make(map[string]interface{})
 	err := handler.thing.Create(c.Request.Context(), &newThing)
-	var status int
 	if err == nil {
-		res := &createEntityRes{ID: newThing.ID}
-		result = utils.SuccessPayload(res, "Succesfully created thing")
+		result = utils.SuccessPayload(newThing, "Succesfully created thing")
+		utils.Response(c, http.StatusOK, result)
 	} else {
 		result = utils.NewHTTPError(utils.EntityCreationError)
-		status = http.StatusBadRequest
+		utils.Response(c, http.StatusBadRequest, result)
 	}
-	utils.Response(c, status, result)
 }
 
 // Need to get ALL the things, not just by the ID
@@ -57,11 +53,10 @@ func (handler *ThingHandler) UpdateThing(c *gin.Context) {
 	if err != nil {
 		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
-		return
+	} else {
+		result = utils.SuccessPayload(nil, "Succesfully updated")
+		utils.Response(c, http.StatusOK, result)
 	}
-
-	result = utils.SuccessPayload(nil, "Succesfully updated")
-	utils.Response(c, http.StatusOK, result)
 }
 
 func (handler *ThingHandler) Delete(c *gin.Context) {
@@ -70,9 +65,8 @@ func (handler *ThingHandler) Delete(c *gin.Context) {
 	if err != nil {
 		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
 		utils.Response(c, http.StatusBadRequest, result)
-		return
+	} else {
+		result = utils.SuccessPayload(nil, "Successfully deleted")
+		utils.Response(c, http.StatusOK, result)
 	}
-
-	result = utils.SuccessPayload(nil, "Successfully deleted")
-	utils.Response(c, http.StatusOK, result)
 }

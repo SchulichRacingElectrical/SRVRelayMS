@@ -40,7 +40,9 @@ func NewUserService(db *mgo.Session, c *config.Configuration) UserServiceInterfa
 }
 
 func (service *UserService) Create(ctx context.Context, user *model.User) (*mongo.InsertOneResult, error) {
-	return service.UserCollection(ctx).InsertOne(ctx, user)
+	res, err := service.UserCollection(ctx).InsertOne(ctx, user)
+	user.ID = (res.InsertedID).(primitive.ObjectID)
+	return res, err
 }
 
 func (service *UserService) FindByUserEmail(ctx context.Context, email string) (*model.User, error) {
@@ -60,9 +62,10 @@ func (service *UserService) FindByUserId(ctx context.Context, userId string) (*m
 }
 
 func (service *UserService) IsUserUnique(ctx context.Context, newUser *model.User) bool {
+	var user model.User
 	query := bson.M{"name": newUser.DisplayName, "email": newUser.Email, "organizationId": newUser.OrganizationId}
-	err := service.UserCollection(ctx).FindOne(ctx, query)
-	return err == nil
+	err := service.UserCollection(ctx).FindOne(ctx, query).Decode(&user)
+	return err != nil
 }
 
 func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.User, error) {

@@ -18,20 +18,16 @@ func NewUserAPI(userService services.UserServiceInterface) *UserHandler {
 	return &UserHandler{service: userService}
 }
 
-func (handler *UserHandler) Create(ctx *gin.Context) {
+func (handler *UserHandler) CreateUser(ctx *gin.Context) {
 	var newUser models.User
 	ctx.BindJSON(&newUser)
-	result := make(map[string]interface{})
 
 	if !handler.service.IsUserUnique(ctx.Request.Context(), &newUser) {
-		result = utils.NewHTTPError(utils.UserAlreadyExists)
+		result := utils.NewHTTPError(utils.UserAlreadyExists)
 		utils.Response(ctx, http.StatusConflict, result)
 	} else {
 		users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), newUser.OrganizationId)
-		if err != nil { 
-			result = utils.SuccessPayload("", "Invalid Organization.")
-			utils.Response(ctx, http.StatusBadRequest, result)
-		} else {
+		if err == nil { 
 			// If there are no users in the organization, set the first user as an admin
 			if len(users) == 0 {
 				newUser.Role = "Admin"
@@ -40,34 +36,37 @@ func (handler *UserHandler) Create(ctx *gin.Context) {
 			}
 			newUser.Password = handler.service.HashPassword(newUser.Password)
 			_, err := handler.service.Create(ctx.Request.Context(), &newUser)
-			newUser.Password = ""
 			if err == nil {
-				result = utils.SuccessPayload(newUser, "Successfully created user")
+				newUser.Password = ""
+				result := utils.SuccessPayload(newUser, "Successfully created user.")
 				utils.Response(ctx, http.StatusOK, result)
 			} else {
-				result = utils.NewHTTPError(utils.EntityCreationError)
+				result := utils.NewHTTPError(utils.EntityCreationError)
 				utils.Response(ctx, http.StatusBadRequest, result)
 			}
+		} else {
+			result := utils.SuccessPayload("", "Invalid Organization.")
+			utils.Response(ctx, http.StatusBadRequest, result)
 		}
 	}
 }
 
 func (handler *UserHandler) GetUsers(ctx *gin.Context) {
 	organization, err := middleware.GetOrganizationClaim(ctx)
-	if err != nil {
-		utils.Response(ctx, http.StatusUnauthorized, "")
-	} else {
+	if err == nil {
 		if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 			users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), organization.ID)
-			if err != nil {
-				utils.Response(ctx, http.StatusInternalServerError, "")
-			} else {
+			if err == nil {
 				result := utils.SuccessPayload(users, "Successfully retrieved users.")
 				utils.Response(ctx, http.StatusOK, result)
+			} else {
+				utils.Response(ctx, http.StatusInternalServerError, "")
 			}
 		} else {
 			utils.Response(ctx, http.StatusUnauthorized, "")
 		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, "")
 	}
 }
 
@@ -100,16 +99,16 @@ func (handler *UserHandler) Login(ctx *gin.Context) {
 	}
 }
 
-func (handler *UserHandler) Update(ctx *gin.Context) {
+func (handler *UserHandler) UpdateUser(ctx *gin.Context) {
 	var updatedUser models.User
 	ctx.BindJSON(&updatedUser)
 	user, err := middleware.GetUserClaim(ctx)
-	if err != nil {
-		utils.Response(ctx, http.StatusUnauthorized, "")
-	} else {
+
+	if err == nil {
+		updatedUser.Role = user.Role // Don't allow users to change their role
 		if user.ID == updatedUser.ID {
 			err := handler.service.Update(ctx, &updatedUser)
-			if err != nil {
+			if err == nil {
 				utils.Response(ctx, http.StatusOK, "User updated successfully.")
 			} else {
 				utils.Response(ctx, http.StatusInternalServerError, "")
@@ -117,23 +116,38 @@ func (handler *UserHandler) Update(ctx *gin.Context) {
 		} else {
 			utils.Response(ctx, http.StatusUnauthorized, "")	
 		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, "")
 	}
 }
 
-func (handler *UserHandler) Delete(ctx *gin.Context) {
+func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
+	var updatedUser models.User
+	ctx.BindJSON(&updatedUser)
+	if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		err := handler.service.Update(ctx, &updatedUser)
+		if err == nil {
+			utils.Response(ctx, http.StatusOK, "User promotion successful.")
+		} else {
+			utils.Response(ctx, http.StatusInternalServerError, "")
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, "")
+	}
+}
+
+func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	userToDeleteId := ctx.Param("userId")
 	user, err := middleware.GetUserClaim(ctx)
 	completion := func (ctx *gin.Context, userId string) {
 		err := handler.service.Delete(ctx, userToDeleteId)
-		if err != nil {
+		if err == nil {
 			utils.Response(ctx, http.StatusOK, "User deleted successfully.")
 		} else {
 			utils.Response(ctx, http.StatusInternalServerError, "")	
 		}
 	}
-	if err != nil {
-		utils.Response(ctx, http.StatusUnauthorized, "")
-	} else {
+	if err == nil {
 		if user.ID.String() == userToDeleteId {
 			completion(ctx, userToDeleteId)
 		} else {
@@ -143,5 +157,16 @@ func (handler *UserHandler) Delete(ctx *gin.Context) {
 				utils.Response(ctx, http.StatusUnauthorized, "")	
 			}
 		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, "")
 	}
+}
+
+func (handler *UserHandler) ChangePassword(ctx *gin.Context) {
+	// TODO: Allow the user to change their password
+}
+
+func (handler *UserHandler) ForgotPassword(ctx *gin.Context) {
+	// TODO: Send an email to the user, somehow flow them to a new password page
+	// Likely not worth doing at this time, will take too much time
 }
