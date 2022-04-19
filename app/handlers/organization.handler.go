@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database-ms/app/middleware"
 	models "database-ms/app/models"
 	services "database-ms/app/services"
 	utils "database-ms/utils"
@@ -62,6 +63,11 @@ func (handler *OrganizationHandler) GetOrganization(ctx *gin.Context) {
 func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
 	result := make(map[string]interface{})
 	organizations, err := handler.service.FindAllOrganizations(ctx.Request.Context())
+	if !middleware.IsSuperAdmin(ctx) {
+		for _, organization := range *organizations {
+			organization.ApiKey = ""
+		}
+	}
 	if err == nil {
 		result = utils.SuccessPayload(organizations, "Successfully retrieved organizations.")
 		utils.Response(ctx, http.StatusOK, result)

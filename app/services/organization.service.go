@@ -65,10 +65,6 @@ func (service *OrganizationService) FindAllOrganizations(ctx context.Context) (*
 	if err != nil || cursor.All(ctx, &organizations) != nil {
 		return nil, err
 	}
-	// Remove ApiKey from organization list as it's a secret.
-	for i := range organizations {
-		organizations[i].ApiKey = ""
-	}
 	return &organizations, err
 }
 
