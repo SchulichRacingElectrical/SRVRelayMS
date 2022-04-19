@@ -19,18 +19,14 @@ func NewUserAPI(userService services.UserServiceInterface) *UserHandler {
 }
 
 func (handler *UserHandler) GetUsers(ctx *gin.Context) {
-	organization, err := middleware.GetOrganizationClaim(ctx)
-	if err == nil {
-		if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-			users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), organization.ID)
-			if err == nil {
-				result := utils.SuccessPayload(users, "Successfully retrieved users.")
-				utils.Response(ctx, http.StatusOK, result)
-			} else {
-				utils.Response(ctx, http.StatusInternalServerError, "")
-			}
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), organization.ID)
+		if err == nil {
+			result := utils.SuccessPayload(users, "Successfully retrieved users.")
+			utils.Response(ctx, http.StatusOK, result)
 		} else {
-			utils.Response(ctx, http.StatusUnauthorized, "")
+			utils.Response(ctx, http.StatusInternalServerError, "")
 		}
 	} else {
 		utils.Response(ctx, http.StatusUnauthorized, "")

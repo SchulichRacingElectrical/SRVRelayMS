@@ -49,19 +49,12 @@ func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 }
 
 func (handler *OrganizationHandler) GetOrganization(ctx *gin.Context) {
-	result := make(map[string]interface{})
-	organization, exists := ctx.Get("organization")
-	if exists {
-		result = utils.SuccessPayload(organization, "Successfully retrieved organization.")
-		utils.Response(ctx, http.StatusOK, result)
-	} else {
-		result = utils.NewHTTPError(utils.OrganizationNotFound)
-		utils.Response(ctx, http.StatusBadRequest, result)
-	}
+	organization, _ := ctx.Get("organization")
+	result := utils.SuccessPayload(organization, "Successfully retrieved organization.")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
 func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
-	result := make(map[string]interface{})
 	organizations, err := handler.service.FindAllOrganizations(ctx.Request.Context())
 	if !middleware.IsSuperAdmin(ctx) {
 		for _, organization := range *organizations {
@@ -69,10 +62,10 @@ func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
 		}
 	}
 	if err == nil {
-		result = utils.SuccessPayload(organizations, "Successfully retrieved organizations.")
+		result := utils.SuccessPayload(organizations, "Successfully retrieved organizations.")
 		utils.Response(ctx, http.StatusOK, result)
 	} else {
-		result = utils.NewHTTPError(utils.OrganizationsNotFound)
+		result := utils.NewHTTPError(utils.OrganizationsNotFound)
 		utils.Response(ctx, http.StatusNotFound, result)
 	}
 }
