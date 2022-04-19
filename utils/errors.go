@@ -19,16 +19,18 @@ const (
 	// Other errors
 	InternalError       = "internalError"
 	InvalidBindingModel = "invalidBindingModel"
-	SensorAlreadyExists = "sensorAlreadyExists"
 	EntityCreationError = "entityCreationError"
 	BadRequest          = "badRequest"
+	Unauthorized				= "unauthorized"
 
 	// Sensor errors
 	SensorsNotFound = "sensorsNotFound"
 	SensorNotFound  = "sensorNotFound"
+	SensorAlreadyExists = "sensorAlreadyExists"
 
 	// User error
 	UserNotFound      = "userNotFound"
+	UsersNotFound			= "usersNotFound"
 	WrongPassword     = "wrongPassword"
 	UserNotApproved		= "userPendingApproval"
 	UserAlreadyExists = "userAlreadyExists"
@@ -38,32 +40,36 @@ const (
 	ThingNotFound = "thingNotFound"
 
 	// Organization error
+	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
 	OrganizationsNotFound = "organizationsNotFound"
 )
 
 // Error code with description
-var errorMessage = map[string]string{
-
+var errorMessage = map[string]string {
 	// Generic errors
-	"internalError":       "an internal error occurred",
-	"invalidBindingModel": "model could not be bound",
-	"entityCreationError": "could not create entity",
+	"internalError":       "An internal error occurred.",
+	"invalidBindingModel": "The model could not be bound.",
+	"entityCreationError": "Could not create entity.",
+	"unauthorized": "Unauthorized.",
 
 	// Sensor errors
-	"sensorAlreadyExists": "sensor already exists",
-	"sensorsNotFound":     "sensors could not be found",
-	"sensorNotFound":      "sensor could not be found",
+	"sensorAlreadyExists": "Sensor already exists.",
+	"sensorsNotFound":     "Sensors could not be found.",
+	"sensorNotFound":      "Sensor could not be found.",
 
 	// User errors
-	"userNotFound":      "user could not be found",
-	"wrongPassword":     "password was incorrect",
-	"userAlreadyExists": "email is already being used",
+	"userNotFound":      "User could not be found.",
+	"usersNotFound":		 "Users not found.",	
+	"wrongPassword":     "Password was incorrect.",
+	"userAlreadyExists": "Email is already being used.",
 
 	// Thing
-	"thingNotFound": "thing could not be found",
+	"thingsNotFound":	"Things could not found.",
+	"thingNotFound": 	"Thing could not be found.",
 
 	// Organization
-	"organizationNotFound":  "organization could not be found",
-	"organizationsNotFound": "organizations could not be found",
+	"organizationDuplicate": "Organization name is taken.",
+	"organizationNotFound":  "Organization could not be found.",
+	"organizationsNotFound": "Organizations could not be found.",
 }

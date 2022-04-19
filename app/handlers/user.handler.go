@@ -26,10 +26,10 @@ func (handler *UserHandler) GetUsers(ctx *gin.Context) {
 			result := utils.SuccessPayload(users, "Successfully retrieved users.")
 			utils.Response(ctx, http.StatusOK, result)
 		} else {
-			utils.Response(ctx, http.StatusInternalServerError, "")
+			utils.Response(ctx, http.StatusNotFound, utils.NewHTTPError(utils.UsersNotFound))
 		}
 	} else {
-		utils.Response(ctx, http.StatusUnauthorized, "")
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }
 
@@ -44,13 +44,13 @@ func (handler *UserHandler) UpdateUser(ctx *gin.Context) {
 			if err == nil {
 				utils.Response(ctx, http.StatusOK, "User updated successfully.")
 			} else {
-				utils.Response(ctx, http.StatusInternalServerError, "")
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 			}
 		} else {
-			utils.Response(ctx, http.StatusUnauthorized, "")	
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InternalError))	
 		}
 	} else {
-		utils.Response(ctx, http.StatusUnauthorized, "")
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InternalError))
 	}
 }
 
@@ -62,10 +62,10 @@ func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
 		if err == nil {
 			utils.Response(ctx, http.StatusOK, "User promotion successful.")
 		} else {
-			utils.Response(ctx, http.StatusInternalServerError, "")
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		}
 	} else {
-		utils.Response(ctx, http.StatusUnauthorized, "")
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }
 
@@ -77,7 +77,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 		if err == nil {
 			utils.Response(ctx, http.StatusOK, "User deleted successfully.")
 		} else {
-			utils.Response(ctx, http.StatusInternalServerError, "")	
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		}
 	}
 	if err == nil {
@@ -87,11 +87,11 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 			if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 				completion(ctx, userToDeleteId)
 			} else {
-				utils.Response(ctx, http.StatusUnauthorized, "")	
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
 			}
 		}
 	} else {
-		utils.Response(ctx, http.StatusUnauthorized, "")
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }
 

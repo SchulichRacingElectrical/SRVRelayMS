@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database-ms/app/middleware"
 	models "database-ms/app/models"
 	services "database-ms/app/services"
 	utils "database-ms/utils"
@@ -17,56 +18,59 @@ func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
 	return &ThingHandler{thing: thingService}
 }
 
-func (handler *ThingHandler) Create(c *gin.Context) {
+func (handler *ThingHandler) Create(ctx *gin.Context) {
 	var newThing models.Thing
-	c.BindJSON(&newThing)
-	result := make(map[string]interface{})
-	err := handler.thing.Create(c.Request.Context(), &newThing)
+	ctx.BindJSON(&newThing)
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		err := handler.thing.Create(ctx.Request.Context(), &newThing)
+		if err == nil {
+			result := utils.SuccessPayload(newThing, "Succesfully created thing")
+			utils.Response(ctx, http.StatusOK, result)
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+	}
+}
+
+func (handler *ThingHandler) GetThings(ctx *gin.Context) {
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	things, err := handler.thing.FindByOrganizationId(ctx.Request.Context(), organization.ID)
 	if err == nil {
-		result = utils.SuccessPayload(newThing, "Succesfully created thing")
-		utils.Response(c, http.StatusOK, result)
+		result := utils.SuccessPayload(things, "Successfully retrieved things.")
+		utils.Response(ctx, http.StatusOK, result)
 	} else {
-		result = utils.NewHTTPError(utils.EntityCreationError)
-		utils.Response(c, http.StatusBadRequest, result)
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingsNotFound))	
 	}
 }
 
-// Need to get ALL the things, not just by the ID
-func (handler *ThingHandler) GetThings(c *gin.Context) {
-	result := make(map[string]interface{})
-	// The organization Id does not come from params
-	things, err := handler.thing.FindByOrganizationId(c.Request.Context(), c.Param("organizationId"))
-	if err == nil {
-		result = utils.SuccessPayload(things, "Successfully retrieved things.")
-		utils.Response(c, http.StatusOK, result)
+func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
+	var thing models.Thing
+	ctx.BindJSON(&thing)
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		err := handler.thing.Update(ctx.Request.Context(), &thing)
+		if err != nil {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		} else {
+			result := utils.SuccessPayload(nil, "Succesfully updated")
+			utils.Response(ctx, http.StatusOK, result)
+		}
 	} else {
-		result = utils.NewHTTPError(utils.ThingNotFound)
-		utils.Response(c, http.StatusBadRequest, result)	
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }
 
-func (handler *ThingHandler) UpdateThing(c *gin.Context) {
-	var thingUpdates models.ThingUpdate
-	c.BindJSON(&thingUpdates)
-	result := make(map[string]interface{})
-	err := handler.thing.Update(c.Request.Context(), c.Param("thingId"), &thingUpdates)
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(c, http.StatusBadRequest, result)
+func (handler *ThingHandler) Delete(ctx *gin.Context) {
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		err := handler.thing.Delete(ctx.Request.Context(), ctx.Param("thingId"))
+		if err != nil {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		} else {
+			result := utils.SuccessPayload(nil, "Successfully deleted")
+			utils.Response(ctx, http.StatusOK, result)
+		}
 	} else {
-		result = utils.SuccessPayload(nil, "Succesfully updated")
-		utils.Response(c, http.StatusOK, result)
-	}
-}
-
-func (handler *ThingHandler) Delete(c *gin.Context) {
-	result := make(map[string]interface{})
-	err := handler.thing.Delete(c.Request.Context(), c.Param("thingId"))
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(c, http.StatusBadRequest, result)
-	} else {
-		result = utils.SuccessPayload(nil, "Successfully deleted")
-		utils.Response(c, http.StatusOK, result)
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }

@@ -26,11 +26,11 @@ func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 	// Ensure the org name is unique
 	organizations, err := handler.service.FindAllOrganizations(ctx.Request.Context())
 	if err != nil {
-		utils.Response(ctx, http.StatusInternalServerError, "")
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
 	} else {
 		for _, org := range *organizations {
 			if org.Name == newOrganization.Name {
-				utils.Response(ctx, http.StatusConflict, "Duplicate organization name.")
+				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OrganizationDuplicate))
 				return
 			}
 		}	
@@ -49,7 +49,10 @@ func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 }
 
 func (handler *OrganizationHandler) GetOrganization(ctx *gin.Context) {
-	organization, _ := ctx.Get("organization")
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		organization.ApiKey = ""
+	}
 	result := utils.SuccessPayload(organization, "Successfully retrieved organization.")
 	utils.Response(ctx, http.StatusOK, result)
 }
