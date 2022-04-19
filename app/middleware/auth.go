@@ -49,7 +49,7 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 				// Check if Api Key matches an organization.
 				organization, err := organizationService.FindByOrganizationApiKey(context.TODO(), apiKey)
 				if err != nil {
-					utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
+					utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 					return
 				}
 				
@@ -63,7 +63,8 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 		// Check JWT token
 		tokenString, err := ctx.Cookie("Authorization")
 		if tokenString == "" || err != nil {
-			utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			ctx.Abort()
 			return
 		}
 
@@ -75,7 +76,8 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 			return hmacSampleSecret, nil
 		})
 		if err != nil {
-			utils.Response(ctx, http.StatusInternalServerError, "Internal Server Error.")
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+			ctx.Abort()
 			return
 		}
 
@@ -83,18 +85,21 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 			userId := fmt.Sprintf("%s", claims["userId"])
 			user, err := userService.FindByUserId(context.TODO(), userId)
 			if err != nil {
-				utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+				ctx.Abort()
 				return
 			}
 			organization, err := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId)
 			if err != nil {
-				utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+				ctx.Abort()
 				return
 			}
 			ctx.Set("user", user)
 			ctx.Set("organization", organization)
 		} else {
-			utils.Response(ctx, http.StatusInternalServerError, "Internal Server Error")
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+			ctx.Abort()
 		}
 	}
 }

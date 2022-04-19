@@ -15,6 +15,7 @@ import (
 type ThingServiceInterface interface {
 	Create(context.Context, *model.Thing) error
 	FindByOrganizationId(context.Context, primitive.ObjectID) ([]*model.Thing, error)
+	FindById(ctx context.Context, thingId string) (*model.Thing, error)
 	Update(context.Context, *model.Thing) error
 	Delete(context.Context, string) error
 }
@@ -41,6 +42,16 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 		return nil, err
 	}
 	return things, nil
+}
+
+func (service *ThingService) FindById(ctx context.Context, thingId string) (*model.Thing, error) {
+	var thing model.Thing
+	bsonThingId, err := primitive.ObjectIDFromHex(thingId)
+	if err != nil {
+		return nil, err
+	}
+	err = service.ThingCollection(ctx).FindOne(ctx, bson.M{"_id": bsonThingId}).Decode(&thing)
+	return &thing, err
 }
 
 func (service *ThingService) Update(ctx context.Context, thing *model.Thing) error {
