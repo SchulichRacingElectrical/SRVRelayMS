@@ -74,15 +74,12 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		db := client.Database(service.config.MongoDbName)
 
 		// Delete related sensor by using sensor id
-		sensorCollection := db.Collection("Sensor")
-		sensorFilter := bson.M{"thingId": bsonThingId}
-		if _, err := sensorCollection.DeleteMany(ctx, sensorFilter); err != nil {
+		if _, err := db.Collection("Sensor").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
 			return nil, err
 		}
 
 		// Delete thing
-		thingCollection := db.Collection("Thing")
-		if _, err := thingCollection.DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
+		if _, err := db.Collection("Thing").DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
 			return nil, err
 		}
 

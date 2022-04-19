@@ -60,7 +60,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			thingEndpoints.GET("", thingAPI.GetThings)
 			thingEndpoints.POST("", thingAPI.CreateThing)
 			thingEndpoints.PUT("", thingAPI.UpdateThing)
-			thingEndpoints.DELETE("/:thingId", thingAPI.Delete)	
+			thingEndpoints.DELETE("/:thingId", thingAPI.DeleteThing)	
 		}
 
 		sensorEndpoints := privateEndpoints.Group("/sensors")
