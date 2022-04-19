@@ -90,7 +90,7 @@ func (service *UserService) Delete(ctx context.Context, userId string) error {
 	if err != nil {
 		return err
 	} else {
-		_, err := service.UserCollection(ctx).DeleteOne(ctx, bson.M{"_id":bsonUserId})
+		_, err := service.UserCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonUserId})
 		return err
 	}
 }

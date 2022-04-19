@@ -5,6 +5,7 @@ import (
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,6 +19,7 @@ type ThingServiceInterface interface {
 	FindById(ctx context.Context, thingId string) (*model.Thing, error)
 	Update(context.Context, *model.Thing) error
 	Delete(context.Context, string) error
+	IsThingUnique(context.Context, *model.Thing) bool
 }
 
 type ThingService struct {
@@ -54,9 +56,13 @@ func (service *ThingService) FindById(ctx context.Context, thingId string) (*mod
 	return &thing, err
 }
 
-func (service *ThingService) Update(ctx context.Context, thing *model.Thing) error {
-	_, err := service.ThingCollection(ctx).UpdateOne(ctx, bson.M{"_id": thing.ID}, bson.M{"$set": thing})
-	return err
+func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) error {
+	if service.IsThingUnique(ctx, updatedThing) {
+		_, err := service.ThingCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedThing.ID}, bson.M{"$set": updatedThing})
+		return err
+	} else {
+		return errors.New("Thing name must remain unique.") // Could pass error code too?
+	}
 }
 
 func (service *ThingService) Delete(ctx context.Context, thingId string) error {
@@ -70,19 +76,14 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		return err
 	}
 
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
-
-		// Delete related sensor by using sensor id
 		if _, err := db.Collection("Sensor").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
 			return nil, err
-		}
-
-		// Delete thing
+		} 
 		if _, err := db.Collection("Thing").DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
 			return nil, err
 		}
-
 		return nil, nil
 	}
 
@@ -91,6 +92,20 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 	}
 
 	return nil
+}
+
+func (service *ThingService) IsThingUnique(ctx context.Context, newThing *model.Thing) bool {
+	things, err := service.FindByOrganizationId(ctx, newThing.OrganizationId)
+	if err == nil {
+		for _, thing := range things {
+			if newThing.Name == thing.Name {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
 }
 
 func (service *ThingService) ThingCollection(ctx context.Context) *mongo.Collection {

@@ -25,7 +25,7 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	ctx.BindJSON(&newSensor)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newSensor.ThingID.String())
-	if !handler.sensorService.IsSensorUnique(ctx, &newSensor) {
+	if handler.sensorService.IsSensorUnique(ctx, &newSensor) {
 		if err == nil {
 			if thing.OrganizationId == organization.ID {
 				err := handler.sensorService.Create(ctx.Request.Context(), &newSensor)
@@ -95,7 +95,7 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 	var updateSensor models.Sensor
 	ctx.BindJSON(&updateSensor)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, updateSensor.ID.String())
+	thing, err := handler.thingService.FindById(ctx, updateSensor.ThingID.String())
 	if err == nil {
 		if thing.OrganizationId == organization.ID {
 			err := handler.sensorService.Update(ctx.Request.Context(), &updateSensor)
@@ -113,15 +113,29 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 	}
 }
 
-// TODO: Ensure the thing for the deleted sensor belongs to the correct organization
 func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
-	result := make(map[string]interface{})
-	err := handler.sensorService.Delete(ctx.Request.Context(), ctx.Param("sensorId"))
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(ctx, http.StatusBadRequest, result)
-		return
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	sensor, err := handler.sensorService.FindBySensorId(ctx, ctx.Param("sensorId"))
+	if err == nil {
+		thing, err := handler.thingService.FindById(ctx, sensor.ThingID.String())	
+		if err == nil {
+			if thing.OrganizationId == organization.ID {
+				err := handler.sensorService.Delete(ctx.Request.Context(), ctx.Param("sensorId"))
+				if err != nil {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				} else {
+					result := utils.SuccessPayload(nil, "Successfully deleted")
+					utils.Response(ctx, http.StatusOK, result)
+				}
+			} else {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
+			}
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
+		}
+	} else {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))		
 	}
-	result = utils.SuccessPayload(nil, "Successfully deleted")
-	utils.Response(ctx, http.StatusOK, result)
 }
+
+// Create tenant security function? - Might make more sense to put this in the service.

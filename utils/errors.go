@@ -39,6 +39,7 @@ const (
 	// Thing error
 	ThingsNotFound 				= "thingsNotFound"
 	ThingNotFound 				= "thingNotFound"
+	ThingNotUnique				=	"thingNotUnique"
 
 	// Organization error
 	OrganizationDuplicate = "organizationDuplicate"
@@ -59,7 +60,7 @@ var errorMessage = map[string]string {
 	"sensorsNotFound":     		"Sensors could not be found.",
 	"sensorNotFound":      		"Sensor could not be found.",
 	"sensorNotUnique":				"Sensor name and CAN ID must be unique for a thing.",
-	
+
 	// User errors
 	"userNotFound":      			"User could not be found.",
 	"usersNotFound":		 			"Users not found.",	
@@ -69,6 +70,7 @@ var errorMessage = map[string]string {
 	// Thing
 	"thingsNotFound":					"Things could not found.",
 	"thingNotFound": 					"Thing could not be found.",
+	"thingNotUnique":					"Thing name must be unique",
 
 	// Organization
 	"organizationDuplicate": 	"Organization name is taken.",
