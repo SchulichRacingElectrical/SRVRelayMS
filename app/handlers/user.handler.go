@@ -41,7 +41,6 @@ func (handler *UserHandler) UpdateUser(ctx *gin.Context) {
 	var updatedUser models.User
 	ctx.BindJSON(&updatedUser)
 	user, err := middleware.GetUserClaim(ctx)
-
 	if err == nil {
 		updatedUser.Role = user.Role // Don't allow users to change their role
 		if user.ID == updatedUser.ID {

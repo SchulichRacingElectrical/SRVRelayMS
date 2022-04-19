@@ -31,8 +31,10 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	// Declare auth endpoints
 	authEndpoints := c.Group("/auth")
 	{
+		authEndpoints.GET("/validate", authAPI.Validate)
 		authEndpoints.POST("/login", authAPI.Login)
 		authEndpoints.POST("/signup", authAPI.SignUp)
+		authEndpoints.POST("/signout", authAPI.SignOut)
 	}
 
 	// Declare private (auth required) endpoints

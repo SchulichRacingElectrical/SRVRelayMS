@@ -11,6 +11,7 @@ import (
 
 type AuthHandler struct {
 	service services.UserServiceInterface
+	// Add a specific auth service
 }
 
 func NewAuthAPI(userService services.UserServiceInterface) *UserHandler {
@@ -20,7 +21,6 @@ func NewAuthAPI(userService services.UserServiceInterface) *UserHandler {
 func (handler *UserHandler) SignUp(ctx *gin.Context) {
 	var newUser models.User
 	ctx.BindJSON(&newUser)
-
 	if !handler.service.IsUserUnique(ctx.Request.Context(), &newUser) {
 		result := utils.NewHTTPError(utils.UserAlreadyExists)
 		utils.Response(ctx, http.StatusConflict, result)
@@ -53,14 +53,12 @@ func (handler *UserHandler) SignUp(ctx *gin.Context) {
 func (handler *UserHandler) Login(ctx *gin.Context) {
 	var loggingInUser models.User
 	ctx.BindJSON(&loggingInUser)
-	result := make(map[string]interface{})
-
 	DBuser, err := handler.service.FindByUserEmail(ctx.Request.Context(), loggingInUser.Email)
 	if err != nil {
-		result = utils.NewHTTPError(utils.UserNotFound)
+		result := utils.NewHTTPError(utils.UserNotFound)
 		utils.Response(ctx, http.StatusBadRequest, result)
 	} else if DBuser.Role == "Pending" {
-		result = utils.NewHTTPError(utils.UserNotApproved)
+		result := utils.NewHTTPError(utils.UserNotApproved)
 		utils.Response(ctx, http.StatusUnauthorized, result)
 	} else {
 		if handler.service.CheckPasswordHash(loggingInUser.Password, DBuser.Password) {
@@ -69,12 +67,22 @@ func (handler *UserHandler) Login(ctx *gin.Context) {
 				ctx.JSON(http.StatusUnprocessableEntity, err.Error())
 			} else {
 				DBuser.Password = ""
-				result = utils.SuccessPayload(DBuser, "Successfully signed user in.")
+				result := utils.SuccessPayload(DBuser, "Successfully signed user in.")
 				ctx.JSON(http.StatusOK, result)
 			}
 		} else {
-			result = utils.NewHTTPError(utils.WrongPassword)
+			result := utils.NewHTTPError(utils.WrongPassword)
 			utils.Response(ctx, http.StatusUnauthorized, result)
 		}
 	}
+}
+
+func (handler *UserHandler) Validate(ctx *gin.Context) {
+	utils.Response(ctx, http.StatusOK, "Valid.")
+}
+
+func (handler *UserHandler) SignOut(ctx *gin.Context) {
+	// TODO: Blacklist tokens
+	// TODO: Delete blacklisted tokens in the database after they expire
+	// TODO: In auth middleware, check if the token is blacklisted
 }

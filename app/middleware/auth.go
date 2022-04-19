@@ -3,7 +3,9 @@ package middleware
 import (
 	"context"
 	"database-ms/config"
+	"database-ms/utils"
 	"fmt"
+	"net/http"
 
 	"database-ms/app/models"
 	services "database-ms/app/services"
@@ -47,6 +49,7 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 				// Check if Api Key matches an organization.
 				organization, err := organizationService.FindByOrganizationApiKey(context.TODO(), apiKey)
 				if err != nil {
+					utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
 					return
 				}
 				
@@ -60,6 +63,7 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 		// Check JWT token
 		tokenString, err := ctx.Cookie("Authorization")
 		if tokenString == "" || err != nil {
+			utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
 			return
 		}
 
@@ -70,19 +74,27 @@ func AuthorizationMiddleware(conf *config.Configuration, dbSession *mgo.Session)
 			}
 			return hmacSampleSecret, nil
 		})
+		if err != nil {
+			utils.Response(ctx, http.StatusInternalServerError, "Internal Server Error.")
+			return
+		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			userId := fmt.Sprintf("%s", claims["userId"])
 			user, err := userService.FindByUserId(context.TODO(), userId)
 			if err != nil {
+				utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
 				return
 			}
 			organization, err := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId)
 			if err != nil {
+				utils.Response(ctx, http.StatusUnauthorized, "Not Authorized.")
 				return
 			}
 			ctx.Set("user", user)
 			ctx.Set("organization", organization)
+		} else {
+			utils.Response(ctx, http.StatusInternalServerError, "Internal Server Error")
 		}
 	}
 }
