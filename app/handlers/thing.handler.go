@@ -26,7 +26,7 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 		if middleware.IsAuthorizationAtLeast(ctx, "Admin") && organization.ID == newThing.OrganizationId {
 			err := handler.service.Create(ctx.Request.Context(), &newThing)
 			if err == nil {
-				result := utils.SuccessPayload(newThing, "Succesfully created thing")
+				result := utils.SuccessPayload(newThing, "Succesfully created thing.")
 				utils.Response(ctx, http.StatusOK, result)
 			} else {
 				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
@@ -58,7 +58,7 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 		if organization.ID == thing.ID { 
 			err := handler.service.Update(ctx.Request.Context(), &thing)
 			if err == nil {
-				result := utils.SuccessPayload(nil, "Succesfully updated")
+				result := utils.SuccessPayload(nil, "Succesfully updated thing.")
 				utils.Response(ctx, http.StatusOK, result)
 			} else {
 				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
@@ -79,7 +79,7 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 			if organization.ID == thing.OrganizationId { 
 				err := handler.service.Delete(ctx.Request.Context(), ctx.Param("thingId"))
 				if err == nil {
-					result := utils.SuccessPayload(nil, "Successfully deleted")
+					result := utils.SuccessPayload(nil, "Successfully deleted thing.")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
 					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
@@ -94,3 +94,5 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }
+
+// Perhaps make a tenancy assertion function rather than all this if-else nastiness

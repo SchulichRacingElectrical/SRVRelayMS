@@ -84,6 +84,7 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		if _, err := db.Collection("Thing").DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
 			return nil, err
 		}
+		// TODO: There will be a lot more things to delete in the future...
 		return nil, nil
 	}
 

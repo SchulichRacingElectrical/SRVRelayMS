@@ -5,6 +5,7 @@ import (
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
+	"errors"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,10 +16,14 @@ import (
 
 type OrganizationServiceInterface interface {
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
-	FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*model.Organization, error)
+	FindByOrganizationId(context.Context, primitive.ObjectID) (*model.Organization, error) // Should probably just cut this
 	FindByOrganizationIdString(context.Context, string) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
-	FindAllOrganizations(ctx context.Context) (*[]model.Organization, error)
+	FindAllOrganizations(context.Context) (*[]model.Organization, error)
+	Update(context.Context, *model.Organization) error
+	UpdateKey(context.Context, *model.Organization) (string, error)
+	Delete(context.Context, primitive.ObjectID) error
+	IsOrganizationUnique(context.Context, *model.Organization) bool
 }
 
 type OrganizationService struct {
@@ -66,6 +71,49 @@ func (service *OrganizationService) FindAllOrganizations(ctx context.Context) (*
 		return nil, err
 	}
 	return &organizations, err
+}
+
+func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) error {
+	organization, err := service.FindByOrganizationIdString(ctx, updatedOrganization.ID.Hex())
+	if err == nil {
+		updatedOrganization.ApiKey = organization.ApiKey
+		if service.IsOrganizationUnique(ctx, updatedOrganization) {
+			_, err = service.OrganizationCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedOrganization.ID}, bson.M{"$set": updatedOrganization})
+			return err
+		} else {
+			return errors.New("Organization name must remain unique.") // Could pass error code too?
+		}
+	} else {
+		return err
+	}
+}
+
+func (service *OrganizationService) UpdateKey(ctx context.Context, organization *model.Organization) (string, error) {
+	organization.ApiKey = uuid.NewString()	
+	_, err := service.OrganizationCollection(ctx).UpdateOne(ctx, bson.M{"_id": organization.ID}, bson.M{"$set": organization})
+	return organization.ApiKey, err
+}
+
+func (service *OrganizationService) Delete(ctx context.Context, organizationId primitive.ObjectID) error {
+	// TODO
+	// Transaction will be super nasty :(
+	// Will need to delete all associated users, things, sensors, raw data presets, 
+	// chart presets, runs, sessions, and comments!
+	return nil
+}
+
+func (service *OrganizationService) IsOrganizationUnique(ctx context.Context, organization *model.Organization) bool {
+	organizations, err := service.FindAllOrganizations(ctx)
+	if err == nil {
+		for _, org := range *organizations {
+			if organization.Name == org.Name {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
 }
 
 // ============== Service Helper Method(s) ================

@@ -45,6 +45,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		{
 			organizationEndpoints.GET("", organizationAPI.GetOrganization)
 			organizationEndpoints.PUT("", organizationAPI.UpdateOrganization)
+			organizationEndpoints.PUT("/issueNewAPIKey", organizationAPI.IssueNewAPIKey)
 			organizationEndpoints.DELETE("/:organizationId", organizationAPI.DeleteOrganization)
 		}	
 

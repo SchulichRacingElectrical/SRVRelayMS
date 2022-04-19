@@ -21,30 +21,18 @@ func NewOrganizationAPI(organizationService services.OrganizationServiceInterfac
 func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 	var newOrganization models.Organization
 	ctx.BindJSON(&newOrganization)
-	result := make(map[string]interface{})
-
-	// Ensure the org name is unique
-	organizations, err := handler.service.FindAllOrganizations(ctx.Request.Context())
-	if err != nil {
-		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+	if handler.service.IsOrganizationUnique(ctx, &newOrganization) {
+		_, err := handler.service.Create(ctx.Request.Context(), &newOrganization)
+		if err == nil {
+			newOrganization.ApiKey = ""
+			result := utils.SuccessPayload(newOrganization, "Successfully created organization.")
+			utils.Response(ctx, http.StatusOK, result)
+		} else {
+			result := utils.NewHTTPError(utils.EntityCreationError)
+			utils.Response(ctx, http.StatusBadRequest, result)
+		}
 	} else {
-		for _, org := range *organizations {
-			if org.Name == newOrganization.Name {
-				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OrganizationDuplicate))
-				return
-			}
-		}	
-	}
-
-	// Create the organization
-	_, err = handler.service.Create(ctx.Request.Context(), &newOrganization)
-	if err == nil {
-		newOrganization.ApiKey = ""
-		result = utils.SuccessPayload(newOrganization, "Successfully created organization.")
-		utils.Response(ctx, http.StatusOK, result)
-	} else {
-		result = utils.NewHTTPError(utils.EntityCreationError)
-		utils.Response(ctx, http.StatusBadRequest, result)
+		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OrganizationDuplicate))	
 	}
 }
 
@@ -74,7 +62,39 @@ func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
 }
 
 func (handler *OrganizationHandler) UpdateOrganization(ctx *gin.Context) {
-	// TODO: Only the admin of the org can update
+	var updatedOrganization models.Organization
+	ctx.BindJSON(&updatedOrganization)
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		if organization.ID == updatedOrganization.ID {
+			err := handler.service.Update(ctx, &updatedOrganization)
+			if err == nil {
+				result := utils.SuccessPayload(nil, "Succesfully updated organization.")
+				utils.Response(ctx, http.StatusOK, result)
+			} else {
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+			}
+		} else {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+	}
+}
+
+func (handler *OrganizationHandler) IssueNewAPIKey(ctx *gin.Context) {
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		newKey, err := handler.service.UpdateKey(ctx, organization)
+		if err == nil {
+			result := utils.SuccessPayload(newKey, "Successfully created a new API key.")
+			utils.Response(ctx, http.StatusOK, result)
+		} else {
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
+	}
 }
 
 func (handler *OrganizationHandler) DeleteOrganization(ctx *gin.Context) {
