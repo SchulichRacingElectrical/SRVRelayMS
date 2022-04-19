@@ -21,9 +21,10 @@ type SensorServiceInterface interface {
 	Create(context.Context, *model.Sensor) error
 	FindByThingId(context.Context, string) ([]*model.Sensor, error)
 	FindBySensorId(context.Context, string) (*model.Sensor, error)
-	FindUpdatedSensor(context.Context, string, int64) ([]*model.Sensor, error)
-	Update(context.Context, string, *model.SensorUpdate) error
+	FindUpdatedSensors(context.Context, string, int64) ([]*model.Sensor, error)
+	Update(context.Context, *model.Sensor) error
 	Delete(context.Context, string) error
+	IsSensorUnique(context.Context, *model.Sensor) bool
 }
 
 type SensorService struct {
@@ -53,13 +54,11 @@ func (service *SensorService) FindByThingId(ctx context.Context, thingId string)
 	if err != nil {
 		return nil, err
 	}
-
 	var sensors []*model.Sensor
 	cursor, err := service.sensorCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}})
 	if err = cursor.All(ctx, &sensors); err != nil {
 		return nil, err
 	}
-
 	return sensors, nil
 }
 
@@ -68,7 +67,6 @@ func (service *SensorService) FindBySensorId(ctx context.Context, sensorId strin
 	if err != nil {
 		return nil, err
 	}
-
 	var sensor model.Sensor
 	if err = service.sensorCollection(ctx).FindOne(ctx, bson.M{"_id": bsonSensorId}).Decode(&sensor); err != nil {
 		return nil, err
@@ -76,28 +74,32 @@ func (service *SensorService) FindBySensorId(ctx context.Context, sensorId strin
 	return &sensor, nil
 }
 
-func (service *SensorService) FindUpdatedSensor(ctx context.Context, thingId string, lastUpdate int64) ([]*model.Sensor, error) {
+func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId string, lastUpdate int64) ([]*model.Sensor, error) {
 	bsonThingId, err := primitive.ObjectIDFromHex(thingId)
 	if err != nil {
 		return nil, err
 	}
-
 	var sensors []*model.Sensor
 	cursor, err := service.sensorCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}, {"lastUpdate", bson.D{{"$gt", lastUpdate}}}})
 	if err = cursor.All(ctx, &sensors); err != nil {
 		return nil, err
 	}
-
 	return sensors, nil
 }
 
-func (service *SensorService) Update(ctx context.Context, sensorId string, updates *model.SensorUpdate) error {
-	bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
+func (service *SensorService) Update(ctx context.Context, updatedSensor *model.Sensor) error {
+	sensor, err := service.FindBySensorId(ctx, updatedSensor.ID.String())
 	if err != nil {
 		return err
+	} else {
+		updatedSensor.SmallId = sensor.SmallId
+		if service.IsSensorUnique(ctx, updatedSensor) {
+			_, err = service.sensorCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedSensor.ID}, bson.M{"$set": updatedSensor})
+			return err
+		} else {
+			return errors.New("Sensor name and/or CAN ID must remain unique.")
+		}
 	}
-	_, err = service.sensorCollection(ctx).UpdateOne(ctx, bson.M{"_id": bsonSensorId}, bson.M{"$set": updates})
-	return err
 }
 
 func (service *SensorService) Delete(ctx context.Context, sensorId string) error {
@@ -145,6 +147,20 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 	}
 
 	return nil
+}
+
+func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *model.Sensor) bool {
+	sensors, err := service.FindByThingId(ctx, newSensor.ThingID.String())
+	if err != nil {
+		return false
+	} else {
+		for _, sensor := range sensors {
+			if newSensor.Name == sensor.Name || newSensor.CanId == sensor.CanId {
+				return false
+			}
+		}
+		return true
+	}
 }
 
 // ============== Service Helper Method(s) ================

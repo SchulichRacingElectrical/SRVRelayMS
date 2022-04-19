@@ -22,7 +22,6 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	var newThing models.Thing
 	ctx.BindJSON(&newThing)
 	organization, _ := middleware.GetOrganizationClaim(ctx)	
-	// Cross-tenant thing creation protection
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") && organization.ID == newThing.OrganizationId {
 		err := handler.service.Create(ctx.Request.Context(), &newThing)
 		if err == nil {
@@ -52,7 +51,6 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	ctx.BindJSON(&thing)
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
-		// Cross-tenant update protection
 		if organization.ID == thing.ID { 
 			err := handler.service.Update(ctx.Request.Context(), &thing)
 			if err != nil {
@@ -74,7 +72,6 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
 		thing, err := handler.service.FindById(ctx, ctx.Param("thingId"))
 		if err == nil {
-			// Cross-tenant deletion protection
 			if organization.ID == thing.OrganizationId { 
 				err := handler.service.Delete(ctx.Request.Context(), ctx.Param("thingId"))
 				if err == nil {

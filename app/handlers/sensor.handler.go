@@ -23,29 +23,30 @@ func NewSensorAPI(sensorService services.SensorServiceInterface, thingService se
 func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	var newSensor models.Sensor
 	ctx.BindJSON(&newSensor)
-
-	// Prevent cross-tenant creation of sensors
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newSensor.ThingID.String())
-	if err == nil {
-		if thing.OrganizationId == organization.ID {
-			err := handler.sensorService.Create(ctx.Request.Context(), &newSensor)
-			if err == nil {
-				result := utils.SuccessPayload(newSensor, "Successfully created sensor")
-				utils.Response(ctx, http.StatusOK, result)
+	if !handler.sensorService.IsSensorUnique(ctx, &newSensor) {
+		if err == nil {
+			if thing.OrganizationId == organization.ID {
+				err := handler.sensorService.Create(ctx.Request.Context(), &newSensor)
+				if err == nil {
+					result := utils.SuccessPayload(newSensor, "Successfully created sensor")
+					utils.Response(ctx, http.StatusOK, result)
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+				}
 			} else {
-				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 			}
 		} else {
-			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
 		}
 	} else {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
+		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.SensorNotUnique))
 	}
 }
 
 func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
-	// Prevent cross-tenant reading of sensors
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, ctx.Param("thingId"))
 	if err == nil {
@@ -66,36 +67,50 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 }
 
 func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
-	result := make(map[string]interface{})
-	lastUpdate, err := strconv.ParseInt(ctx.Param("lastUpdate"), 10, 64)
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(ctx, http.StatusBadRequest, result)
-		return
-	}
-	sensors, err := handler.sensorService.FindUpdatedSensor(ctx.Request.Context(), ctx.Param("thingId"), lastUpdate)
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, err := handler.thingService.FindById(ctx, ctx.Param("thingId"))
 	if err == nil {
-		result = utils.SuccessPayload(sensors, "Successfully retrieved sensors")
-		utils.Response(ctx, http.StatusOK, result)
+		if thing.OrganizationId == organization.ID {
+			lastUpdate, err := strconv.ParseInt(ctx.Param("lastUpdate"), 10, 64)
+			if err != nil {
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+			} else {
+				sensors, err := handler.sensorService.FindUpdatedSensors(ctx.Request.Context(), ctx.Param("thingId"), lastUpdate)
+				if err == nil {
+					result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
+					utils.Response(ctx, http.StatusOK, result)
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
+				}
+			}
+		} else {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		}
 	} else {
-		result = utils.NewHTTPError(utils.SensorsNotFound)
-		utils.Response(ctx, http.StatusBadRequest, result)
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))		
 	}
 }
 
-// TODO: Ensure the thing for the updated sensor belongs to the correct organization
 func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
-	var updateSensor models.SensorUpdate
+	var updateSensor models.Sensor
 	ctx.BindJSON(&updateSensor)
-	result := make(map[string]interface{})
-	err := handler.sensorService.Update(ctx.Request.Context(), ctx.Param("sensorId"), &updateSensor)
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(ctx, http.StatusBadRequest, result)
-		return
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, err := handler.thingService.FindById(ctx, updateSensor.ID.String())
+	if err == nil {
+		if thing.OrganizationId == organization.ID {
+			err := handler.sensorService.Update(ctx.Request.Context(), &updateSensor)
+			if err != nil {
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+			} else {
+				result := utils.SuccessPayload(nil, "Successfully updated")
+				utils.Response(ctx, http.StatusOK, result)
+			}
+		} else {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		}
+	} else {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))		
 	}
-	result = utils.SuccessPayload(nil, "Successfully updated")
-	utils.Response(ctx, http.StatusOK, result)
 }
 
 // TODO: Ensure the thing for the deleted sensor belongs to the correct organization

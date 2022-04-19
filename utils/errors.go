@@ -27,6 +27,7 @@ const (
 	SensorsNotFound 			= "sensorsNotFound"
 	SensorNotFound  			= "sensorNotFound"
 	SensorAlreadyExists 	= "sensorAlreadyExists"
+	SensorNotUnique				= "sensorNotUnique"
 
 	// User error
 	UserNotFound      		= "userNotFound"
@@ -57,7 +58,8 @@ var errorMessage = map[string]string {
 	"sensorAlreadyExists": 		"Sensor already exists.",
 	"sensorsNotFound":     		"Sensors could not be found.",
 	"sensorNotFound":      		"Sensor could not be found.",
-
+	"sensorNotUnique":				"Sensor name and CAN ID must be unique for a thing.",
+	
 	// User errors
 	"userNotFound":      			"User could not be found.",
 	"usersNotFound":		 			"Users not found.",	
