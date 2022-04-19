@@ -14,6 +14,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	// Initialize APIs
 	organizationAPI := handlers.NewOrganizationAPI(services.NewOrganizationService(mgoDbSession, conf))
 	userAPI := handlers.NewUserAPI(services.NewUserService(mgoDbSession, conf))
+	authAPI := handlers.NewAuthAPI(services.NewUserService(mgoDbSession, conf))
 	thingAPI := handlers.NewThingAPI(services.NewThingService(mgoDbSession, conf))
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf))
 
@@ -30,8 +31,8 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	// Declare auth endpoints
 	authEndpoints := c.Group("/auth")
 	{
-		authEndpoints.POST("/login", userAPI.Login)
-		authEndpoints.POST("/signup", userAPI.CreateUser)
+		authEndpoints.POST("/login", authAPI.Login)
+		authEndpoints.POST("/signup", authAPI.SignUp)
 	}
 
 	// Declare private (auth required) endpoints
