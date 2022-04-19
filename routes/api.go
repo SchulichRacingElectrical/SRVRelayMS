@@ -15,8 +15,9 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	organizationAPI := handlers.NewOrganizationAPI(services.NewOrganizationService(mgoDbSession, conf))
 	userAPI := handlers.NewUserAPI(services.NewUserService(mgoDbSession, conf))
 	authAPI := handlers.NewAuthAPI(services.NewUserService(mgoDbSession, conf))
-	thingAPI := handlers.NewThingAPI(services.NewThingService(mgoDbSession, conf))
-	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf))
+	thingService := services.NewThingService(mgoDbSession, conf)
+	thingAPI := handlers.NewThingAPI(thingService)
+	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("") 
@@ -65,13 +66,13 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 
 		sensorEndpoints := privateEndpoints.Group("/sensors")
 		{
-			sensorEndpoints.POST("", sensorAPI.Create)
-			sensorEndpoints.PUT("", sensorAPI.Update)
-			sensorEndpoints.DELETE("/:sensorId", sensorAPI.Delete)
+			sensorEndpoints.POST("", sensorAPI.CreateSensor)
+			sensorEndpoints.PUT("", sensorAPI.UpdateSensor)
+			sensorEndpoints.DELETE("/:sensorId", sensorAPI.DeleteSensor)
 			thingIdEndpoints := sensorEndpoints.Group("/thing/:thingId")
 			{
 				thingIdEndpoints.GET("", sensorAPI.FindThingSensors)
-				thingIdEndpoints.GET("/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensor)
+				thingIdEndpoints.GET("/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensors)
 			}	
 		}
 	}	

@@ -36,52 +36,16 @@ func NewSensorService(db *mgo.Session, c *config.Configuration) SensorServiceInt
 }
 
 func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) error {
-	newSmallId, err := service.findAvailableSmallId(sensor.ThingID, ctx)
+	newSmallId, err := service.FindAvailableSmallId(sensor.ThingID, ctx)
 	if err != nil {
 		return err
-	}
-
-	sensor.SmallId = &newSmallId
-	sensor.ID = primitive.NewObjectID()
-	sensor.LastUpdate = utils.CurrentTimeInMilli()
-
-	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	if err != nil {
+	} else {
+		sensor.SmallId = &newSmallId
+		sensor.LastUpdate = utils.CurrentTimeInMilli()
+		result, err := service.sensorCollection(ctx).InsertOne(ctx, sensor)
+		sensor.ID = (result.InsertedID).(primitive.ObjectID)
 		return err
 	}
-
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		db := client.Database(service.config.MongoDbName)
-
-		// Check if thing exists
-		thingCollection := db.Collection("Thing")
-		if count, err := thingCollection.CountDocuments(sessCtx, bson.M{"_id": sensor.ThingID}); err != nil || count < 1 {
-			return nil, errors.New("could not find thing")
-		}
-
-		// Insert new sensor
-		fmt.Println("Inserting new sensor...")
-		sensorCollection := db.Collection("Sensor")
-		_, err := sensorCollection.InsertOne(ctx, sensor)
-		if err != nil {
-			return nil, err
-		}
-
-		// Add sensor id to thing sensor list
-		fmt.Println("Adding sensor to thing...")
-		updpate := bson.M{"$push": bson.M{"sensors": sensor.ID}}
-		if _, err := thingCollection.UpdateByID(ctx, sensor.ThingID, updpate); err != nil {
-			return nil, err
-		}
-
-		return nil, nil
-	}
-
-	if _, err := databases.WithTransaction(client, ctx, callback); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (service *SensorService) FindByThingId(ctx context.Context, thingId string) ([]*model.Sensor, error) {
@@ -188,7 +152,7 @@ type SmallId struct {
 	SmallId int
 }
 
-func (service *SensorService) findAvailableSmallId(thingId primitive.ObjectID, ctx context.Context) (int, error) {
+func (service *SensorService) FindAvailableSmallId(thingId primitive.ObjectID, ctx context.Context) (int, error) {
 	opts := options.Find().SetProjection(bson.D{{"smallId", 1}, {"_id", 0}})
 	filterCursor, err := service.sensorCollection(ctx).Find(ctx, bson.D{{"thingId", thingId}}, opts)
 	if err != nil {

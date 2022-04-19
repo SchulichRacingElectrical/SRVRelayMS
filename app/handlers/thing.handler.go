@@ -11,11 +11,11 @@ import (
 )
 
 type ThingHandler struct {
-	thing services.ThingServiceInterface
+	service services.ThingServiceInterface
 }
 
 func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
-	return &ThingHandler{thing: thingService}
+	return &ThingHandler{service: thingService}
 }
 
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
@@ -24,7 +24,7 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)	
 	// Cross-tenant thing creation protection
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") && organization.ID == newThing.OrganizationId {
-		err := handler.thing.Create(ctx.Request.Context(), &newThing)
+		err := handler.service.Create(ctx.Request.Context(), &newThing)
 		if err == nil {
 			result := utils.SuccessPayload(newThing, "Succesfully created thing")
 			utils.Response(ctx, http.StatusOK, result)
@@ -38,7 +38,7 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 
 func (handler *ThingHandler) GetThings(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	things, err := handler.thing.FindByOrganizationId(ctx.Request.Context(), organization.ID)
+	things, err := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.ID)
 	if err == nil {
 		result := utils.SuccessPayload(things, "Successfully retrieved things.")
 		utils.Response(ctx, http.StatusOK, result)
@@ -54,7 +54,7 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
 		// Cross-tenant update protection
 		if organization.ID == thing.ID { 
-			err := handler.thing.Update(ctx.Request.Context(), &thing)
+			err := handler.service.Update(ctx.Request.Context(), &thing)
 			if err != nil {
 				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 			} else {
@@ -72,11 +72,11 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
-		thing, err := handler.thing.FindById(ctx, ctx.Param("thingId"))
+		thing, err := handler.service.FindById(ctx, ctx.Param("thingId"))
 		if err == nil {
 			// Cross-tenant deletion protection
 			if organization.ID == thing.OrganizationId { 
-				err := handler.thing.Delete(ctx.Request.Context(), ctx.Param("thingId"))
+				err := handler.service.Delete(ctx.Request.Context(), ctx.Param("thingId"))
 				if err == nil {
 					result := utils.SuccessPayload(nil, "Successfully deleted")
 					utils.Response(ctx, http.StatusOK, result)
