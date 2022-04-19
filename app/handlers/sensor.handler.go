@@ -24,7 +24,7 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	var newSensor models.Sensor
 	ctx.BindJSON(&newSensor)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, newSensor.ThingID.String())
+	thing, err := handler.thingService.FindById(ctx, newSensor.ThingID.Hex())
 	if handler.sensorService.IsSensorUnique(ctx, &newSensor) {
 		if err == nil {
 			if thing.OrganizationId == organization.ID {
@@ -92,13 +92,13 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 }
 
 func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
-	var updateSensor models.Sensor
-	ctx.BindJSON(&updateSensor)
+	var updatedSensor models.Sensor
+	ctx.BindJSON(&updatedSensor)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, updateSensor.ThingID.String())
+	thing, err := handler.thingService.FindById(ctx, updatedSensor.ThingID.Hex())
 	if err == nil {
 		if thing.OrganizationId == organization.ID {
-			err := handler.sensorService.Update(ctx.Request.Context(), &updateSensor)
+			err := handler.sensorService.Update(ctx.Request.Context(), &updatedSensor)
 			if err != nil {
 				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 			} else {
@@ -117,7 +117,7 @@ func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	sensor, err := handler.sensorService.FindBySensorId(ctx, ctx.Param("sensorId"))
 	if err == nil {
-		thing, err := handler.thingService.FindById(ctx, sensor.ThingID.String())	
+		thing, err := handler.thingService.FindById(ctx, sensor.ThingID.Hex())	
 		if err == nil {
 			if thing.OrganizationId == organization.ID {
 				err := handler.sensorService.Delete(ctx.Request.Context(), ctx.Param("sensorId"))

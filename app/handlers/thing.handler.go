@@ -18,7 +18,6 @@ func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
 	return &ThingHandler{service: thingService}
 }
 
-// TODO: Don't allow non-unique thing names within the organization
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	var newThing models.Thing
 	ctx.BindJSON(&newThing)

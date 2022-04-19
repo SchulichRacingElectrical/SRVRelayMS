@@ -43,7 +43,9 @@ func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) 
 		sensor.SmallId = &newSmallId
 		sensor.LastUpdate = utils.CurrentTimeInMilli()
 		result, err := service.SensorCollection(ctx).InsertOne(ctx, sensor)
-		sensor.ID = (result.InsertedID).(primitive.ObjectID)
+		if err == nil {
+			sensor.ID = (result.InsertedID).(primitive.ObjectID)
+		}
 		return err
 	}
 }
@@ -87,7 +89,7 @@ func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId st
 }
 
 func (service *SensorService) Update(ctx context.Context, updatedSensor *model.Sensor) error {
-	sensor, err := service.FindBySensorId(ctx, updatedSensor.ID.String())
+	sensor, err := service.FindBySensorId(ctx, updatedSensor.ID.Hex())
 	if err == nil {
 		updatedSensor.SmallId = sensor.SmallId
 		if service.IsSensorUnique(ctx, updatedSensor) {
@@ -112,7 +114,7 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 }
 
 func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *model.Sensor) bool {
-	sensors, err := service.FindByThingId(ctx, newSensor.ThingID.String())
+	sensors, err := service.FindByThingId(ctx, newSensor.ThingID.Hex())
 	if err == nil {
 		for _, sensor := range sensors {
 			if newSensor.Name == sensor.Name || newSensor.CanId == sensor.CanId {
@@ -126,9 +128,6 @@ func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *mod
 }
 
 // ============== Service Helper Method(s) ================
-type SmallId struct {
-	SmallId int
-}
 
 func (service *SensorService) FindAvailableSmallId(thingId primitive.ObjectID, ctx context.Context) (int, error) {
 	opts := options.Find().SetProjection(bson.D{{"smallId", 1}, {"_id", 0}})
@@ -137,6 +136,9 @@ func (service *SensorService) FindAvailableSmallId(thingId primitive.ObjectID, c
 		return -1, err
 	}
 
+	type SmallId struct {
+		SmallId int
+	}
 	var results []SmallId
 	if err = filterCursor.All(ctx, &results); err != nil {
 		return -1, err
