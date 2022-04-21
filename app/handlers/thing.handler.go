@@ -55,7 +55,7 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	ctx.BindJSON(&thing)
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
-		if organization.ID == thing.ID { 
+		if organization.ID == thing.OrganizationId { 
 			err := handler.service.Update(ctx.Request.Context(), &thing)
 			if err == nil {
 				result := utils.SuccessPayload(nil, "Succesfully updated thing.")
