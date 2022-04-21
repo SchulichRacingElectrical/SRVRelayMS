@@ -53,6 +53,7 @@ func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
 		}
 	}
 	if err == nil {
+		// TODO: If the organizations list is empty, return empty array
 		result := utils.SuccessPayload(organizations, "Successfully retrieved organizations.")
 		utils.Response(ctx, http.StatusOK, result)
 	} else {

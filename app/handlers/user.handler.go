@@ -23,6 +23,9 @@ func (handler *UserHandler) GetUsers(ctx *gin.Context) {
 	if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), organization.ID)
 		if err == nil {
+			if users == nil {
+				users = []*models.User{}
+			}
 			result := utils.SuccessPayload(users, "Successfully retrieved users.")
 			utils.Response(ctx, http.StatusOK, result)
 		} else {
