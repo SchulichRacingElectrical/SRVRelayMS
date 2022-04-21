@@ -19,7 +19,7 @@ type OrganizationServiceInterface interface {
 	FindByOrganizationId(context.Context, primitive.ObjectID) (*model.Organization, error) // Should probably just cut this
 	FindByOrganizationIdString(context.Context, string) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
-	FindAllOrganizations(context.Context) (*[]model.Organization, error)
+	FindAllOrganizations(context.Context) ([]*model.Organization, error)
 	Update(context.Context, *model.Organization) error
 	UpdateKey(context.Context, *model.Organization) (string, error)
 	Delete(context.Context, primitive.ObjectID) error
@@ -64,13 +64,16 @@ func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context
 	return &organization, err
 }
 
-func (service *OrganizationService) FindAllOrganizations(ctx context.Context) (*[]model.Organization, error) {
-	var organizations []model.Organization
+func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([]*model.Organization, error) {
+	var organizations []*model.Organization
 	cursor, err := service.OrganizationCollection(ctx).Find(ctx, bson.D{})
 	if err != nil || cursor.All(ctx, &organizations) != nil {
 		return nil, err
 	}
-	return &organizations, err
+	if organizations == nil {
+		organizations = []*model.Organization{}
+	}
+	return organizations, err
 }
 
 func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) error {
@@ -105,7 +108,7 @@ func (service *OrganizationService) Delete(ctx context.Context, organizationId p
 func (service *OrganizationService) IsOrganizationUnique(ctx context.Context, organization *model.Organization) bool {
 	organizations, err := service.FindAllOrganizations(ctx)
 	if err == nil {
-		for _, org := range *organizations {
+		for _, org := range organizations {
 			if organization.Name == org.Name {
 				return false
 			}

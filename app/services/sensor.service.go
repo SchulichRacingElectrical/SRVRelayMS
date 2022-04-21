@@ -60,6 +60,9 @@ func (service *SensorService) FindByThingId(ctx context.Context, thingId string)
 	if err = cursor.All(ctx, &sensors); err != nil {
 		return nil, err
 	}
+	if sensors == nil {
+		sensors = []*model.Sensor{}
+	}
 	return sensors, nil
 }
 
@@ -84,6 +87,9 @@ func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId st
 	cursor, err := service.SensorCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}, {"lastUpdate", bson.D{{"$gt", lastUpdate}}}})
 	if err = cursor.All(ctx, &sensors); err != nil {
 		return nil, err
+	}
+	if sensors == nil {
+		sensors = []*model.Sensor{}
 	}
 	return sensors, nil
 }

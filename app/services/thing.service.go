@@ -43,6 +43,9 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 	if err = cursor.All(ctx, &things); err != nil {
 		return nil, err
 	}
+	if things == nil {
+		things = []*model.Thing{}
+	}
 	return things, nil
 }
 

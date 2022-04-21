@@ -77,6 +77,9 @@ func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organ
 	for _, user := range users {
 		user.Password = ""
 	}
+	if users == nil {
+		users = []*model.User{}
+	}
 	return users, nil
 }
 

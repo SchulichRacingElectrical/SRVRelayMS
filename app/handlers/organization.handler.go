@@ -48,12 +48,11 @@ func (handler *OrganizationHandler) GetOrganization(ctx *gin.Context) {
 func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
 	organizations, err := handler.service.FindAllOrganizations(ctx.Request.Context())
 	if !middleware.IsSuperAdmin(ctx) {
-		for _, organization := range *organizations {
+		for _, organization := range organizations {
 			organization.ApiKey = ""
 		}
 	}
 	if err == nil {
-		// TODO: If the organizations list is empty, return empty array
 		result := utils.SuccessPayload(organizations, "Successfully retrieved organizations.")
 		utils.Response(ctx, http.StatusOK, result)
 	} else {

@@ -43,9 +43,6 @@ func (handler *ThingHandler) GetThings(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	things, err := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.ID)
 	if err == nil {
-		if things == nil {
-			things = []*models.Thing{}
-		}
 		result := utils.SuccessPayload(things, "Successfully retrieved things.")
 		utils.Response(ctx, http.StatusOK, result)
 	} else {

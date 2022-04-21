@@ -53,9 +53,6 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 		if thing.OrganizationId == organization.ID {
 			sensors, err := handler.sensorService.FindByThingId(ctx.Request.Context(), ctx.Param("thingId"))
 			if err == nil {
-				if sensors == nil {
-					sensors = []*models.Sensor{}
-				}
 				result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
 				utils.Response(ctx, http.StatusOK, result)
 			} else {
@@ -80,9 +77,6 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 			} else {
 				sensors, err := handler.sensorService.FindUpdatedSensors(ctx.Request.Context(), ctx.Param("thingId"), lastUpdate)
 				if err == nil {
-					if sensors == nil {
-						sensors = []*models.Sensor{}
-					}
 					result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
