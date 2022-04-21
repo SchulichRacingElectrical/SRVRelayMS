@@ -18,6 +18,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	thingService := services.NewThingService(mgoDbSession, conf)
 	thingAPI := handlers.NewThingAPI(thingService)
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)
+	operatorAPI := handlers.NewOperatorAPI(services.NewOperatorService(mgoDbSession, conf))
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("") 
@@ -76,5 +77,20 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 				thingIdEndpoints.GET("/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensors)
 			}	
 		}
+
+		operatorEndpoints := privateEndpoints.Group("/operators")
+		{
+			operatorEndpoints.POST("", operatorAPI.CreateOperator)
+			operatorEndpoints.GET("", operatorAPI.GetOperators)
+			operatorEndpoints.PUT("", operatorAPI.UpdateOperator)
+			operatorEndpoints.DELETE("/:operatorId", operatorAPI.DeleteOperator)
+		}
+
+		// TODO: ThingOperatorEndpoints
+		// TODO: SessionEndpoints
+		// TODO: RunEndpoints
+		// TODO: RunOperatorEndpoints
+		// TODO: RawDataPresetEndpoints
+		// TODO: ChartPresetEndpoints
 	}	
 }
