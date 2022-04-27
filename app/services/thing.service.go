@@ -100,6 +100,8 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 			return nil, err
 		}
 		// TODO: There will be a lot more things to delete in the future...
+		// Will need to delete associated runs and sessions
+		// Will need to delete associated presets
 		return nil, nil
 	}
 
