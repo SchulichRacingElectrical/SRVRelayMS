@@ -18,12 +18,14 @@ func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
 	return &ThingHandler{service: thingService}
 }
 
+// TODO: Attach organization Id rather than having it in the body
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	var newThing models.Thing
 	ctx.BindJSON(&newThing)
 	organization, _ := middleware.GetOrganizationClaim(ctx)	
+	newThing.OrganizationId = organization.ID
 	if handler.service.IsThingUnique(ctx, &newThing) {
-		if middleware.IsAuthorizationAtLeast(ctx, "Admin") && organization.ID == newThing.OrganizationId {
+		if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 			err := handler.service.Create(ctx.Request.Context(), &newThing)
 			if err == nil {
 				result := utils.SuccessPayload(newThing, "Succesfully created thing.")

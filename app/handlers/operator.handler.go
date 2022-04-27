@@ -22,8 +22,9 @@ func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 	var newOperator models.Operator
 	ctx.BindJSON(&newOperator)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
+	newOperator.OrganizationId = organization.ID
 	if handler.service.IsOperatorUnique(ctx, &newOperator) { // Should reverse order, check auth first
-		if middleware.IsAuthorizationAtLeast(ctx, "Admin") && newOperator.OrganizationId == organization.ID {
+		if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 			err := handler.service.Create(ctx.Request.Context(), &newOperator)
 			if err == nil {
 				result := utils.SuccessPayload(newOperator, "Successfully created operator.")
