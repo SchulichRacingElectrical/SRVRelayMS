@@ -140,7 +140,11 @@ func (service *ThingService) AttachAssociatedOperatorIds(ctx context.Context, th
 	for _, thingOperator := range thingOperators {
 		operatorIds = append(operatorIds, thingOperator.OperatorId)
 	}
-	thing.OperatorIds = operatorIds
+	if len(operatorIds) == 0 {
+		thing.OperatorIds = []primitive.ObjectID{}
+	} else {
+		thing.OperatorIds = operatorIds
+	}
 }
 
 func (service *ThingService) ThingCollection(ctx context.Context) *mongo.Collection {
