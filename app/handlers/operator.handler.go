@@ -51,22 +51,27 @@ func (handler *OperatorHandler) GetOperators(ctx *gin.Context) {
 	}
 }
 
-// Remove organizationId requirement from the body?
 func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 	var updatedOperator models.Operator
 	ctx.BindJSON(&updatedOperator)
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
-		if organization.ID == updatedOperator.OrganizationId {
-			err := handler.service.Update(ctx.Request.Context(), &updatedOperator)
-			if err == nil {
-				result := utils.SuccessPayload(nil, "Successfully updated operator.")
-				utils.Response(ctx, http.StatusOK, result)
+		operator, err := handler.service.FindById(ctx, updatedOperator.ID.Hex())
+		if err == nil {
+			if organization.ID == operator.OrganizationId {
+				updatedOperator.OrganizationId = operator.OrganizationId
+				err := handler.service.Update(ctx.Request.Context(), &updatedOperator)
+				if err == nil {
+					result := utils.SuccessPayload(nil, "Successfully updated operator.")
+					utils.Response(ctx, http.StatusOK, result)
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				}
 			} else {
-				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
 			}
 		} else {
-			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
+			utils.Response(ctx, http.StatusNotFound, utils.NewHTTPError(utils.OperatorNotFound))
 		}
 	} else {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	

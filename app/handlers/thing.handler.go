@@ -51,22 +51,27 @@ func (handler *ThingHandler) GetThings(ctx *gin.Context) {
 	}
 }
 
-// Remove organizationId requirement from body?
 func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	var updatedThing models.Thing
 	ctx.BindJSON(&updatedThing)
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
-		if organization.ID == updatedThing.OrganizationId { 
-			err := handler.service.Update(ctx.Request.Context(), &updatedThing)
-			if err == nil {
-				result := utils.SuccessPayload(nil, "Succesfully updated thing.")
-				utils.Response(ctx, http.StatusOK, result)
+		thing, err := handler.service.FindById(ctx, updatedThing.ID.Hex())
+		if err == nil {
+			if organization.ID == thing.OrganizationId { 
+				updatedThing.OrganizationId = thing.OrganizationId
+				err := handler.service.Update(ctx.Request.Context(), &updatedThing)
+				if err == nil {
+					result := utils.SuccessPayload(nil, "Succesfully updated thing.")
+					utils.Response(ctx, http.StatusOK, result)
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				}
 			} else {
-				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
 			}
 		} else {
-			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
+			utils.Response(ctx, http.StatusNotFound, utils.NewHTTPError(utils.ThingNotFound))
 		}
 	} else {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
