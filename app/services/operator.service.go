@@ -28,7 +28,7 @@ type OperatorService struct {
 }
 
 func NewOperatorService(db *mgo.Session, c *config.Configuration) OperatorServiceInterface {
-	return &OperatorService{config: c, db: db}
+	return &OperatorService{db: db, config: c}
 }
 
 func (service *OperatorService) Create(ctx context.Context, operator *model.Operator) error {

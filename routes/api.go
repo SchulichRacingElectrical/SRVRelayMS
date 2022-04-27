@@ -18,7 +18,10 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	thingService := services.NewThingService(mgoDbSession, conf)
 	thingAPI := handlers.NewThingAPI(thingService)
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)
-	operatorAPI := handlers.NewOperatorAPI(services.NewOperatorService(mgoDbSession, conf))
+	operatorService := services.NewOperatorService(mgoDbSession, conf) 
+	operatorAPI := handlers.NewOperatorAPI(operatorService)
+	thingOperatorAPI := handlers.NewThingOperatorAPI(services.NewThingOperatorService(mgoDbSession, conf), thingService, operatorService)
+
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("") 
@@ -86,7 +89,12 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			operatorEndpoints.DELETE("/:operatorId", operatorAPI.DeleteOperator)
 		}
 
-		// TODO: ThingOperatorEndpoints
+		thingOperatorEndpoints := privateEndpoints.Group("/thing_operator")
+		{
+			thingOperatorEndpoints.POST("", thingOperatorAPI.CreateThingOperatorAssociation)
+			thingOperatorEndpoints.DELETE("/thing/:thingId/operator/:operatorId", thingOperatorAPI.DeleteThingOperator)
+		}
+
 		// TODO: SessionEndpoints
 		// TODO: RunEndpoints
 		// TODO: RunOperatorEndpoints

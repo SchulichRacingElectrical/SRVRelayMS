@@ -46,6 +46,9 @@ const (
 	OperatorNotFound			= "operatorNotFound"
 	OperatorNotUnique			=	"operatorNotUnique"
 
+	// ThingOperator error
+	ThingOperatorNotUnique= "thingOperatorNotUnique"
+
 	// Organization error
 	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
@@ -81,6 +84,9 @@ var errorMessage = map[string]string {
 	"operatorsNotFound":			"Operators could not be found.",
 	"operatorNotFound":				"Operator could not be found.",
 	"operatorNotUnique":			"Operator name must be unique.",
+
+	// ThingOperator
+	"thingOperatorNotUnique":	"Thing Operator association already exists.",
 
 	// Organization
 	"organizationDuplicate": 	"Organization name is taken.",
