@@ -23,8 +23,8 @@ func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 	ctx.BindJSON(&newOperator)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	newOperator.OrganizationId = organization.ID
-	if handler.service.IsOperatorUnique(ctx, &newOperator) { // Should reverse order, check auth first
-		if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		if handler.service.IsOperatorUnique(ctx, &newOperator) {
 			err := handler.service.Create(ctx.Request.Context(), &newOperator)
 			if err == nil {
 				result := utils.SuccessPayload(newOperator, "Successfully created operator.")
@@ -33,10 +33,10 @@ func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 			}
 		} else {
-			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
 		}
 	} else {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }
 
@@ -51,13 +51,14 @@ func (handler *OperatorHandler) GetOperators(ctx *gin.Context) {
 	}
 }
 
+// Remove organizationId requirement from the body?
 func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
-	var operator models.Operator
-	ctx.BindJSON(&operator)
+	var updatedOperator models.Operator
+	ctx.BindJSON(&updatedOperator)
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
-		if organization.ID == operator.OrganizationId {
-			err := handler.service.Update(ctx.Request.Context(), &operator)
+		if organization.ID == updatedOperator.OrganizationId {
+			err := handler.service.Update(ctx.Request.Context(), &updatedOperator)
 			if err == nil {
 				result := utils.SuccessPayload(nil, "Successfully updated operator.")
 				utils.Response(ctx, http.StatusOK, result)

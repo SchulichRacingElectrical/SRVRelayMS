@@ -18,7 +18,6 @@ func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
 	return &ThingHandler{service: thingService}
 }
 
-// TODO: Attach organization Id rather than having it in the body
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	var newThing models.Thing
 	ctx.BindJSON(&newThing)
@@ -52,13 +51,14 @@ func (handler *ThingHandler) GetThings(ctx *gin.Context) {
 	}
 }
 
+// Remove organizationId requirement from body?
 func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
-	var thing models.Thing
-	ctx.BindJSON(&thing)
+	var updatedThing models.Thing
+	ctx.BindJSON(&updatedThing)
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
-		if organization.ID == thing.OrganizationId { 
-			err := handler.service.Update(ctx.Request.Context(), &thing)
+		if organization.ID == updatedThing.OrganizationId { 
+			err := handler.service.Update(ctx.Request.Context(), &updatedThing)
 			if err == nil {
 				result := utils.SuccessPayload(nil, "Succesfully updated thing.")
 				utils.Response(ctx, http.StatusOK, result)
