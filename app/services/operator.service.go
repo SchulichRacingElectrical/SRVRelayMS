@@ -46,6 +46,9 @@ func (service *OperatorService) FindById(ctx context.Context, operatorId string)
 		return nil, err
 	}
 	err = service.OperatorCollection(ctx).FindOne(ctx, bson.M{"_id": bsonOperatorId}).Decode(&operator)
+	if err == nil {
+		service.AttachAssociatedThingIds(ctx, &operator)
+	}
 	return &operator, err
 }
 
@@ -118,6 +121,7 @@ func (service *OperatorService) IsOperatorUnique(ctx context.Context, newOperato
 }
 
 func (service *OperatorService) AttachAssociatedThingIds(ctx context.Context, operator *model.Operator) {
+	operator.ThingIds = []primitive.ObjectID{}
 	var thingOperators []*model.ThingOperator
 	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
 	if err != nil {
