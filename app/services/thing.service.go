@@ -81,6 +81,9 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 
 	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
+		if _, err := db.Collection("ThingOperator").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
+			return nil, err
+		}
 		if _, err := db.Collection("Sensor").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
 			return nil, err
 		} 

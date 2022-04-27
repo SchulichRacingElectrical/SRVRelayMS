@@ -41,6 +41,11 @@ const (
 	ThingNotFound 				= "thingNotFound"
 	ThingNotUnique				=	"thingNotUnique"
 
+	// Operator error
+	OperatorsNotFound			= "operatorsNotFound"
+	OperatorNotFound			= "operatorNotFound"
+	OperatorNotUnique			=	"operatorNotUnique"
+
 	// Organization error
 	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
@@ -68,9 +73,14 @@ var errorMessage = map[string]string {
 	"userAlreadyExists": 			"Email is already being used.",
 
 	// Thing
-	"thingsNotFound":					"Things could not found.",
+	"thingsNotFound":					"Things could not be found.",
 	"thingNotFound": 					"Thing could not be found.",
 	"thingNotUnique":					"Thing name must be unique",
+
+	// Operator
+	"operatorsNotFound":			"Operators could not be found.",
+	"operatorNotFound":				"Operator could not be found.",
+	"operatorNotUnique":			"Operator name must be unique.",
 
 	// Organization
 	"organizationDuplicate": 	"Organization name is taken.",

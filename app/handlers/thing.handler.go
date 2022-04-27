@@ -91,7 +91,7 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		}
 	} else {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ThingNotFound))
 	}
 }
 
