@@ -60,7 +60,7 @@ func (service *OrganizationService) FindByOrganizationId(ctx context.Context, or
 
 func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, api_key string) (*model.Organization, error) {
 	var organization model.Organization
-	err := service.OrganizationCollection(ctx).FindOne(ctx, bson.M{"api_key": api_key}).Decode(&organization)
+	err := service.OrganizationCollection(ctx).FindOne(ctx, bson.M{"apiKey": api_key}).Decode(&organization)
 	return &organization, err
 }
 
