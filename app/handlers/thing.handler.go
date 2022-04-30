@@ -101,5 +101,3 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ThingNotFound))
 	}
 }
-
-// Perhaps make a tenancy assertion function rather than all this if-else nastiness

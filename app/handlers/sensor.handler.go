@@ -137,5 +137,3 @@ func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))		
 	}
 }
-
-// Create tenant security function? - Might make more sense to put this in the service.

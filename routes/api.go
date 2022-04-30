@@ -94,50 +94,50 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			thingOperatorEndpoints.DELETE("/thing/:thingId/operator/:operatorId", thingOperatorAPI.DeleteThingOperator)
 		}
 
-		// TODO
-		runEndpoints := privateEndpoints.Group("/runs")
-		{
-			runEndpoints.GET("/:thingId", )
-			runEndpoints.GET("/:runId/file", )
-			runEndpoints.GET("/:runId/comments", )
-			runEndpoints.POST("", )
-			runEndpoints.POST("/:runId/file", )
-			runEndpoints.POST("/comment", )
-			runEndpoints.PUT("", )
-			runEndpoints.PUT("/comment", )
-			runEndpoints.DELETE("/:runId", )
-			runEndpoints.DELETE("/comment/:commentId", )
-		}
+		// // TODO
+		// runEndpoints := privateEndpoints.Group("/runs")
+		// {
+		// 	runEndpoints.GET("/:thingId", )
+		// 	runEndpoints.GET("/:runId/file", )
+		// 	runEndpoints.GET("/:runId/comments", )
+		// 	runEndpoints.POST("", )
+		// 	runEndpoints.POST("/:runId/file", )
+		// 	runEndpoints.POST("/comment", )
+		// 	runEndpoints.PUT("", )
+		// 	runEndpoints.PUT("/comment", )
+		// 	runEndpoints.DELETE("/:runId", )
+		// 	runEndpoints.DELETE("/comment/:commentId", )
+		// }
 
-		// TODO
-		sessionEndpoints := privateEndpoints.Group("/sessions")
-		{
-			sessionEndpoints.GET("/:thingId", )
-			sessionEndpoints.GET("/zip", )
-			sessionEndpoints.POST("", )
-			sessionEndpoints.POST("/comment", )
-			sessionEndpoints.PUT("", )
-			sessionEndpoints.PUT("/comment", )
-			sessionEndpoints.DELETE("", )
-			sessionEndpoints.DELETE("/comment", )
-		}
+		// // TODO
+		// sessionEndpoints := privateEndpoints.Group("/sessions")
+		// {
+		// 	sessionEndpoints.GET("/:thingId", )
+		// 	sessionEndpoints.GET("/zip", )
+		// 	sessionEndpoints.POST("", )
+		// 	sessionEndpoints.POST("/comment", )
+		// 	sessionEndpoints.PUT("", )
+		// 	sessionEndpoints.PUT("/comment", )
+		// 	sessionEndpoints.DELETE("", )
+		// 	sessionEndpoints.DELETE("/comment", )
+		// }
 
-		// TODO
-		rawDataPresetEndpoints := privateEndpoints.Group("/rawdatapresets")
-		{
-			rawDataPresetEndpoints.GET("/:thingId", )
-			rawDataPresetEndpoints.POST("", )
-			rawDataPresetEndpoints.PUT("", )
-			rawDataPresetEndpoints.DELETE("/:rdpId", )
-		}
+		// // TODO
+		// rawDataPresetEndpoints := privateEndpoints.Group("/rawdatapresets")
+		// {
+		// 	rawDataPresetEndpoints.GET("/:thingId", )
+		// 	rawDataPresetEndpoints.POST("", )
+		// 	rawDataPresetEndpoints.PUT("", )
+		// 	rawDataPresetEndpoints.DELETE("/:rdpId", )
+		// }
 
-		// TODO
-		chartPresetEndpoints := privateEndpoints.Group("/chartpresets")
-		{
-			chartPresetEndpoints.GET("/:thingId", )
-			chartPresetEndpoints.POST("", )
-			chartPresetEndpoints.PUT("", )
-			chartPresetEndpoints.DELETE("/:cpId", )
-		}
+		// // TODO
+		// chartPresetEndpoints := privateEndpoints.Group("/chartpresets")
+		// {
+		// 	chartPresetEndpoints.GET("/:thingId", )
+		// 	chartPresetEndpoints.POST("", )
+		// 	chartPresetEndpoints.PUT("", )
+		// 	chartPresetEndpoints.DELETE("/:cpId", )
+		// }
 	}	
 }

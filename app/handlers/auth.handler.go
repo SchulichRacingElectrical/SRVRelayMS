@@ -11,7 +11,6 @@ import (
 
 type AuthHandler struct {
 	service services.UserServiceInterface
-	// Add a specific auth service
 }
 
 func NewAuthAPI(userService services.UserServiceInterface) *UserHandler {
@@ -78,6 +77,7 @@ func (handler *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (handler *UserHandler) Validate(ctx *gin.Context) {
+	// TODO: Send back the authorization level
 	utils.Response(ctx, http.StatusOK, "Valid.")
 }
 
