@@ -134,7 +134,7 @@ func (service *OperatorService) AttachAssociatedThingIds(ctx context.Context, op
 	}	
 	var thingIds []primitive.ObjectID
 	for _, thingOperator := range thingOperators {
-		thingIds = append(thingIds, thingOperator.ID)
+		thingIds = append(thingIds, thingOperator.ThingId)
 	}
 	if len(thingIds) == 0 {
 		operator.ThingIds = []primitive.ObjectID{}
