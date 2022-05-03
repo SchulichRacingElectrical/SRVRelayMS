@@ -5,7 +5,6 @@ import (
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
-	"errors"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -80,12 +79,8 @@ func (service *OrganizationService) Update(ctx context.Context, updatedOrganizat
 	organization, err := service.FindByOrganizationIdString(ctx, updatedOrganization.ID.Hex())
 	if err == nil {
 		updatedOrganization.ApiKey = organization.ApiKey
-		if service.IsOrganizationUnique(ctx, updatedOrganization) {
-			_, err = service.OrganizationCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedOrganization.ID}, bson.M{"$set": updatedOrganization})
-			return err
-		} else {
-			return errors.New("Organization name must remain unique.") // Could pass error code too?
-		}
+		_, err = service.OrganizationCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedOrganization.ID}, bson.M{"$set": updatedOrganization})
+		return err
 	} else {
 		return err
 	}

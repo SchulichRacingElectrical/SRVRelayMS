@@ -67,12 +67,16 @@ func (handler *OrganizationHandler) UpdateOrganization(ctx *gin.Context) {
 	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		organization, _ := middleware.GetOrganizationClaim(ctx)
 		if organization.ID == updatedOrganization.ID {
-			err := handler.service.Update(ctx, &updatedOrganization)
-			if err == nil {
-				result := utils.SuccessPayload(nil, "Succesfully updated organization.")
-				utils.Response(ctx, http.StatusOK, result)
+			if handler.service.IsOrganizationUnique(ctx, &updatedOrganization) {
+				err := handler.service.Update(ctx, &updatedOrganization)
+				if err == nil {
+					result := utils.SuccessPayload(nil, "Succesfully updated organization.")
+					utils.Response(ctx, http.StatusOK, result)
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				}
 			} else {
-				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OrganizationDuplicate))
 			}
 		} else {
 			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
