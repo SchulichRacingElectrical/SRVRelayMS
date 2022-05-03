@@ -125,14 +125,12 @@ func GetUserClaim(ctx *gin.Context) (*models.User, error) {
 func IsAuthorizationAtLeast(ctx *gin.Context, role string) bool {
 	user, err := GetUserClaim(ctx)
 	if err != nil {
-		hasOrganizationKey, exists := ctx.Get("org-admin")
-		return hasOrganizationKey.(bool) && exists
+		return ctx.GetBool("org-admin")
 	} else {
 		return Roles[user.Role] >= Roles[role]	
 	}
 }
 
 func IsSuperAdmin(ctx *gin.Context) bool {
-	superAdmin, exists := ctx.Get("super-admin")
-	return superAdmin.(bool) && exists
+	return ctx.GetBool("super-admin")
 }
