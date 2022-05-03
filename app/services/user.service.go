@@ -19,15 +19,16 @@ import (
 
 type UserServiceInterface interface {
 	Create(context.Context, *model.User) (*mongo.InsertOneResult, error)
-	FindByUserEmail(ctx context.Context, email string) (*model.User, error)
-	FindByUserId(ctx context.Context, userId string) (*model.User, error)
-	IsUserUnique(ctx context.Context, newUser *model.User) bool
-	FindUsersByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.User, error)
-	Update(ctx context.Context, user *model.User) error
-	Delete(ctx context.Context, userId string) error
+	FindByUserEmail(context.Context, string) (*model.User, error)
+	FindByUserId(context.Context, string) (*model.User, error)
+	IsUserUnique(context.Context, *model.User) bool
+	IsLastAdmin(context.Context, *model.User) (bool, error)
+	FindUsersByOrganizationId(context.Context, primitive.ObjectID) ([]*model.User, error)
+	Update(context.Context, *model.User) error
+	Delete(context.Context, string) error
 	CreateToken(*gin.Context, *model.User) (string, error)
-	HashPassword(password string) string
-	CheckPasswordHash(password, hash string) bool	
+	HashPassword(string) string
+	CheckPasswordHash(string, string) bool	
 }
 
 type UserService struct {
@@ -62,10 +63,36 @@ func (service *UserService) FindByUserId(ctx context.Context, userId string) (*m
 }
 
 func (service *UserService) IsUserUnique(ctx context.Context, newUser *model.User) bool {
-	var user model.User
-	query := bson.M{"name": newUser.DisplayName, "email": newUser.Email, "organizationId": newUser.OrganizationId}
-	err := service.UserCollection(ctx).FindOne(ctx, query).Decode(&user)
-	return err != nil
+	users, err := service.FindUsersByOrganizationId(ctx, newUser.OrganizationId)
+	if err == nil {
+		for _, user := range users {
+			// Email must be globally unique
+			if newUser.Email == user.Email && newUser.ID != user.ID {
+				return false
+			}
+			// Display name must be unique within the organization
+			if newUser.DisplayName == user.DisplayName && newUser.OrganizationId == user.OrganizationId && newUser.ID != user.ID {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
+}
+
+func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (bool, error) {
+	users, err := service.FindUsersByOrganizationId(ctx, user.OrganizationId)
+	if err == nil {
+		for _, existingUser := range users {
+			if user.ID != existingUser.ID && existingUser.Role == "Admin" {
+				return false, nil
+			}
+		}
+		return true, nil
+	} else {
+		return false, err
+	}	
 }
 
 func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.User, error) {

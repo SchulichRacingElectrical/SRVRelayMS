@@ -60,12 +60,16 @@ func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 		if err == nil {
 			if organization.ID == operator.OrganizationId {
 				updatedOperator.OrganizationId = operator.OrganizationId
-				err := handler.service.Update(ctx.Request.Context(), &updatedOperator)
-				if err == nil {
-					result := utils.SuccessPayload(nil, "Successfully updated operator.")
-					utils.Response(ctx, http.StatusOK, result)
+				if handler.service.IsOperatorUnique(ctx, &updatedOperator) {
+					err := handler.service.Update(ctx.Request.Context(), &updatedOperator)
+					if err == nil {
+						result := utils.SuccessPayload(nil, "Successfully updated operator.")
+						utils.Response(ctx, http.StatusOK, result)
+					} else {
+						utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+					}
 				} else {
-					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+					utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
 				}
 			} else {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	

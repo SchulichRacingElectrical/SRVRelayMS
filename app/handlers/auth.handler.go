@@ -21,7 +21,7 @@ func (handler *UserHandler) SignUp(ctx *gin.Context) {
 	var newUser models.User
 	ctx.BindJSON(&newUser)
 	if !handler.service.IsUserUnique(ctx.Request.Context(), &newUser) {
-		result := utils.NewHTTPError(utils.UserAlreadyExists)
+		result := utils.NewHTTPError(utils.UserConflict)
 		utils.Response(ctx, http.StatusConflict, result)
 	} else {
 		users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), newUser.OrganizationId)

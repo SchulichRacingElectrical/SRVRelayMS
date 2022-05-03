@@ -6,7 +6,6 @@ import (
 	"database-ms/config"
 	"database-ms/databases"
 	"database-ms/utils"
-	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -90,60 +89,56 @@ func (service *OperatorService) FindByOrganizationId(ctx context.Context, organi
 }
 
 func (service *OperatorService) Update(ctx context.Context, updatedOperator *model.Operator) error {
-	if service.IsOperatorUnique(ctx, updatedOperator) {
-		client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-		if err != nil {
-			return err
-		}
-
-		callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
-			db := client.Database(service.config.MongoDbName)
-
-			// Update the operator
-			if _, err := db.Collection("Operator").UpdateOne(ctx, bson.M{"_id": updatedOperator.ID}, bson.M{"$set": updatedOperator}); err != nil {
-				return nil, err
-			}
-
-			// Find the current operator
-			currentOperator, err := service.FindById(ctx, updatedOperator.ID.Hex())
-			if err != nil {
-				return nil, err
-			}
-
-			// Resolve which thing-operator relationships to be inserted
-			var thingOperatorsToInsert []interface{}
-			for _, newThingId := range updatedOperator.ThingIds {
-				if !utils.IdInSlice(newThingId, currentOperator.ThingIds) {
-					thingOperatorsToInsert = append(thingOperatorsToInsert, bson.D{{"operatorId", updatedOperator.ID}, {"thingId", newThingId}})
-				}
-			}
-			if len(thingOperatorsToInsert) > 0 {
-				if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperatorsToInsert); err != nil {
-					return nil, err
-				}
-			}
-
-			// Resolve which thing-operator relationships need to be deleted
-			var thingOperatorsToDelete []model.ThingOperator
-			for _, currentThingId := range currentOperator.ThingIds {
-				if !utils.IdInSlice(currentThingId, updatedOperator.ThingIds) {
-					thingOperatorsToDelete = append(thingOperatorsToDelete, model.ThingOperator{OperatorId: updatedOperator.ID, ThingId: currentThingId})
-				}
-			}
-			for _, thingOperator := range thingOperatorsToDelete {
-				if _, err = db.Collection("ThingOperator").DeleteOne(ctx, bson.M{"operatorId": thingOperator.OperatorId, "thingId": thingOperator.ThingId}); err != nil {
-					return nil, err
-				}
-			}
-
-			return nil, nil
-		}
-
-		_, err = databases.WithTransaction(client, ctx, callback)
+	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
 		return err
-	} else {
-		return errors.New("Operator name must remain unique.")
 	}
+
+	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+		db := client.Database(service.config.MongoDbName)
+
+		// Update the operator
+		if _, err := db.Collection("Operator").UpdateOne(ctx, bson.M{"_id": updatedOperator.ID}, bson.M{"$set": updatedOperator}); err != nil {
+			return nil, err
+		}
+
+		// Find the current operator
+		currentOperator, err := service.FindById(ctx, updatedOperator.ID.Hex())
+		if err != nil {
+			return nil, err
+		}
+
+		// Resolve which thing-operator relationships to be inserted
+		var thingOperatorsToInsert []interface{}
+		for _, newThingId := range updatedOperator.ThingIds {
+			if !utils.IdInSlice(newThingId, currentOperator.ThingIds) {
+				thingOperatorsToInsert = append(thingOperatorsToInsert, bson.D{{"operatorId", updatedOperator.ID}, {"thingId", newThingId}})
+			}
+		}
+		if len(thingOperatorsToInsert) > 0 {
+			if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperatorsToInsert); err != nil {
+				return nil, err
+			}
+		}
+
+		// Resolve which thing-operator relationships need to be deleted
+		var thingOperatorsToDelete []model.ThingOperator
+		for _, currentThingId := range currentOperator.ThingIds {
+			if !utils.IdInSlice(currentThingId, updatedOperator.ThingIds) {
+				thingOperatorsToDelete = append(thingOperatorsToDelete, model.ThingOperator{OperatorId: updatedOperator.ID, ThingId: currentThingId})
+			}
+		}
+		for _, thingOperator := range thingOperatorsToDelete {
+			if _, err = db.Collection("ThingOperator").DeleteOne(ctx, bson.M{"operatorId": thingOperator.OperatorId, "thingId": thingOperator.ThingId}); err != nil {
+				return nil, err
+			}
+		}
+
+		return nil, nil
+	}
+
+	_, err = databases.WithTransaction(client, ctx, callback)
+	return err
 }
 
 func (service *OperatorService) Delete(ctx context.Context, operatorId string) error {

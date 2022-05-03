@@ -22,6 +22,7 @@ const (
 	EntityCreationError 	= "entityCreationError"
 	BadRequest          	= "badRequest"
 	Unauthorized					= "unauthorized"
+	Forbidden							= "forbidden"
 
 	// Sensor errors
 	SensorsNotFound 			= "sensorsNotFound"
@@ -34,7 +35,8 @@ const (
 	UsersNotFound					= "usersNotFound"
 	WrongPassword     		= "wrongPassword"
 	UserNotApproved				= "userPendingApproval"
-	UserAlreadyExists 		= "userAlreadyExists"
+	UserConflict					= "userConflict"
+	UserLastAdmin					= "userLastAdmin"
 
 	// Thing error
 	ThingsNotFound 				= "thingsNotFound"
@@ -62,6 +64,7 @@ var errorMessage = map[string]string {
 	"invalidBindingModel": 		"The model could not be bound.",
 	"entityCreationError": 		"Could not create entity.",
 	"unauthorized": 					"Unauthorized.",
+	"forbidden":							"Forbidden.",
 
 	// Sensor errors
 	"sensorAlreadyExists": 		"Sensor already exists.",
@@ -73,7 +76,8 @@ var errorMessage = map[string]string {
 	"userNotFound":      			"User could not be found.",
 	"usersNotFound":		 			"Users not found.",	
 	"wrongPassword":     			"Password was incorrect.",
-	"userAlreadyExists": 			"Email is already being used.",
+	"userConflict":						"Email must be globally unique and name must be organizationally unique.",
+	"userLastAdmin":					"The last administrator in the organization cannot be deleted or have their role changed.",
 
 	// Thing
 	"thingsNotFound":					"Things could not be found.",

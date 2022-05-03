@@ -21,7 +21,6 @@ func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	var newThing models.Thing
 	ctx.BindJSON(&newThing)
-	println(newThing.OperatorIds)
 	organization, _ := middleware.GetOrganizationClaim(ctx)	
 	newThing.OrganizationId = organization.ID
 	if handler.service.IsThingUnique(ctx, &newThing) {
@@ -61,12 +60,16 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 		if err == nil {
 			if organization.ID == thing.OrganizationId { 
 				updatedThing.OrganizationId = thing.OrganizationId
-				err := handler.service.Update(ctx.Request.Context(), &updatedThing)
-				if err == nil {
-					result := utils.SuccessPayload(nil, "Succesfully updated thing.")
-					utils.Response(ctx, http.StatusOK, result)
+				if handler.service.IsThingUnique(ctx, &updatedThing) {
+					err := handler.service.Update(ctx.Request.Context(), &updatedThing)
+					if err == nil {
+						result := utils.SuccessPayload(nil, "Succesfully updated thing.")
+						utils.Response(ctx, http.StatusOK, result)
+					} else {
+						utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+					}
 				} else {
-					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+					utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
 				}
 			} else {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
