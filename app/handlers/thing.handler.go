@@ -21,6 +21,7 @@ func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	var newThing models.Thing
 	ctx.BindJSON(&newThing)
+	println(newThing.OperatorIds)
 	organization, _ := middleware.GetOrganizationClaim(ctx)	
 	newThing.OrganizationId = organization.ID
 	if handler.service.IsThingUnique(ctx, &newThing) {

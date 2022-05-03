@@ -5,6 +5,7 @@ import (
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
+	"database-ms/utils"
 	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -33,9 +34,29 @@ func NewThingService(db *mgo.Session, c *config.Configuration) ThingServiceInter
 }
 
 func (service *ThingService) Create(ctx context.Context, thing *model.Thing) error {
-	result, err := service.ThingCollection(ctx).InsertOne(ctx, thing)
-	thing.ID = (result.InsertedID).(primitive.ObjectID)
-	thing.OperatorIds = []primitive.ObjectID{}
+	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		return err
+	}
+
+	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+		db := client.Database(service.config.MongoDbName)
+		result, err := db.Collection("Thing").InsertOne(ctx, thing)
+		if err != nil {
+			return nil, err
+		}
+		thing.ID = (result.InsertedID).(primitive.ObjectID)
+		var thingOperators []interface{}
+		for _, operatorId := range thing.OperatorIds {
+			thingOperators = append(thingOperators, bson.D{{"operatorId", operatorId}, {"thingId", thing.ID}})
+		}
+		if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperators); err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}
+
+	_, err = databases.WithTransaction(client, ctx, callback)
 	return err
 }
 
@@ -70,10 +91,58 @@ func (service *ThingService) FindById(ctx context.Context, thingId string) (*mod
 
 func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) error {
 	if service.IsThingUnique(ctx, updatedThing) {
-		_, err := service.ThingCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedThing.ID}, bson.M{"$set": updatedThing})
+		client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+		if err != nil {
+			return err
+		}
+		
+		callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+			db := client.Database(service.config.MongoDbName)
+
+			// Create the thing
+			if _, err := db.Collection("Thing").UpdateOne(ctx, bson.M{"_id": updatedThing.ID}, bson.M{"$set": updatedThing}); err != nil {
+				return nil, err
+			}
+
+			// Find the current thing
+			currentThing, err := service.FindById(ctx, updatedThing.ID.Hex())
+			if err != nil {
+				return nil, err
+			}
+
+			// Resolve which thing-operator relationships need to be inserted
+			var thingOperatorsToInsert []interface{}
+			for _, newOperatorId := range updatedThing.OperatorIds {
+				if !utils.IdInSlice(newOperatorId, currentThing.OperatorIds) {
+					thingOperatorsToInsert = append(thingOperatorsToInsert, bson.D{{"operatorId", newOperatorId}, {"thingId", updatedThing.ID}})
+				}
+			}
+			if len(thingOperatorsToInsert) > 0 {
+				if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperatorsToInsert); err != nil {
+					return nil, err
+				}
+			}
+
+			// Resolve which thing-operator relationships need to be deleted
+			var thingOperatorsToDelete []model.ThingOperator
+			for _, currentOperatorId := range currentThing.OperatorIds {
+				if !utils.IdInSlice(currentOperatorId, updatedThing.OperatorIds) {
+					thingOperatorsToDelete = append(thingOperatorsToDelete, model.ThingOperator{OperatorId: currentOperatorId, ThingId: updatedThing.ID})
+				}
+			}
+			for _, thingOperator := range thingOperatorsToDelete {
+				if _, err = db.Collection("ThingOperator").DeleteOne(ctx, bson.M{"operatorId": thingOperator.OperatorId, "thingId": thingOperator.ThingId}); err != nil {
+					return nil, err
+				}
+			}
+
+			return nil, nil
+		}
+
+		_, err = databases.WithTransaction(client, ctx, callback)
 		return err
 	} else {
-		return errors.New("Thing name must remain unique.") // Could pass error code too?
+		return errors.New("Thing name must remain unique.")
 	}
 }
 
@@ -116,7 +185,7 @@ func (service *ThingService) IsThingUnique(ctx context.Context, newThing *model.
 	things, err := service.FindByOrganizationId(ctx, newThing.OrganizationId)
 	if err == nil {
 		for _, thing := range things {
-			if newThing.Name == thing.Name {
+			if newThing.Name == thing.Name && newThing.ID != thing.ID {
 				return false
 			}
 		}
@@ -155,4 +224,12 @@ func (service *ThingService) ThingCollection(ctx context.Context) *mongo.Collect
 		panic(err)
 	}
 	return dbClient.Database(service.config.MongoDbName).Collection("Thing")
+}
+
+func (service *ThingService) ThingOperatorCollection(ctx context.Context) *mongo.Collection {
+	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		panic(err)
+	}
+	return dbClient.Database(service.config.MongoDbName).Collection("ThingOperator")
 }

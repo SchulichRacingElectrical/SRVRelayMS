@@ -3,6 +3,7 @@ package utils
 import (
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -53,4 +54,13 @@ func Unique(intSlice []int) []int {
 		}
 	}
 	return list
+}
+
+func IdInSlice(a primitive.ObjectID, list []primitive.ObjectID) bool {
+	for _, b := range list {
+		if a == b {
+			return true
+		}
+	}
+	return false
 }
