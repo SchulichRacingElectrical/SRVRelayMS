@@ -98,12 +98,8 @@ func (service *SensorService) Update(ctx context.Context, updatedSensor *model.S
 	sensor, err := service.FindBySensorId(ctx, updatedSensor.ID.Hex())
 	if err == nil {
 		updatedSensor.SmallId = sensor.SmallId
-		if service.IsSensorUnique(ctx, updatedSensor) {
-			_, err = service.SensorCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedSensor.ID}, bson.M{"$set": updatedSensor})
-			return err
-		} else {
-			return errors.New("Sensor name and/or CAN ID must remain unique.") // Could pass error code too?
-		}
+		_, err = service.SensorCollection(ctx).ReplaceOne(ctx, bson.M{"_id": updatedSensor.ID}, updatedSensor)
+		return err
 	} else {
 		return err
 	}
@@ -123,7 +119,7 @@ func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *mod
 	sensors, err := service.FindByThingId(ctx, newSensor.ThingID.Hex())
 	if err == nil {
 		for _, sensor := range sensors {
-			if newSensor.Name == sensor.Name || newSensor.CanId == sensor.CanId {
+			if (newSensor.Name == sensor.Name || newSensor.CanId == sensor.CanId) && newSensor.ID != sensor.ID {
 				return false
 			}
 		}

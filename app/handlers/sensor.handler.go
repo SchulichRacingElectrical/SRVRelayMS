@@ -22,7 +22,11 @@ func NewSensorAPI(sensorService services.SensorServiceInterface, thingService se
 
 func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	var newSensor models.Sensor
-	ctx.BindJSON(&newSensor)
+	err := ctx.BindJSON(&newSensor)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))	
+		return	
+	}
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newSensor.ThingID.Hex())
 	if handler.sensorService.IsSensorUnique(ctx, &newSensor) {
@@ -98,12 +102,16 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 	thing, err := handler.thingService.FindById(ctx, updatedSensor.ThingID.Hex())
 	if err == nil {
 		if thing.OrganizationId == organization.ID {
-			err := handler.sensorService.Update(ctx.Request.Context(), &updatedSensor)
-			if err != nil {
-				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+			if handler.sensorService.IsSensorUnique(ctx, &updatedSensor) {
+				err := handler.sensorService.Update(ctx.Request.Context(), &updatedSensor)
+				if err != nil {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				} else {
+					result := utils.SuccessPayload(nil, "Successfully updated")
+					utils.Response(ctx, http.StatusOK, result)
+				}
 			} else {
-				result := utils.SuccessPayload(nil, "Successfully updated")
-				utils.Response(ctx, http.StatusOK, result)
+				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.SensorNotUnique))
 			}
 		} else {
 			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
