@@ -98,6 +98,7 @@ func (service *SensorService) Update(ctx context.Context, updatedSensor *model.S
 	sensor, err := service.FindBySensorId(ctx, updatedSensor.ID.Hex())
 	if err == nil {
 		updatedSensor.SmallId = sensor.SmallId
+		updatedSensor.LastUpdate = utils.CurrentTimeInMilli() 
 		_, err = service.SensorCollection(ctx).ReplaceOne(ctx, bson.M{"_id": updatedSensor.ID}, updatedSensor)
 		return err
 	} else {
