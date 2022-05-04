@@ -12,9 +12,10 @@ import (
 
 func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Configuration) {
 	// Initialize APIs
-	organizationAPI := handlers.NewOrganizationAPI(services.NewOrganizationService(mgoDbSession, conf))
+	organizationService := services.NewOrganizationService(mgoDbSession, conf)
+	organizationAPI := handlers.NewOrganizationAPI(organizationService)
 	userAPI := handlers.NewUserAPI(services.NewUserService(mgoDbSession, conf))
-	authAPI := handlers.NewAuthAPI(services.NewUserService(mgoDbSession, conf))
+	authAPI := handlers.NewAuthAPI(services.NewUserService(mgoDbSession, conf), organizationService)
 	thingService := services.NewThingService(mgoDbSession, conf)
 	thingAPI := handlers.NewThingAPI(thingService)
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)

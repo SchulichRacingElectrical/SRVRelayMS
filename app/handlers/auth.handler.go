@@ -11,15 +11,21 @@ import (
 
 type AuthHandler struct {
 	service services.UserServiceInterface
+	organizationService services.OrganizationServiceInterface
 }
 
-func NewAuthAPI(userService services.UserServiceInterface) *UserHandler {
-	return &UserHandler{service: userService}
+func NewAuthAPI(userService services.UserServiceInterface, organizationService services.OrganizationServiceInterface) *AuthHandler {
+	return &AuthHandler{service: userService, organizationService: organizationService}
 }
 
-func (handler *UserHandler) SignUp(ctx *gin.Context) {
+func (handler *AuthHandler) SignUp(ctx *gin.Context) {
 	var newUser models.User
 	ctx.BindJSON(&newUser)
+	_, err := handler.organizationService.FindByOrganizationId(ctx, newUser.OrganizationId)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
 	if !handler.service.IsUserUnique(ctx.Request.Context(), &newUser) {
 		result := utils.NewHTTPError(utils.UserConflict)
 		utils.Response(ctx, http.StatusConflict, result)
@@ -49,7 +55,7 @@ func (handler *UserHandler) SignUp(ctx *gin.Context) {
 	}
 }
 
-func (handler *UserHandler) Login(ctx *gin.Context) {
+func (handler *AuthHandler) Login(ctx *gin.Context) {
 	var loggingInUser models.User
 	ctx.BindJSON(&loggingInUser)
 	DBuser, err := handler.service.FindByUserEmail(ctx.Request.Context(), loggingInUser.Email)
@@ -76,12 +82,12 @@ func (handler *UserHandler) Login(ctx *gin.Context) {
 	}
 }
 
-func (handler *UserHandler) Validate(ctx *gin.Context) {
+func (handler *AuthHandler) Validate(ctx *gin.Context) {
 	// TODO: Send back the authorization level
 	utils.Response(ctx, http.StatusOK, "Valid.")
 }
 
-func (handler *UserHandler) SignOut(ctx *gin.Context) {
+func (handler *AuthHandler) SignOut(ctx *gin.Context) {
 	// TODO: Blacklist tokens
 	// TODO: Delete blacklisted tokens in the database after they expire
 	// TODO: In auth middleware, check if the token is blacklisted

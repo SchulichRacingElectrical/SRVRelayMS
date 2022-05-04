@@ -49,8 +49,10 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) err
 		for _, operatorId := range thing.OperatorIds {
 			thingOperators = append(thingOperators, bson.D{{"operatorId", operatorId}, {"thingId", thing.ID}})
 		}
-		if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperators); err != nil {
-			return nil, err
+		if len(thingOperators) > 0 {
+			if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperators); err != nil {
+				return nil, err
+			}
 		}
 		return nil, nil
 	}
