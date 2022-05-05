@@ -1,82 +1,107 @@
 package handlers
 
 import (
-	"database-ms/app/models"
-	thingSrv "database-ms/app/services/thing"
-	"database-ms/utils"
-	"fmt"
+	"database-ms/app/middleware"
+	models "database-ms/app/models"
+	services "database-ms/app/services"
+	utils "database-ms/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ThingHandler struct {
-	thing thingSrv.ThingServiceInterface
+	service services.ThingServiceInterface
 }
 
-func NewThingAPI(thingService thingSrv.ThingServiceInterface) *ThingHandler {
-	return &ThingHandler{
-		thing: thingService,
-	}
+func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
+	return &ThingHandler{service: thingService}
 }
 
-func (handler *ThingHandler) Create(c *gin.Context) {
+func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	var newThing models.Thing
-	c.BindJSON(&newThing)
-	result := make(map[string]interface{})
-
-	err := handler.thing.Create(c.Request.Context(), &newThing)
-	var status int
-	if err == nil {
-		res := &createEntityRes{
-			ID: newThing.ID,
+	ctx.BindJSON(&newThing)
+	organization, _ := middleware.GetOrganizationClaim(ctx)	
+	newThing.OrganizationId = organization.ID
+	if handler.service.IsThingUnique(ctx, &newThing) {
+		if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+			err := handler.service.Create(ctx.Request.Context(), &newThing)
+			if err == nil {
+				result := utils.SuccessPayload(newThing, "Succesfully created thing.")
+				utils.Response(ctx, http.StatusOK, result)
+			} else {
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+			}
+		} else {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		}
-		result = utils.SuccessPayload(res, "Succesfully created thing")
 	} else {
-		fmt.Println(err)
-		result = utils.NewHTTPError(utils.EntityCreationError)
-		status = http.StatusBadRequest
+		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
 	}
-	utils.Response(c, status, result)
-
 }
 
-func (handler *ThingHandler) GetThing(c *gin.Context) {
-	result := make(map[string]interface{})
-	thing, err := handler.thing.FindById(c.Request.Context(), c.Param("thingId"))
+func (handler *ThingHandler) GetThings(ctx *gin.Context) {
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	things, err := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.ID)
 	if err == nil {
-		result = utils.SuccessPayload(thing, "Succesfully retrieved thing")
-		utils.Response(c, http.StatusOK, result)
+		result := utils.SuccessPayload(things, "Successfully retrieved things.")
+		utils.Response(ctx, http.StatusOK, result)
 	} else {
-		result = utils.NewHTTPError(utils.ThingNotFound)
-		utils.Response(c, http.StatusBadRequest, result)
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingsNotFound))	
 	}
 }
 
-func (handler *ThingHandler) UpdateThing(c *gin.Context) {
-	var thingUpdates models.ThingUpdate
-	c.BindJSON(&thingUpdates)
-	result := make(map[string]interface{})
-	err := handler.thing.Update(c.Request.Context(), c.Param("thingId"), &thingUpdates)
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(c, http.StatusBadRequest, result)
-		return
+func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
+	var updatedThing models.Thing
+	ctx.BindJSON(&updatedThing)
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		thing, err := handler.service.FindById(ctx, updatedThing.ID.Hex())
+		if err == nil {
+			if organization.ID == thing.OrganizationId { 
+				updatedThing.OrganizationId = thing.OrganizationId
+				if handler.service.IsThingUnique(ctx, &updatedThing) {
+					err := handler.service.Update(ctx.Request.Context(), &updatedThing)
+					if err == nil {
+						result := utils.SuccessPayload(nil, "Succesfully updated thing.")
+						utils.Response(ctx, http.StatusOK, result)
+					} else {
+						utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+					}
+				} else {
+					utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
+				}
+			} else {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
+			}
+		} else {
+			utils.Response(ctx, http.StatusNotFound, utils.NewHTTPError(utils.ThingNotFound))
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
-
-	result = utils.SuccessPayload(nil, "Succesfully updated")
-	utils.Response(c, http.StatusOK, result)
 }
 
-func (handler *ThingHandler) Delete(c *gin.Context) {
-	result := make(map[string]interface{})
-	err := handler.thing.Delete(c.Request.Context(), c.Param("thingId"))
-	if err != nil {
-		result = utils.NewHTTPCustomError(utils.BadRequest, err.Error())
-		utils.Response(c, http.StatusBadRequest, result)
-		return
+func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
+	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		thing, err := handler.service.FindById(ctx, ctx.Param("thingId"))
+		if err == nil {
+			if organization.ID == thing.OrganizationId { 
+				err := handler.service.Delete(ctx.Request.Context(), ctx.Param("thingId"))
+				if err == nil {
+					result := utils.SuccessPayload(nil, "Successfully deleted thing.")
+					utils.Response(ctx, http.StatusOK, result)
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				}
+			} else {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
+			}
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ThingNotFound))
 	}
-
-	result = utils.SuccessPayload(nil, "Successfully deleted")
-	utils.Response(c, http.StatusOK, result)
 }

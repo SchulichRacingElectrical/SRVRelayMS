@@ -11,7 +11,6 @@ import (
 )
 
 // Configuration contains static info required to run the apps
-// It contains DB info
 type Configuration struct {
 	Address       string `env:"ADDRESS" envDefault:":8080"`
 	AtlasUri      string `env:"ATLAS_URI,required"`

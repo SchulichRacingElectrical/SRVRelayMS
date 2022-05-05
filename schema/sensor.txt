@@ -25,7 +25,6 @@
           'string'
         ],
         'enum': [
-          'x',
           'c',
           'b',
           'B',
@@ -38,14 +37,8 @@
           'L',
           'q',
           'Q',
-          'n',
-          'N',
-          'e',
           'f',
           'd',
-          's',
-          'p',
-          'P'
         ],
         description: '\'type\' is required'
       },

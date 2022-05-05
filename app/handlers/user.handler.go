@@ -1,107 +1,168 @@
 package handlers
 
 import (
-	"database-ms/app/models"
-	userSrv "database-ms/app/services/user"
-	"database-ms/utils"
-	"fmt"
+	middleware "database-ms/app/middleware"
+	models "database-ms/app/models"
+	services "database-ms/app/services"
+	utils "database-ms/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	user userSrv.UserServiceInterface
+	service services.UserServiceInterface
 }
 
-func NewUserAPI(userService userSrv.UserServiceInterface) *UserHandler {
-	return &UserHandler{
-		user: userService,
-	}
+func NewUserAPI(userService services.UserServiceInterface) *UserHandler {
+	return &UserHandler{service: userService}
 }
 
-func (handler *UserHandler) Create(c *gin.Context) {
-	var newUser models.User
-	c.BindJSON(&newUser)
-	result := make(map[string]interface{})
-	var status int
-
-	// Check if this email already exists
-	_, err := handler.user.FindByUserEmail(c.Request.Context(), newUser.Email)
-	if err == nil {
-		result = utils.NewHTTPError(utils.UserAlreadyExists)
-		status = http.StatusConflict
-		utils.Response(c, status, result)
-		return
-	}
-
-	newUser.Password = hashPassword(newUser.Password)
-	newUser.Roles = "Pending"
-	res, err := handler.user.Create(c.Request.Context(), &newUser)
-	if err == nil {
-		result = utils.SuccessPayload(res, "Successfully created user")
-		status = http.StatusOK
-	} else {
-		fmt.Println(err)
-		result = utils.NewHTTPError(utils.EntityCreationError)
-		status = http.StatusBadRequest
-	}
-	utils.Response(c, status, result)
-}
-
-func (handler *UserHandler) GetUser(c *gin.Context) {
-	result := make(map[string]interface{})
-	user, err := handler.user.FindByUserId(c.Request.Context(), c.Param("userId"))
-	if err == nil {
-		user.Password = ""
-		result = utils.SuccessPayload(user, "Successfully retrieved user")
-		utils.Response(c, http.StatusOK, result)
-	} else {
-		result = utils.NewHTTPError(utils.UserNotFound)
-		utils.Response(c, http.StatusBadRequest, result)
-	}
-}
-
-func (handler *UserHandler) Login(c *gin.Context) {
-	var loggingInUser models.User
-	c.BindJSON(&loggingInUser)
-	result := make(map[string]interface{})
-
-	DBuser, err := handler.user.FindByUserEmail(c.Request.Context(), loggingInUser.Email)
-	if err != nil {
-		result = utils.NewHTTPError(utils.UserNotFound)
-		utils.Response(c, http.StatusBadRequest, result)
-		return
-	}
-
-	// Check password match
-	if checkPasswordHash(loggingInUser.Password, DBuser.Password) {
-		_, err := handler.user.CreateToken(c, DBuser)
-		if err != nil {
-			c.JSON(http.StatusUnprocessableEntity, err.Error())
-			return
+func (handler *UserHandler) GetUsers(ctx *gin.Context) {
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), organization.ID)
+		if err == nil {
+			result := utils.SuccessPayload(users, "Successfully retrieved users.")
+			utils.Response(ctx, http.StatusOK, result)
+		} else {
+			utils.Response(ctx, http.StatusNotFound, utils.NewHTTPError(utils.UsersNotFound))
 		}
-		DBuser.Password = ""
-		result = utils.SuccessPayload(DBuser, "Successfully signed user in.")
-		c.JSON(http.StatusOK, result)
 	} else {
-		result = utils.NewHTTPError(utils.WrongPassword)
-		utils.Response(c, http.StatusUnauthorized, result)
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 	}
 }
 
-// Password hashing and verification functions
-
-func hashPassword(password string) string {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	if err != nil {
-		panic("Hashing password failed")
+func (handler *UserHandler) UpdateUser(ctx *gin.Context) {
+	var updatedUser models.User
+	ctx.BindJSON(&updatedUser)
+	user, err := middleware.GetUserClaim(ctx)
+	if err == nil {
+		updatedUser.Role = user.Role // Don't allow users to change their role
+		if user.ID == updatedUser.ID {
+			if handler.service.IsUserUnique(ctx, &updatedUser) {
+				err := handler.service.Update(ctx, &updatedUser)
+				if err == nil {
+					utils.Response(ctx, http.StatusOK, "User updated successfully.")
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+				}
+			} else {
+				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.UserConflict))
+			}
+		} else {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InternalError))	
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InternalError))
 	}
-	return string(bytes)
 }
 
-func checkPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
+	var updatedUser models.User
+	ctx.BindJSON(&updatedUser)
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	if middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		user, err := handler.service.FindByUserId(ctx, updatedUser.ID.Hex())
+		if err == nil {
+			if user.OrganizationId == organization.ID {
+				last, err := handler.service.IsLastAdmin(ctx, user) 
+				if err != nil {
+					utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+				} else {
+					if !last {
+						user.Role = updatedUser.Role
+						err = handler.service.Update(ctx, user)
+						if err == nil {
+							utils.Response(ctx, http.StatusOK, "User promotion successful.")
+						} else {
+							utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+						}
+					} else {
+						utils.Response(ctx, http.StatusForbidden, utils.NewHTTPError(utils.UserLastAdmin))
+					}
+				}
+			} else {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			}
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		}
+	} else {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+	}
+}
+
+func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
+	userToDeleteId := ctx.Param("userId")
+	user, err := middleware.GetUserClaim(ctx)
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	completion := func (ctx *gin.Context, userId string) {
+		err := handler.service.Delete(ctx, userToDeleteId)
+		if err == nil {
+			utils.Response(ctx, http.StatusOK, "User deleted successfully.")
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
+	}
+	if err == nil {
+		if user.ID.String() == userToDeleteId {
+			last, err := handler.service.IsLastAdmin(ctx, user) 
+			if err != nil {
+				utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+			}
+			if !last {
+				completion(ctx, userToDeleteId)
+			} else {
+				utils.Response(ctx, http.StatusForbidden, utils.NewHTTPError(utils.UserLastAdmin))
+			}
+		} else {
+			if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+				user, err := handler.service.FindByUserId(ctx, userToDeleteId)
+				if err == nil {
+					if user.OrganizationId == organization.ID {
+						completion(ctx, userToDeleteId)
+					} else {
+						utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+					}
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+				}
+			} else {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))	
+			}
+		}
+	} else {
+		if middleware.IsAuthorizationAtLeast(ctx, "Admin") { // API Key
+			user, err := handler.service.FindByUserId(ctx, userToDeleteId)	
+			if err == nil {
+				if user.OrganizationId == organization.ID {
+					last, err := handler.service.IsLastAdmin(ctx, user) 
+					if err != nil {
+						utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+					}
+					if !last {
+						completion(ctx, userToDeleteId)
+					} else {
+						utils.Response(ctx, http.StatusForbidden, utils.NewHTTPError(utils.UserLastAdmin))
+					}
+				} else {
+					utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+				}
+			} else {
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+			}
+		} else {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		}
+	}
+}
+
+func (handler *UserHandler) ChangePassword(ctx *gin.Context) {
+	// TODO: Allow the user to change their password
+}
+
+func (handler *UserHandler) ForgotPassword(ctx *gin.Context) {
+	// TODO: Send an email to the user, somehow flow them to a new password page
+	// Likely not worth doing at this time, will take too much time
 }
