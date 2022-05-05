@@ -38,6 +38,12 @@ const (
 	// Thing error
 	ThingNotFound = "thingNotFound"
 
+	// Run error
+	RunNotFound = "runNotFound"
+
+	// Comment error
+	CommentsNotFound = "commentsNotFound"
+
 	// Organization error
 	OrganizationNotFound  = "organizationNotFound"
 	OrganizationsNotFound = "organizationsNotFound"
@@ -64,7 +70,13 @@ var errorMessage = map[string]string{
 	// Thing
 	"thingNotFound": "thing could not be found",
 
+	// Comment
+	"commentsNotFound": "comments could not be found",
+
 	// Organization
 	"organizationNotFound":  "organization could not be found",
 	"organizationsNotFound": "organizations could not be found",
+
+	// Run errors
+	"runNotFound": "run could not be found",
 }

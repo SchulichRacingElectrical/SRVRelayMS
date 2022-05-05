@@ -4,6 +4,7 @@ import (
 	"database-ms/app/handlers"
 	"database-ms/app/middleware"
 	organizationSrv "database-ms/app/services/organization"
+	runSrv "database-ms/app/services/run"
 	sensorSrv "database-ms/app/services/sensor"
 	thingSrv "database-ms/app/services/thing"
 	userSrv "database-ms/app/services/user"
@@ -29,6 +30,9 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 
 	thingService := thingSrv.NewThingService(mgoDbSession, conf)
 	thingAPI := handlers.NewThingAPI(thingService)
+
+	runService := runSrv.NewRunService(conf)
+	runAPI := handlers.NewRunAPI(runService)
 
 	// Routes
 	publicEndpoints := c.Group("")
@@ -58,6 +62,12 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 				thingIdEndpoints.PUT("", thingAPI.UpdateThing)
 				thingIdEndpoints.DELETE("", thingAPI.Delete)
 			}
+		}
+
+		// Run
+		runEndpoints := publicEndpoints.Group("/run")
+		{
+			runEndpoints.POST("", runAPI.Create)
 		}
 
 		// Organizations
