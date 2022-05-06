@@ -1,5 +1,5 @@
 # specify the base image to use for the application
-FROM golang:latest
+FROM golang:1.17
 
 #download the watcher code on startup
 RUN go get -v github.com/canthefason/go-watcher/cmd/watcher
