@@ -16,7 +16,9 @@ type RawDataPresetServiceInterface interface {
 	FindByThingId(context.Context, string) ([]*model.RawDataPreset, error)
 	Update(context.Context, *model.RawDataPreset) error
 	Delete(context.Context, string) error
+	FindById(context.Context, string) (*model.RawDataPreset, error)
 	IsRawDataPresetUnique(context.Context, *model.RawDataPreset) bool
+	DoPresetSensorsExist(context.Context, *model.RawDataPreset) bool
 }
 
 type RawDataPresetService struct {
@@ -48,7 +50,15 @@ func (service *RawDataPresetService) Delete(ctx context.Context, rawDataPresetId
 	return nil
 }
 
+func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPresetId string) (*model.RawDataPreset, error) {
+	return nil, nil
+}
+
 func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
+	return false
+}
+
+func (service *RawDataPresetService) DoPresetSensorsExist(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
 	return false
 }
 

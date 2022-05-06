@@ -13,6 +13,8 @@ type ChartPresetServiceInterface interface {
 	FindByThingId(context.Context, string) ([]*models.ChartPreset, error)
 	Update(context.Context, *models.ChartPreset) error
 	Delete(context.Context, string) error
+	FindById(context.Context, string) (*models.ChartPreset, error)
+	AreChartsValid(context.Context, *models.ChartPreset) bool
 	IsChartPresetUnique(context.Context, *models.ChartPreset) bool
 }
 
@@ -39,6 +41,14 @@ func (service *ChartPresetService) Update(ctx context.Context, updatedChartPrese
 
 func (service *ChartPresetService) Delete(ctx context.Context, chartPresetId string) error {
 	return nil
+}
+
+func (service *ChartPresetService) FindById(ctx context.Context, chartPresetId string) (*models.ChartPreset, error) {
+	return nil, nil
+}
+
+func (service *ChartPresetService) AreChartsValid(ctx context.Context, chartPreset *models.ChartPreset) bool {
+	return false
 }
 
 func (service *ChartPresetService) IsChartPresetUnique(ctx context.Context, chartPreset *models.ChartPreset) bool {

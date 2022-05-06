@@ -34,7 +34,7 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 			if thing.OrganizationId == organization.ID {
 				err := handler.service.Create(ctx.Request.Context(), &newSensor)
 				if err == nil {
-					result := utils.SuccessPayload(newSensor, "Successfully created sensor")
+					result := utils.SuccessPayload(newSensor, "Successfully created Sensor.")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
 					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
@@ -57,7 +57,7 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 		if thing.OrganizationId == organization.ID {
 			sensors, err := handler.service.FindByThingId(ctx.Request.Context(), ctx.Param("thingId"))
 			if err == nil {
-				result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
+				result := utils.SuccessPayload(sensors, "Successfully retrieved Sensors.")
 				utils.Response(ctx, http.StatusOK, result)
 			} else {
 				utils.Response(ctx, http.StatusBadRequest,  utils.NewHTTPError(utils.SensorsNotFound))
@@ -81,7 +81,7 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 			} else {
 				sensors, err := handler.service.FindUpdatedSensors(ctx.Request.Context(), ctx.Param("thingId"), lastUpdate)
 				if err == nil {
-					result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
+					result := utils.SuccessPayload(sensors, "Successfully retrieved Sensors.")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
 					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
@@ -104,11 +104,11 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 		if thing.OrganizationId == organization.ID {
 			if handler.service.IsSensorUnique(ctx, &updatedSensor) {
 				err := handler.service.Update(ctx.Request.Context(), &updatedSensor)
-				if err != nil {
-					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-				} else {
-					result := utils.SuccessPayload(nil, "Successfully updated")
+				if err == nil {
+					result := utils.SuccessPayload(nil, "Successfully updated.")
 					utils.Response(ctx, http.StatusOK, result)
+				} else {
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 				}
 			} else {
 				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.SensorNotUnique))
@@ -132,7 +132,7 @@ func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 				if err != nil {
 					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 				} else {
-					result := utils.SuccessPayload(nil, "Successfully deleted")
+					result := utils.SuccessPayload(nil, "Successfully deleted.")
 					utils.Response(ctx, http.StatusOK, result)
 				}
 			} else {
