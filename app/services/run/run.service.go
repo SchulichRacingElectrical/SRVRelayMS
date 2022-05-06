@@ -6,22 +6,27 @@ import (
 	"database-ms/config"
 	"database-ms/databases"
 	"database-ms/utils"
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RunServiceI interface {
-	Create(context.Context, *models.Run) error
-	GetRun(context.Context, string) (*models.Run, error)
+	CreateRun(context.Context, *models.Run) error
+	FindById(context.Context, string) (*models.Run, error)
+	GetRunsByThingId(context.Context, string) ([]*models.Run, error)
+	UpdateRun(context.Context, *models.Run) error
+	DeleteRun(context.Context, string) error
+
 	GetComments(context.Context, string) ([]*models.Comment, error)
 	AddComment(context.Context, string, *models.Comment) error
-	UpdateContent(context.Context, string, *models.Comment) error
-	DeleteComment(context.Context, string, string) error
-	Delete(context.Context, string) error
+	UpdateCommentContent(context.Context, string, *models.Comment) error
+	DeleteComment(context.Context, string) error
 }
+
+const RUN = "run"
 
 type RunService struct {
 	config *config.Configuration
@@ -31,20 +36,112 @@ func NewRunService(c *config.Configuration) RunServiceI {
 	return &RunService{config: c}
 }
 
-func (service *RunService) Create(ctx context.Context, run *models.Run) error {
+func (service *RunService) CreateRun(ctx context.Context, run *models.Run) error {
 	run.ID = primitive.NewObjectID()
+	// Check if Thing exists
+	res := service.getCollection(ctx, "Thing").FindOne(ctx, bson.M{"_id": run.ThingID})
+	if res.Err().Error() == mongo.ErrNoDocuments.Error() {
+		return errors.New("thing does not exist")
+	}
+
+	// Check of Session exists
+	res = service.getCollection(ctx, "Session").FindOne(ctx, bson.M{"_id": run.SessionId})
+	if res.Err().Error() == mongo.ErrNoDocuments.Error() {
+		return errors.New("session does not exist")
+	}
+
 	_, err := service.getCollection(ctx, "Run").InsertOne(ctx, run)
 	return err
 }
 
-func (service *RunService) GetRun(ctx context.Context, runId string) (*models.Run, error) {
+func (services *RunService) FindById(ctx context.Context, runId string) (*models.Run, error) {
 	var run models.Run
 	bsonRunId, err := primitive.ObjectIDFromHex(runId)
 	if err != nil {
 		return nil, err
 	}
-	err = service.getCollection(ctx, "Run").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&run)
+
+	err = services.getCollection(ctx, "Run").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&run)
+	if err == nil {
+		return nil, err
+	}
+
 	return &run, err
+}
+
+func (service *RunService) GetRunsByThingId(ctx context.Context, thingId string) ([]*models.Run, error) {
+	bsonThingId, err := primitive.ObjectIDFromHex(thingId)
+	if err != nil {
+		return nil, err
+	}
+
+	var runs []*models.Run
+	cursor, err := service.getCollection(ctx, "Run").Find(ctx, bson.M{"thingId": bsonThingId})
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cursor.All(ctx, &runs); err != nil {
+		return nil, err
+	}
+
+	return runs, nil
+}
+
+func (service *RunService) UpdateRun(ctx context.Context, updatedService *models.Run) error {
+	// Check that start time < end time
+	if updatedService.StartTime > updatedService.EndTime {
+		return errors.New("startTime cannot be larger than Endtime")
+	}
+
+	// Check if Thing exists
+	res := service.getCollection(ctx, "Thing").FindOne(ctx, bson.M{"_id": updatedService.ThingID})
+	if res.Err().Error() == mongo.ErrNoDocuments.Error() {
+		return errors.New("thing does not exist")
+	}
+
+	// Check of Session exists
+	res = service.getCollection(ctx, "Session").FindOne(ctx, bson.M{"_id": updatedService.SessionId})
+	if res.Err().Error() == mongo.ErrNoDocuments.Error() {
+		return errors.New("session does not exist")
+	}
+
+	_, err := service.getCollection(ctx, "Comment").UpdateOne(ctx,
+		bson.M{"_id": updatedService.ID},
+		bson.M{"$set": updatedService})
+
+	return err
+
+}
+
+func (service *RunService) DeleteRun(ctx context.Context, runId string) error {
+	bsonRunId, err := primitive.ObjectIDFromHex(runId)
+	if err != nil {
+		return err
+	}
+
+	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		return err
+	}
+	defer client.Disconnect(ctx)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		db := client.Database(service.config.MongoDbName)
+
+		// Delete related comments
+		commentFilter := bson.M{"associatedId": bsonRunId, "type": RUN}
+		if _, err := db.Collection("Comment").DeleteMany(ctx, commentFilter); err != nil {
+			return nil, err
+		}
+
+		// Delete run
+		_, err := db.Collection("Run").DeleteOne(ctx, bson.M{"_id": bsonRunId})
+		return nil, err
+	}
+
+	_, err = databases.WithTransaction(client, ctx, callback)
+	return err
 }
 
 func (service *RunService) AddComment(ctx context.Context, runId string, comment *models.Comment) error {
@@ -53,54 +150,30 @@ func (service *RunService) AddComment(ctx context.Context, runId string, comment
 		return err
 	}
 
+	// Check if Run exists
+	res := service.getCollection(ctx, "Run").FindOne(ctx, bson.M{"_id": bsonRunId})
+	if res.Err().Error() == mongo.ErrNoDocuments.Error() {
+		return errors.New("run does not exist")
+	}
+
 	comment.ID = primitive.NewObjectID()
 	comment.CreationDate = utils.CurrentTimeInMilli()
+	comment.Type = RUN
+	comment.AssociatedId = bsonRunId
 
-	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	if err != nil {
-		return err
-	}
-
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		db := client.Database(service.config.MongoDbName)
-
-		// Add to run comment id list
-		insertUpdate := bson.M{"$push": bson.M{"commentIds": comment.ID}}
-		if _, err := db.Collection("Run").UpdateByID(ctx, bsonRunId, insertUpdate); err != nil {
-			return nil, err
-		}
-
-		// Create comment document
-		_, err := db.Collection("Comment").InsertOne(ctx, comment)
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, nil
-	}
-
-	if _, err := databases.WithTransaction(client, ctx, callback); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = service.getCollection(ctx, "Comment").InsertOne(ctx, comment)
+	return err
 }
 
 func (service *RunService) GetComments(ctx context.Context, runId string) ([]*models.Comment, error) {
-	// Get run
-	var run models.Run
 	bsonRunId, err := primitive.ObjectIDFromHex(runId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = service.getCollection(ctx, "Run").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&run); err != nil {
-		return nil, err
-	}
-
 	// Get comments
 	var comments []*models.Comment
-	commentFilter := bson.M{"_id": bson.M{"$in": run.CommentsId}}
+	commentFilter := bson.M{"associatedId": bsonRunId, "type": RUN}
 	cursor, err := service.getCollection(ctx, "Comment").Find(ctx, commentFilter)
 	if err != nil {
 		return nil, err
@@ -113,86 +186,49 @@ func (service *RunService) GetComments(ctx context.Context, runId string) ([]*mo
 	return comments, nil
 }
 
-func (service *RunService) UpdateContent(ctx context.Context, commentId string, comment *models.Comment) error {
-	bsonCommentId, err := primitive.ObjectIDFromHex(commentId)
-	if err != nil {
-		return err
-	}
-	comment.CreationDate = utils.CurrentTimeInMilli()
-	_, err = service.getCollection(ctx, "Comment").UpdateOne(ctx, bson.M{"_id": bsonCommentId}, bson.M{"$set": comment})
-	return err
-}
-
-func (service *RunService) DeleteComment(ctx context.Context, runId string, commentId string) error {
-	bsonRunId, err := primitive.ObjectIDFromHex(runId)
-	if err != nil {
-		return err
-	}
-
+func (service *RunService) UpdateCommentContent(ctx context.Context, commentId string, updatedComment *models.Comment) error {
 	bsonCommentId, err := primitive.ObjectIDFromHex(commentId)
 	if err != nil {
 		return err
 	}
 
-	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	// Check if comment exists
+	var comment models.Comment
+	err = service.getCollection(ctx, "Comment").FindOne(ctx, bson.M{"_id": commentId}).Decode(&comment)
 	if err != nil {
-		return err
+		return errors.New(utils.CommentDoesNotExist)
 	}
 
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		db := client.Database(service.config.MongoDbName)
-
-		// Remove the comment id from Run comments Id list
-		runUpdate := bson.M{"$pull": bson.M{"commentIds": bsonCommentId}}
-		if _, err := db.Collection("Run").UpdateByID(ctx, bsonRunId, runUpdate); err != nil {
-			return nil, err
-		}
-
-		// Delete comment
-		_, err := db.Collection("Comment").DeleteOne(ctx, bson.M{"_id": bsonCommentId})
-		return nil, err
+	// Check if user owns the comment
+	if comment.UserID.Hex() != updatedComment.UserID.Hex() {
+		return errors.New(utils.CommentCannotUpdateOtherUserComment)
 	}
 
-	_, err = databases.WithTransaction(client, ctx, callback)
+	_, err = service.getCollection(ctx, "Comment").UpdateOne(ctx,
+		bson.M{"_id": bsonCommentId},
+		bson.M{"$set": bson.M{
+			"content":      updatedComment.Content,
+			"creationDate": utils.CurrentTimeInMilli(),
+		}})
 
 	return err
 }
 
-func (service *RunService) Delete(ctx context.Context, runId string) error {
-	bsonRunId, err := primitive.ObjectIDFromHex(runId)
+func (service *RunService) DeleteComment(ctx context.Context, commentId string) error {
+	bsonCommentId, err := primitive.ObjectIDFromHex(commentId)
 	if err != nil {
 		return err
 	}
 
-	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	res, err := service.getCollection(ctx, "Comment").DeleteOne(ctx, bson.M{"_id": bsonCommentId})
 	if err != nil {
 		return err
 	}
 
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		db := client.Database(service.config.MongoDbName)
-
-		// Get related comments
-		runProjection := bson.D{{"commentIds", 1}}
-		runFilter := bson.M{"_id": bsonRunId}
-		runOpts := options.FindOne().SetProjection(runProjection)
-		var runEntity map[string]interface{}
-		if err := db.Collection("Run").FindOne(ctx, runFilter, runOpts).Decode(&runEntity); err != nil {
-			return nil, err
-		}
-
-		// Delete related comments
-		commentFilter := bson.M{"_id": bson.M{"$in": runEntity["commentIds"]}}
-		if _, err := db.Collection("Comment").DeleteMany(ctx, commentFilter); err != nil {
-			return nil, err
-		}
-
-		// Delete run
-		_, err := db.Collection("Run").DeleteOne(ctx, runFilter)
-		return nil, err
+	if res.DeletedCount == 1 {
+		return errors.New(utils.CommentDoesNotExist)
 	}
 
-	_, err = databases.WithTransaction(client, ctx, callback)
 	return err
 }
 

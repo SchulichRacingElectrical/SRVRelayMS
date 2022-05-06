@@ -4,12 +4,13 @@
       'creationDate',
       'content',
       'userId',
-      'isSession'
+      'type',
+      'associatedId'
     ],
     properties: {
       _id: {},
       creationDate: {
-        bsonType: 'long'
+        bsonType: 'string'
       },
       userId: {
         bsonType: 'objectId'
@@ -17,8 +18,15 @@
       content: {
         bsonType: 'string'
       },
-      isSession: {
-        bsonType: 'bool'
+      type: {
+        bsonType: 'string'
+      },
+      associatedId: {
+        bsonType: 'objectId',
+        'enum': [
+          'run',
+          'session'
+        ]
       }
     }
   }

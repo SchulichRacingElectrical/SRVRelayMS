@@ -67,7 +67,11 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		// Run
 		runEndpoints := publicEndpoints.Group("/run")
 		{
-			runEndpoints.POST("", runAPI.Create)
+			runEndpoints.POST("", runAPI.CreateRun)
+			runIdEndpoints := runEndpoints.Group("/:runId")
+			{
+				runIdEndpoints.GET("/comments", runAPI.GetComments)
+			}
 		}
 
 		// Organizations

@@ -39,10 +39,13 @@ const (
 	ThingNotFound = "thingNotFound"
 
 	// Run error
-	RunNotFound = "runNotFound"
+	RunsNotFound = "runsNotFound"
+	RunNotFound  = "runNotFound"
 
 	// Comment error
-	CommentsNotFound = "commentsNotFound"
+	CommentsNotFound                    = "commentsNotFound"
+	CommentDoesNotExist                 = "commentDoesNotExist"
+	CommentCannotUpdateOtherUserComment = "commentCannotUpdateOtherUserComment"
 
 	// Organization error
 	OrganizationNotFound  = "organizationNotFound"
@@ -71,12 +74,15 @@ var errorMessage = map[string]string{
 	"thingNotFound": "thing could not be found",
 
 	// Comment
-	"commentsNotFound": "comments could not be found",
+	"commentsNotFound":                    "comments could not be found",
+	"commentDoesNotExist":                 "comment does not exist",
+	"commentCannotUpdateOtherUserComment": "cannot update comment of another user",
 
 	// Organization
 	"organizationNotFound":  "organization could not be found",
 	"organizationsNotFound": "organizations could not be found",
 
 	// Run errors
-	"runNotFound": "run could not be found",
+	"runsNotFound": "Runs could not be found",
+	"runNotFound":  "Run could not be found",
 }
