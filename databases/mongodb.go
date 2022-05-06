@@ -54,6 +54,15 @@ func GetDBClient(mongoDbURI string, ctx context.Context) (*mongo.Client, error) 
 	return client, nil
 }
 
+func GetDatabase(mongoDbURI string, dbName string, ctx context.Context) (*mongo.Database, error) {
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoDbURI))
+	if err != nil {
+		return nil, err
+	}
+	return client.Database(dbName), nil
+
+}
+
 func WithTransaction(client *mongo.Client, ctx context.Context, callback func(sessCtx mongo.SessionContext) (interface{}, error)) (interface{}, error) {
 	// Start session
 	session, err := client.StartSession()

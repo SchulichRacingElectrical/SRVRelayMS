@@ -10,7 +10,7 @@
     properties: {
       _id: {},
       creationDate: {
-        bsonType: 'string'
+        bsonType: 'long'
       },
       userId: {
         bsonType: 'objectId'
@@ -19,14 +19,14 @@
         bsonType: 'string'
       },
       type: {
-        bsonType: 'string'
-      },
-      associatedId: {
-        bsonType: 'objectId',
+        bsonType: 'string',
         'enum': [
           'run',
           'session'
         ]
+      },
+      associatedId: {
+        bsonType: 'objectId'
       }
     }
   }

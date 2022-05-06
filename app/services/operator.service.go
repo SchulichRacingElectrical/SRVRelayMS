@@ -24,8 +24,8 @@ type OperatorServiceInterface interface {
 }
 
 type OperatorService struct {
-	db 			*mgo.Session
-	config	*config.Configuration
+	db     *mgo.Session
+	config *config.Configuration
 }
 
 func NewOperatorService(db *mgo.Session, c *config.Configuration) OperatorServiceInterface {
@@ -38,7 +38,7 @@ func (service *OperatorService) Create(ctx context.Context, operator *model.Oper
 		return err
 	}
 
-	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 		result, err := db.Collection("Operator").InsertOne(ctx, operator)
 		if err != nil {
@@ -96,7 +96,7 @@ func (service *OperatorService) Update(ctx context.Context, updatedOperator *mod
 		return err
 	}
 
-	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 
 		// Update the operator
@@ -154,7 +154,7 @@ func (service *OperatorService) Delete(ctx context.Context, operatorId string) e
 		return err
 	}
 
-	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 		if _, err := db.Collection("ThingOperator").DeleteMany(ctx, bson.M{"operatorId": bsonOperatorId}); err != nil {
 			return nil, err
@@ -194,7 +194,7 @@ func (service *OperatorService) AttachAssociatedThingIds(ctx context.Context, op
 	cursor, err := thingOperatorCollection.Find(ctx, bson.M{"operatorId": operator.ID})
 	if err = cursor.All(ctx, &thingOperators); err != nil {
 		return
-	}	
+	}
 	var thingIds []primitive.ObjectID
 	for _, thingOperator := range thingOperators {
 		thingIds = append(thingIds, thingOperator.ThingId)

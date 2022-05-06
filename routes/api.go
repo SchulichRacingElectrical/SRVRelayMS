@@ -22,6 +22,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	operatorService := services.NewOperatorService(mgoDbSession, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
 	thingOperatorAPI := handlers.NewThingOperatorAPI(services.NewThingOperatorService(mgoDbSession, conf), thingService, operatorService)
+	runAPI := handlers.NewRunAPI(services.NewRunService(conf))
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("")
@@ -30,6 +31,24 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		{
 			organizationEndpoints.GET("", organizationAPI.GetOrganizations)
 			organizationEndpoints.POST("", organizationAPI.CreateOrganization)
+		}
+
+		// TODO move to private endpoints
+		runEndpoints := publicEndpoints.Group("/runs")
+		{
+			runEndpoints.POST("", runAPI.CreateRun)
+			runEndpoints.GET("/thing/:thingId", runAPI.GetRuns)
+			runEndpoints.PUT("", runAPI.UpdateRun)
+			runEndpoints.DELETE("/:runId", runAPI.DeleteRun)
+
+			// TODO
+			// 	runEndpoints.GET("/:runId/comments", )
+			// 	runEndpoints.POST("/:runId/file", )
+
+			runEndpoints.POST("/:runId/comment", runAPI.AddComment)
+			runEndpoints.GET("/:runId/comments", runAPI.GetComments)
+			runEndpoints.PUT("/comment/:commentId", runAPI.UpdateCommentContent)
+			runEndpoints.DELETE("/comment/:commentId", runAPI.DeleteComment)
 		}
 	}
 
@@ -94,21 +113,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			thingOperatorEndpoints.POST("", thingOperatorAPI.CreateThingOperatorAssociation)
 			thingOperatorEndpoints.DELETE("/thing/:thingId/operator/:operatorId", thingOperatorAPI.DeleteThingOperator)
 		}
-
-		// // TODO
-		// runEndpoints := privateEndpoints.Group("/runs")
-		// {
-		// 	runEndpoints.GET("/:thingId", )
-		// 	runEndpoints.GET("/:runId/file", )
-		// 	runEndpoints.GET("/:runId/comments", )
-		// 	runEndpoints.POST("", )
-		// 	runEndpoints.POST("/:runId/file", )
-		// 	runEndpoints.POST("/comment", )
-		// 	runEndpoints.PUT("", )
-		// 	runEndpoints.PUT("/comment", )
-		// 	runEndpoints.DELETE("/:runId", )
-		// 	runEndpoints.DELETE("/comment/:commentId", )
-		// }
 
 		// // TODO
 		// sessionEndpoints := privateEndpoints.Group("/sessions")

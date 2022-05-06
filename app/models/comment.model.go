@@ -6,9 +6,9 @@ import (
 
 type Comment struct {
 	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	CreationDate int64              `json:"startDate,omitempty" bson:"startDate,omitempty"`
+	CreationDate int64              `json:"creationDate,omitempty" bson:"creationDate,omitempty"`
 	Content      string             `json:"content,omitempty" bson:"content,omitempty"`
 	UserID       primitive.ObjectID `json:"userId,omitempty" bson:"userId,omitempty"`
 	Type         string             `json:"type,omitempty" bson:"type,omitempty"`
-	AssociatedId primitive.ObjectID `json:"associatedId,omitempty" bson:"assiciatedId,omitempty"`
+	AssociatedId primitive.ObjectID `json:"associatedId,omitempty" bson:"associatedId,omitempty"`
 }

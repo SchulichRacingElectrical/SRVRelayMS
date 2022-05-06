@@ -59,6 +59,7 @@ const (
 	CommentsNotFound                    = "commentsNotFound"
 	CommentDoesNotExist                 = "commentDoesNotExist"
 	CommentCannotUpdateOtherUserComment = "commentCannotUpdateOtherUserComment"
+	UserIdMissing                       = "userIdMissing"
 
 	// Organization error
 	OrganizationDuplicate = "organizationDuplicate"
@@ -105,6 +106,7 @@ var errorMessage = map[string]string{
 	"commentsNotFound":                    "comments could not be found",
 	"commentDoesNotExist":                 "comment does not exist",
 	"commentCannotUpdateOtherUserComment": "cannot update comment of another user",
+	"userIdMissing":                       "userId missing",
 
 	// Organization
 	"organizationNotFound":  "organization could not be found",

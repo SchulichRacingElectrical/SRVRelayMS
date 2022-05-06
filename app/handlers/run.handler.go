@@ -29,7 +29,7 @@ func (handler *RunHandler) CreateRun(c *gin.Context) {
 		res := &createEntityRes{
 			ID: newRun.ID,
 		}
-		result := utils.SuccessPayload(res, "Successfully created sensor")
+		result := utils.SuccessPayload(res, "Successfully created run")
 		utils.Response(c, http.StatusOK, result)
 	} else {
 		fmt.Println(err)
@@ -117,7 +117,7 @@ func (handler *RunHandler) UpdateCommentContent(c *gin.Context) {
 	var updatedComment models.Comment
 	c.BindJSON(&updatedComment)
 
-	err := handler.run.UpdateCommentContent(c.Request.Context(), c.Param("runId"), &updatedComment)
+	err := handler.run.UpdateCommentContent(c.Request.Context(), c.Param("commentId"), &updatedComment)
 	if err == nil {
 		result := utils.SuccessPayload(nil, "Successfully updated comment")
 		utils.Response(c, http.StatusOK, result)
@@ -135,22 +135,27 @@ func (handler *RunHandler) UpdateCommentContent(c *gin.Context) {
 }
 
 func (handler *RunHandler) DeleteComment(c *gin.Context) {
-	var updatedComment models.Comment
-	c.BindJSON(&updatedComment)
+	var requestBody models.Comment
+	c.BindJSON(&requestBody)
 
-	err := handler.run.DeleteComment(c.Request.Context(), c.Param("commentId"))
-	if err == nil {
-		result := utils.SuccessPayload(nil, "Successfully deleted comment")
-		utils.Response(c, http.StatusOK, result)
-	} else {
-		var errMsg string
-		switch err.Error() {
-		case utils.CommentDoesNotExist:
-			errMsg = err.Error()
-		default:
-			errMsg = utils.BadRequest
+	if !requestBody.UserID.IsZero() {
+		err := handler.run.DeleteComment(c.Request.Context(), c.Param("commentId"), requestBody.UserID.Hex())
+		if err == nil {
+			result := utils.SuccessPayload(nil, "Successfully deleted comment")
+			utils.Response(c, http.StatusOK, result)
+		} else {
+			var errMsg string
+			switch err.Error() {
+			case utils.CommentDoesNotExist, utils.CommentCannotUpdateOtherUserComment:
+				errMsg = err.Error()
+			default:
+				errMsg = utils.BadRequest
+			}
+			result := utils.NewHTTPError(errMsg)
+			utils.Response(c, http.StatusBadRequest, result)
 		}
-		result := utils.NewHTTPError(errMsg)
+	} else {
+		result := utils.NewHTTPError(utils.UserIdMissing)
 		utils.Response(c, http.StatusBadRequest, result)
 	}
 }
