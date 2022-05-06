@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"database-ms/app/models"
-	"database-ms/app/services/run"
-	"database-ms/utils"
+	services "database-ms/app/services"
+	utils "database-ms/utils"
 	"fmt"
 	"net/http"
 
@@ -11,10 +11,10 @@ import (
 )
 
 type RunHandler struct {
-	run run.RunServiceI
+	run services.RunServiceI
 }
 
-func NewRunAPI(runService run.RunServiceI) *RunHandler {
+func NewRunAPI(runService services.RunServiceI) *RunHandler {
 	return &RunHandler{
 		run: runService,
 	}
