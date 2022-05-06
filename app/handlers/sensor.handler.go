@@ -12,12 +12,12 @@ import (
 )
 
 type SensorHandler struct {
-	sensorService services.SensorServiceInterface
-	thingService services.ThingServiceInterface
+	service 			services.SensorServiceInterface
+	thingService 	services.ThingServiceInterface
 }
 
-func NewSensorAPI(sensorService services.SensorServiceInterface, thingService services.ThingServiceInterface) *SensorHandler {
-	return &SensorHandler{sensorService: sensorService, thingService: thingService}
+func NewSensorAPI(service services.SensorServiceInterface, thingService services.ThingServiceInterface) *SensorHandler {
+	return &SensorHandler{service: service, thingService: thingService}
 }
 
 func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
@@ -29,10 +29,10 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	}
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newSensor.ThingID.Hex())
-	if handler.sensorService.IsSensorUnique(ctx, &newSensor) {
+	if handler.service.IsSensorUnique(ctx, &newSensor) {
 		if err == nil {
 			if thing.OrganizationId == organization.ID {
-				err := handler.sensorService.Create(ctx.Request.Context(), &newSensor)
+				err := handler.service.Create(ctx.Request.Context(), &newSensor)
 				if err == nil {
 					result := utils.SuccessPayload(newSensor, "Successfully created sensor")
 					utils.Response(ctx, http.StatusOK, result)
@@ -55,7 +55,7 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 	thing, err := handler.thingService.FindById(ctx, ctx.Param("thingId"))
 	if err == nil {
 		if thing.OrganizationId == organization.ID {
-			sensors, err := handler.sensorService.FindByThingId(ctx.Request.Context(), ctx.Param("thingId"))
+			sensors, err := handler.service.FindByThingId(ctx.Request.Context(), ctx.Param("thingId"))
 			if err == nil {
 				result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
 				utils.Response(ctx, http.StatusOK, result)
@@ -79,7 +79,7 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 			if err != nil {
 				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 			} else {
-				sensors, err := handler.sensorService.FindUpdatedSensors(ctx.Request.Context(), ctx.Param("thingId"), lastUpdate)
+				sensors, err := handler.service.FindUpdatedSensors(ctx.Request.Context(), ctx.Param("thingId"), lastUpdate)
 				if err == nil {
 					result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
 					utils.Response(ctx, http.StatusOK, result)
@@ -102,8 +102,8 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 	thing, err := handler.thingService.FindById(ctx, updatedSensor.ThingID.Hex())
 	if err == nil {
 		if thing.OrganizationId == organization.ID {
-			if handler.sensorService.IsSensorUnique(ctx, &updatedSensor) {
-				err := handler.sensorService.Update(ctx.Request.Context(), &updatedSensor)
+			if handler.service.IsSensorUnique(ctx, &updatedSensor) {
+				err := handler.service.Update(ctx.Request.Context(), &updatedSensor)
 				if err != nil {
 					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 				} else {
@@ -123,12 +123,12 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 
 func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	sensor, err := handler.sensorService.FindBySensorId(ctx, ctx.Param("sensorId"))
+	sensor, err := handler.service.FindBySensorId(ctx, ctx.Param("sensorId"))
 	if err == nil {
 		thing, err := handler.thingService.FindById(ctx, sensor.ThingID.Hex())	
 		if err == nil {
 			if thing.OrganizationId == organization.ID {
-				err := handler.sensorService.Delete(ctx.Request.Context(), ctx.Param("sensorId"))
+				err := handler.service.Delete(ctx.Request.Context(), ctx.Param("sensorId"))
 				if err != nil {
 					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 				} else {

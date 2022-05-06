@@ -21,7 +21,9 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)
 	operatorService := services.NewOperatorService(mgoDbSession, conf) 
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
-	thingOperatorAPI := handlers.NewThingOperatorAPI(services.NewThingOperatorService(mgoDbSession, conf), thingService, operatorService)
+
+	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(mgoDbSession, conf), thingService)
+	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(mgoDbSession, conf), thingService)
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("") 
@@ -89,12 +91,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			operatorEndpoints.DELETE("/:operatorId", operatorAPI.DeleteOperator)
 		}
 
-		thingOperatorEndpoints := privateEndpoints.Group("/thing_operator")
-		{
-			thingOperatorEndpoints.POST("", thingOperatorAPI.CreateThingOperatorAssociation)
-			thingOperatorEndpoints.DELETE("/thing/:thingId/operator/:operatorId", thingOperatorAPI.DeleteThingOperator)
-		}
-
 		// // TODO
 		// runEndpoints := privateEndpoints.Group("/runs")
 		// {
@@ -123,22 +119,20 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		// 	sessionEndpoints.DELETE("/comment", )
 		// }
 
-		// // TODO
-		// rawDataPresetEndpoints := privateEndpoints.Group("/rawdatapresets")
-		// {
-		// 	rawDataPresetEndpoints.GET("/:thingId", )
-		// 	rawDataPresetEndpoints.POST("", )
-		// 	rawDataPresetEndpoints.PUT("", )
-		// 	rawDataPresetEndpoints.DELETE("/:rdpId", )
-		// }
+		rawDataPresetEndpoints := privateEndpoints.Group("/rawdatapresets")
+		{
+			rawDataPresetEndpoints.GET("/:thingId", rawDataPresetAPI.GetRawDataPresets)
+			rawDataPresetEndpoints.POST("", rawDataPresetAPI.CreateRawDataPreset)
+			rawDataPresetEndpoints.PUT("", rawDataPresetAPI.UpdateRawDataPreset)
+			rawDataPresetEndpoints.DELETE("/:rdpId", rawDataPresetAPI.DeleteRawDataPreset)
+		}
 
-		// // TODO
-		// chartPresetEndpoints := privateEndpoints.Group("/chartpresets")
-		// {
-		// 	chartPresetEndpoints.GET("/:thingId", )
-		// 	chartPresetEndpoints.POST("", )
-		// 	chartPresetEndpoints.PUT("", )
-		// 	chartPresetEndpoints.DELETE("/:cpId", )
-		// }
+		chartPresetEndpoints := privateEndpoints.Group("/chartpresets")
+		{
+			chartPresetEndpoints.GET("/:thingId", chartPresetAPI.GetChartPresets)
+			chartPresetEndpoints.POST("", chartPresetAPI.CreateChartPreset)
+			chartPresetEndpoints.PUT("", chartPresetAPI.UpdateChartPreset)
+			chartPresetEndpoints.DELETE("/:cpId", chartPresetAPI.DeleteChartPreset)
+		}
 	}	
 }
