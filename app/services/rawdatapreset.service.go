@@ -2,10 +2,12 @@ package services
 
 import (
 	"context"
+	"database-ms/app/models"
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/mgo.v2"
@@ -39,26 +41,64 @@ func (service *RawDataPresetService) Create(ctx context.Context, rawDataPreset *
 }
 
 func (service *RawDataPresetService) FindByThingId(ctx context.Context, thingId string) ([]*model.RawDataPreset, error) {
-	return nil, nil
+	bsonThingId, err := primitive.ObjectIDFromHex(thingId)
+	if err != nil {
+		return nil, err
+	}
+	var rawDataPresets []*models.RawDataPreset
+	cursor, err := service.RawDataPresetCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}})
+	if err = cursor.All(ctx, &rawDataPresets); err != nil {
+		return nil, err
+	}
+	if rawDataPresets == nil {
+		rawDataPresets = []*models.RawDataPreset{}
+	}
+	return rawDataPresets, nil
 }
 
 func (service *RawDataPresetService) Update(ctx context.Context, updatedRawDataPreset *model.RawDataPreset) error {
-	return nil
+	_, err := service.RawDataPresetCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedRawDataPreset.ID}, bson.M{"$set": updatedRawDataPreset})
+	return err
 }
 
 func (service *RawDataPresetService) Delete(ctx context.Context, rawDataPresetId string) error {
-	return nil
+	bsonRawDataPresetId, err := primitive.ObjectIDFromHex(rawDataPresetId)
+	if err == nil {
+		_, err := service.RawDataPresetCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonRawDataPresetId})
+		return err
+	} else {
+		return err
+	}
 }
 
 func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPresetId string) (*model.RawDataPreset, error) {
-	return nil, nil
+	bsonRawDataPresetId, err := primitive.ObjectIDFromHex(rawDataPresetId)
+	if err != nil {
+		return nil, err
+	}
+	var rawDataPreset models.RawDataPreset
+	if err = service.RawDataPresetCollection(ctx).FindOne(ctx, bson.M{"_id": bsonRawDataPresetId}).Decode(&rawDataPreset); err != nil {
+		return nil, err
+	}
+	return &rawDataPreset, nil
 }
 
-func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
-	return false
+func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, newRawDataPreset *model.RawDataPreset) bool {
+	rawDataPresets, err := service.FindByThingId(ctx, newRawDataPreset.ThingId.Hex())
+	if err == nil {
+		for _, rawDataPreset := range rawDataPresets {
+			if newRawDataPreset.Name == rawDataPreset.Name && newRawDataPreset.ID != rawDataPreset.ID {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
 }
 
 func (service *RawDataPresetService) DoPresetSensorsExist(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
+	// Create a list of the sensor Ids and check that they all exist
 	return false
 }
 

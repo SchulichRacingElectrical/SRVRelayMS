@@ -23,29 +23,29 @@ func (handler *RawDataPresetHandler) CreateRawDataPreset(ctx *gin.Context) {
 	var newRawDataPreset models.RawDataPreset
 	ctx.BindJSON(&newRawDataPreset)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	if handler.service.DoPresetSensorsExist(ctx, &newRawDataPreset) {
-		if handler.service.IsRawDataPresetUnique(ctx, &newRawDataPreset) {
-			thing, err := handler.thingService.FindById(ctx, newRawDataPreset.ThingId.Hex())
-			if err == nil {
+	thing, err := handler.thingService.FindById(ctx, newRawDataPreset.ThingId.Hex())
+	if err == nil {
+		if handler.service.DoPresetSensorsExist(ctx, &newRawDataPreset) {
+			if handler.service.IsRawDataPresetUnique(ctx, &newRawDataPreset) {
 				if thing.OrganizationId == organization.ID {
 					err := handler.service.Create(ctx.Request.Context(), &newRawDataPreset)
 					if err == nil {
 						result := utils.SuccessPayload(newRawDataPreset, "Successfully created Raw Data Preset.")
 						utils.Response(ctx, http.StatusOK, result)
 					} else {
-						// Bad request
+						utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 					}
 				} else {
-					// Not authorized
+					utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 				}
 			} else {
-				// Bad request, the thing does not exist
+				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.RawDataPresetNotUnique))
 			}
 		} else {
-			// Bad request, name must be unique
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))	
 		}
 	} else {
-		// Bad request, sensor Ids have a sensor that does not exist
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 	}
 }
 
@@ -59,13 +59,13 @@ func (handler *RawDataPresetHandler) GetRawDataPresets(ctx *gin.Context) {
 				result := utils.SuccessPayload(rawDataPresets, "Successfully retrieved Raw Data Presets.")
 				utils.Response(ctx, http.StatusOK, result)
 			} else {
-				// Bad request
+				utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 			}
 		} else {
-			// Unauthorized
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		}
 	} else {
-		// Bad request
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 	}
 }
 
@@ -73,29 +73,29 @@ func (handler *RawDataPresetHandler) UpdateRawDataPreset(ctx *gin.Context) {
 	var updatedRawDataPreset models.RawDataPreset
 	ctx.BindJSON(&updatedRawDataPreset)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	if handler.service.DoPresetSensorsExist(ctx, &updatedRawDataPreset) {
-		if handler.service.IsRawDataPresetUnique(ctx, &updatedRawDataPreset) {
-			thing, err := handler.thingService.FindById(ctx, updatedRawDataPreset.ThingId.Hex())
-			if err == nil {
+	thing, err := handler.thingService.FindById(ctx, updatedRawDataPreset.ThingId.Hex())
+	if err == nil {
+		if handler.service.DoPresetSensorsExist(ctx, &updatedRawDataPreset) {
+			if handler.service.IsRawDataPresetUnique(ctx, &updatedRawDataPreset) {
 				if thing.OrganizationId == organization.ID {
 					err := handler.service.Update(ctx.Request.Context(), &updatedRawDataPreset)
 					if err == nil {
 						result := utils.SuccessPayload(nil, "Successfully updated.")
 						utils.Response(ctx, http.StatusOK, result)
 					} else {
-						// Bad request
+						utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 					}
 				} else {
-					// Not authed
+					utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 				}
 			} else {
-				// Bad request, no thing
+				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.RawDataPresetNotUnique))
 			}
 		} else {
-			// Bad request, not unique
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))	
 		}
 	} else {
-		// Bad request, sensors do not exist
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
 	}
 }
 
@@ -111,16 +111,16 @@ func (handler *RawDataPresetHandler) DeleteRawDataPreset(ctx *gin.Context) {
 					result := utils.SuccessPayload(nil, "Successfully deleted.")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
-					// Internal error
+					utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 				}
 			} else {
-				// No auth
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 			}
 		} else {
-			// Bad request
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
 		}
 	} else {
-		// Bad request
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.RawDataPresetNotFound))
 	}
 }
 

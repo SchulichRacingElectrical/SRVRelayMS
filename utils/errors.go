@@ -55,6 +55,10 @@ const (
 	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
 	OrganizationsNotFound = "organizationsNotFound"
+
+	// Raw Data Preset Error
+	RawDataPresetNotUnique= "rawDataPresetNotUnique"
+	RawDataPresetNotFound = "rawDataPresetNotFound"
 )
 
 // Error code with description
@@ -96,4 +100,8 @@ var errorMessage = map[string]string {
 	"organizationDuplicate": 	"Organization name is taken.",
 	"organizationNotFound":  	"Organization could not be found.",
 	"organizationsNotFound": 	"Organizations could not be found.",
+
+	// Raw Data Preset
+	"rawDataPresetNotUnique":	"Raw Data Preset name must be unique.",
+
 }

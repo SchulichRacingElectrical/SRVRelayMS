@@ -108,7 +108,7 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 					result := utils.SuccessPayload(nil, "Successfully updated.")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
-					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+					utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 				}
 			} else {
 				utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.SensorNotUnique))
