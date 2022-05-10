@@ -24,7 +24,7 @@ type ThingServiceInterface interface {
 }
 
 type ThingService struct {
-	db  	 *mgo.Session
+	db     *mgo.Session
 	config *config.Configuration
 }
 
@@ -38,7 +38,7 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) err
 		return err
 	}
 
-	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 		result, err := db.Collection("Thing").InsertOne(ctx, thing)
 		if err != nil {
@@ -95,8 +95,8 @@ func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thi
 	if err != nil {
 		return err
 	}
-	
-	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 
 		// Create the thing
@@ -154,19 +154,19 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		return err
 	}
 
-	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 		if _, err := db.Collection("ThingOperator").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
 			return nil, err
 		}
 		if _, err := db.Collection("Sensor").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
 			return nil, err
-		} 
+		}
 		if _, err := db.Collection("Thing").DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
 			return nil, err
 		}
 		// TODO: There will be a lot more things to delete in the future...
-		// Will need to delete associated runs and sessions
+		// Will need to delete associated runs and sessions, and their comments
 		// Will need to delete associated presets
 		return nil, nil
 	}
@@ -203,7 +203,7 @@ func (service *ThingService) AttachAssociatedOperatorIds(ctx context.Context, th
 	cursor, err := thingOperatorCollection.Find(ctx, bson.M{"thingId": thing.ID})
 	if err = cursor.All(ctx, &thingOperators); err != nil {
 		return
-	}	
+	}
 	var operatorIds []primitive.ObjectID
 	for _, thingOperator := range thingOperators {
 		operatorIds = append(operatorIds, thingOperator.OperatorId)

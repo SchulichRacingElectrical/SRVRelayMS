@@ -11,12 +11,14 @@ import (
 )
 
 type RunHandler struct {
-	run services.RunServiceI
+	run     services.RunServiceI
+	comment services.CommentServiceI
 }
 
-func NewRunAPI(runService services.RunServiceI) *RunHandler {
+func NewRunAPI(runService services.RunServiceI, commentService services.CommentServiceI) *RunHandler {
 	return &RunHandler{
-		run: runService,
+		run:     runService,
+		comment: commentService,
 	}
 }
 
@@ -52,7 +54,7 @@ func (handler *RunHandler) GetRuns(c *gin.Context) {
 }
 
 func (handler *RunHandler) UpdateRun(c *gin.Context) {
-	var updatedRun models.Run
+	var updatedRun models.RunUpdate
 	c.BindJSON(&updatedRun)
 
 	_, err := handler.run.FindById(c.Request.Context(), updatedRun.ID.Hex())
@@ -91,7 +93,7 @@ func (handler *RunHandler) AddComment(c *gin.Context) {
 
 	_, err := handler.run.FindById(c.Request.Context(), c.Param("runId"))
 	if err == nil {
-		err := handler.run.AddComment(c.Request.Context(), c.Param("runId"), &comment)
+		err := handler.comment.AddComment(c.Request.Context(), utils.Run, c.Param("runId"), &comment)
 		if err == nil {
 			result := utils.SuccessPayload(nil, "Successfully added comment.")
 			utils.Response(c, http.StatusOK, result)
@@ -104,7 +106,7 @@ func (handler *RunHandler) AddComment(c *gin.Context) {
 }
 
 func (handler *RunHandler) GetComments(c *gin.Context) {
-	comments, err := handler.run.GetComments(c.Request.Context(), c.Param("runId"))
+	comments, err := handler.comment.GetComments(c.Request.Context(), utils.Run, c.Param("runId"))
 	if err == nil {
 		result := utils.SuccessPayload(comments, "Successfully retrieved comments")
 		utils.Response(c, http.StatusOK, result)
@@ -117,7 +119,7 @@ func (handler *RunHandler) UpdateCommentContent(c *gin.Context) {
 	var updatedComment models.Comment
 	c.BindJSON(&updatedComment)
 
-	err := handler.run.UpdateCommentContent(c.Request.Context(), c.Param("commentId"), &updatedComment)
+	err := handler.comment.UpdateCommentContent(c.Request.Context(), c.Param("commentId"), &updatedComment)
 	if err == nil {
 		result := utils.SuccessPayload(nil, "Successfully updated comment")
 		utils.Response(c, http.StatusOK, result)
@@ -139,7 +141,7 @@ func (handler *RunHandler) DeleteComment(c *gin.Context) {
 	c.BindJSON(&requestBody)
 
 	if !requestBody.UserID.IsZero() {
-		err := handler.run.DeleteComment(c.Request.Context(), c.Param("commentId"), requestBody.UserID.Hex())
+		err := handler.comment.DeleteComment(c.Request.Context(), c.Param("commentId"), requestBody.UserID.Hex())
 		if err == nil {
 			result := utils.SuccessPayload(nil, "Successfully deleted comment")
 			utils.Response(c, http.StatusOK, result)

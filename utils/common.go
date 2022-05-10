@@ -64,3 +64,14 @@ func IdInSlice(a primitive.ObjectID, list []primitive.ObjectID) bool {
 	}
 	return false
 }
+
+const (
+	Run     = "run"
+	Session = "session"
+)
+
+// Entity Types
+var EntityCollectionTypes = map[string]string{
+	"run":     "Run",
+	"session": "Session",
+}

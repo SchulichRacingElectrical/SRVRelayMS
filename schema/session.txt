@@ -1,34 +1,24 @@
 {
   $jsonSchema: {
     required: [
+      'name',
+      'thingId',
       'startDate',
-      'endDate',
-      'runs',
-      'comments'
+      'endDate'
     ],
     properties: {
       _id: {},
+      name: {
+        bsonType: 'string'
+      },
+      thingId: {
+        bsonType: 'objectId'
+      },
       startDate: {
         bsonType: 'long'
       },
       endDate: {
         bsonType: 'long'
-      },
-      runs: {
-        bsonType: 'array',
-        minItems: 0,
-        uniqueItems: true,
-        items: {
-          bsonType: 'objectId'
-        }
-      },
-      comments: {
-        bsonType: 'array',
-        minItems: 0,
-        uniqueItems: true,
-        items: {
-          bsonType: 'objectId'
-        }
       }
     }
   }

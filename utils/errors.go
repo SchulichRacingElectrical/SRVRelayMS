@@ -54,6 +54,11 @@ const (
 	// Run error
 	RunsNotFound = "runsNotFound"
 	RunNotFound  = "runNotFound"
+	RunDNE       = "runDNE"
+
+	// Session error
+	SessionsNotFound = "sessionsNotFound"
+	SessionNotFound  = "sessionNotFound"
 
 	// Comment error
 	CommentsNotFound                    = "commentsNotFound"
@@ -116,4 +121,9 @@ var errorMessage = map[string]string{
 	// Run errors
 	"runsNotFound": "Runs could not be found",
 	"runNotFound":  "Run could not be found",
+	"runDNE":       "Run does not exist",
+
+	// Session errors
+	"sessionssNotFound": "Sesssions could not be found",
+	"sessionNotFound":   "Session could not be found",
 }
