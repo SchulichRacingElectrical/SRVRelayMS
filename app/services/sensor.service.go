@@ -108,11 +108,11 @@ func (service *SensorService) Update(ctx context.Context, updatedSensor *model.S
 
 func (service *SensorService) Delete(ctx context.Context, sensorId string) error {
 	bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
-	if err != nil {
-		return err
-	} else {
+	if err == nil {
 		_, err := service.SensorCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonSensorId})
 		// TODO: Update the presets if the sensor was removed. 
+		return err
+	} else {
 		return err
 	}
 }

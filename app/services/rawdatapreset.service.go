@@ -98,8 +98,17 @@ func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, 
 }
 
 func (service *RawDataPresetService) DoPresetSensorsExist(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
-	// Create a list of the sensor Ids and check that they all exist
-	return false
+	// TODO: Test
+	_, err := service.SensorCollection(ctx).Find(ctx, bson.M{"_id": bson.M{"$in": rawDataPreset.SensorIds }})
+	return err == nil
+}
+
+func (service *RawDataPresetService) SensorCollection(ctx context.Context) *mongo.Collection {
+	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		panic(err)
+	}
+	return dbClient.Database(service.config.MongoDbName).Collection("Sensor")
 }
 
 func (service *RawDataPresetService) RawDataPresetCollection(ctx context.Context) *mongo.Collection {
