@@ -17,7 +17,7 @@ type CommentServiceI interface {
 	GetComments(context.Context, string, string) ([]*models.Comment, error)
 	AddComment(context.Context, string, string, *models.Comment) error
 	UpdateCommentContent(context.Context, string, *models.Comment) error
-	DeleteComment(context.Context, string, string) error
+	DeleteComment(context.Context, string, string, string) error
 }
 
 type CommentService struct {
@@ -117,7 +117,7 @@ func (service *CommentService) UpdateCommentContent(ctx context.Context, comment
 	return err
 }
 
-func (service *CommentService) DeleteComment(ctx context.Context, commentId string, userId string) error {
+func (service *CommentService) DeleteComment(ctx context.Context, entityType string, commentId string, userId string) error {
 	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
 	if err != nil {
 		panic(err)
@@ -131,7 +131,7 @@ func (service *CommentService) DeleteComment(ctx context.Context, commentId stri
 
 	// Check if comment exists
 	var comment models.Comment
-	err = database.Collection("Comment").FindOne(ctx, bson.M{"_id": bsonCommentId}).Decode(&comment)
+	err = database.Collection("Comment").FindOne(ctx, bson.M{"_id": bsonCommentId, "type": entityType}).Decode(&comment)
 	if err != nil {
 		return errors.New(utils.CommentDoesNotExist)
 	}
@@ -142,7 +142,7 @@ func (service *CommentService) DeleteComment(ctx context.Context, commentId stri
 		return errors.New(utils.CommentCannotUpdateOtherUserComment)
 	}
 
-	_, err = database.Collection("Comment").DeleteOne(ctx, bson.M{"_id": bsonCommentId})
+	_, err = database.Collection("Comment").DeleteOne(ctx, bson.M{"_id": bsonCommentId, "type": entityType})
 	if err != nil {
 		return err
 	}

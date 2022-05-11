@@ -84,7 +84,6 @@ func (handler *RunHandler) DeleteRun(c *gin.Context) {
 	} else {
 		utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunNotFound))
 	}
-
 }
 
 func (handler *RunHandler) AddComment(c *gin.Context) {
@@ -141,7 +140,7 @@ func (handler *RunHandler) DeleteComment(c *gin.Context) {
 	c.BindJSON(&requestBody)
 
 	if !requestBody.UserID.IsZero() {
-		err := handler.comment.DeleteComment(c.Request.Context(), c.Param("commentId"), requestBody.UserID.Hex())
+		err := handler.comment.DeleteComment(c.Request.Context(), utils.Run, c.Param("commentId"), requestBody.UserID.Hex())
 		if err == nil {
 			result := utils.SuccessPayload(nil, "Successfully deleted comment")
 			utils.Response(c, http.StatusOK, result)

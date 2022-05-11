@@ -22,7 +22,9 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	operatorService := services.NewOperatorService(mgoDbSession, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
 	thingOperatorAPI := handlers.NewThingOperatorAPI(services.NewThingOperatorService(mgoDbSession, conf), thingService, operatorService)
-	runAPI := handlers.NewRunAPI(services.NewRunService(conf))
+	commentService := services.NewCommentService(conf)
+	runAPI := handlers.NewRunAPI(services.NewRunService(conf), commentService)
+	sessionAPI := handlers.NewSessionAPI(services.NewSessionService(conf), commentService)
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("")
@@ -31,24 +33,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 		{
 			organizationEndpoints.GET("", organizationAPI.GetOrganizations)
 			organizationEndpoints.POST("", organizationAPI.CreateOrganization)
-		}
-
-		// TODO move to private endpoints
-		runEndpoints := publicEndpoints.Group("/runs")
-		{
-			runEndpoints.POST("", runAPI.CreateRun)
-			runEndpoints.GET("/thing/:thingId", runAPI.GetRuns)
-			runEndpoints.PUT("", runAPI.UpdateRun)
-			runEndpoints.DELETE("/:runId", runAPI.DeleteRun)
-
-			// TODO
-			// 	runEndpoints.GET("/:runId/comments", )
-			// 	runEndpoints.POST("/:runId/file", )
-
-			runEndpoints.POST("/:runId/comment", runAPI.AddComment)
-			runEndpoints.GET("/:runId/comments", runAPI.GetComments)
-			runEndpoints.PUT("/comment/:commentId", runAPI.UpdateCommentContent)
-			runEndpoints.DELETE("/comment/:commentId", runAPI.DeleteComment)
 		}
 	}
 
@@ -114,18 +98,38 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			thingOperatorEndpoints.DELETE("/thing/:thingId/operator/:operatorId", thingOperatorAPI.DeleteThingOperator)
 		}
 
-		// // TODO
-		// sessionEndpoints := privateEndpoints.Group("/sessions")
-		// {
-		// 	sessionEndpoints.GET("/:thingId", )
-		// 	sessionEndpoints.GET("/zip", )
-		// 	sessionEndpoints.POST("", )
-		// 	sessionEndpoints.POST("/comment", )
-		// 	sessionEndpoints.PUT("", )
-		// 	sessionEndpoints.PUT("/comment", )
-		// 	sessionEndpoints.DELETE("", )
-		// 	sessionEndpoints.DELETE("/comment", )
-		// }
+		runEndpoints := privateEndpoints.Group("/runs")
+		{
+			runEndpoints.POST("", runAPI.CreateRun)
+			runEndpoints.GET("/thing/:thingId", runAPI.GetRuns)
+			runEndpoints.PUT("", runAPI.UpdateRun)
+			runEndpoints.DELETE("/:runId", runAPI.DeleteRun)
+
+			// TODO
+			// 	runEndpoints.GET("/:runId/comments", )
+			// 	runEndpoints.POST("/:runId/file", )
+
+			runEndpoints.POST("/:runId/comment", runAPI.AddComment)
+			runEndpoints.GET("/:runId/comments", runAPI.GetComments)
+			runEndpoints.PUT("/comment/:commentId", runAPI.UpdateCommentContent)
+			runEndpoints.DELETE("/comment/:commentId", runAPI.DeleteComment)
+		}
+
+		sessionEndpoints := privateEndpoints.Group("/sessions")
+		{
+			sessionEndpoints.POST("", sessionAPI.CreateSession)
+			sessionEndpoints.GET("/thing/:thingId", sessionAPI.GetSessions)
+			sessionEndpoints.PUT("", sessionAPI.UpdateSession)
+			sessionEndpoints.DELETE("/:sessionId", sessionAPI.DeleteSession)
+
+			// TODO
+			// sessionEndpoints.GET("/zip", )
+
+			sessionEndpoints.POST("/:sessionId/comment", sessionAPI.AddComment)
+			sessionEndpoints.GET("/:sessionId/comments", sessionAPI.GetComments)
+			sessionEndpoints.PUT("/comment/:commentId", sessionAPI.UpdateCommentContent)
+			sessionEndpoints.DELETE("/comment/:commentId", sessionAPI.DeleteComment)
+		}
 
 		// // TODO
 		// rawDataPresetEndpoints := privateEndpoints.Group("/rawdatapresets")
