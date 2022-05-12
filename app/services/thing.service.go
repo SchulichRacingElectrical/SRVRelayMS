@@ -165,6 +165,9 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		if _, err := db.Collection("Thing").DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
 			return nil, err
 		}
+		if _, err := db.Collection("RawDataPreset").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
+			return nil, err
+		}
 		// TODO: There will be a lot more things to delete in the future...
 		// Will need to delete associated runs and sessions and associated comments
 		// Will need to delete associated presets
