@@ -80,7 +80,7 @@ func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 				if handler.service.IsPresetUnique(ctx, &updatedChartPreset) {
 					err := handler.service.Update(ctx, &updatedChartPreset)
 					if err == nil {
-						result := utils.SuccessPayload(nil, "Successfully Updated.")
+						result := utils.SuccessPayload(updatedChartPreset, "Successfully Updated.")
 						utils.Response(ctx, http.StatusOK, result)
 					} else {
 						utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
@@ -101,12 +101,12 @@ func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 
 func (handler *ChartPresetHandler) DeleteChartPreset(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	chartPreset, err := handler.service.FindById(ctx, ctx.Param("cpId"))
+	chartPreset, err := handler.service.FindById(ctx, ctx.Param("chartPresetId"))
 	if err == nil {
 		thing, err := handler.thingService.FindById(ctx, chartPreset.ThingId.Hex())
 		if err == nil {
 			if thing.OrganizationId == organization.ID {
-				err := handler.service.Delete(ctx, ctx.Param("cpId"))
+				err := handler.service.Delete(ctx, ctx.Param("chartPresetId"))
 				if err == nil {
 					result := utils.SuccessPayload(nil, "Successfully deleted.")
 					utils.Response(ctx, http.StatusOK, result)

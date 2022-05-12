@@ -176,6 +176,18 @@ func (service *ChartPresetService) Update(ctx context.Context, updatedChartPrese
 			return nil, err
 		}
 
+		// Fetch the new charts
+		if cursor, err := db.Collection("Chart").Find(ctx, bson.M{"chartPresetId": updatedChartPreset.ID}); err != nil {
+			return nil, err
+		} else {
+			charts := []*models.Chart{}
+			if err = cursor.All(ctx, &charts); err != nil {
+				return nil, err
+			} else {
+				updatedChartPreset.Charts = charts
+			}
+		}
+
 		return nil, nil
 	}
 

@@ -124,15 +124,15 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			rawDataPresetEndpoints.GET("/thing/:thingId", rawDataPresetAPI.GetRawDataPresets)
 			rawDataPresetEndpoints.POST("", rawDataPresetAPI.CreateRawDataPreset)
 			rawDataPresetEndpoints.PUT("", rawDataPresetAPI.UpdateRawDataPreset)
-			rawDataPresetEndpoints.DELETE("/:rdpId", rawDataPresetAPI.DeleteRawDataPreset)
+			rawDataPresetEndpoints.DELETE("/:rawDataPresetId", rawDataPresetAPI.DeleteRawDataPreset)
 		}
 
-		chartPresetEndpoints := privateEndpoints.Group("/chartpresets")
+		chartPresetEndpoints := privateEndpoints.Group("/chartPreset")
 		{
 			chartPresetEndpoints.GET("/thing/:thingId", chartPresetAPI.GetChartPresets)
 			chartPresetEndpoints.POST("", chartPresetAPI.CreateChartPreset)
 			chartPresetEndpoints.PUT("", chartPresetAPI.UpdateChartPreset)
-			chartPresetEndpoints.DELETE("/:cpId", chartPresetAPI.DeleteChartPreset)
+			chartPresetEndpoints.DELETE("/:chartPresetId", chartPresetAPI.DeleteChartPreset)
 		}
 	}	
 }
