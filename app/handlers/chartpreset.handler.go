@@ -72,7 +72,7 @@ func (handler *ChartPresetHandler) GetChartPresets(ctx *gin.Context) {
 
 func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 	var updatedChartPreset models.ChartPreset
-	ctx.BindJSON(updatedChartPreset)
+	ctx.BindJSON(&updatedChartPreset)
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, updatedChartPreset.ThingId.Hex())
 	if err == nil {

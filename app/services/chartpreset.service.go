@@ -127,6 +127,7 @@ func (service *ChartPresetService) Update(ctx context.Context, updatedChartPrese
 		return err
 	}
 
+	// TODO: Don't delete charts if we don't need to?
 	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 
@@ -153,6 +154,7 @@ func (service *ChartPresetService) Update(ctx context.Context, updatedChartPrese
 			chart.ChartPresetID = updatedChartPreset.ID
 			chartsInterface[i] = chart
 		}
+		if len(chartsInterface) == 0 {return nil, bson.ErrDecodeToNil}
 		res, err := db.Collection("Chart").InsertMany(ctx, chartsInterface)
 		if err != nil {
 			return nil, err
