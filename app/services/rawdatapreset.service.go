@@ -84,6 +84,7 @@ func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPreset
 }
 
 func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, newRawDataPreset *model.RawDataPreset) bool {
+	// TODO: Do with FindOne query rather than fetching everything
 	rawDataPresets, err := service.FindByThingId(ctx, newRawDataPreset.ThingId.Hex())
 	if err == nil {
 		for _, rawDataPreset := range rawDataPresets {
@@ -98,7 +99,6 @@ func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, 
 }
 
 func (service *RawDataPresetService) DoPresetSensorsExist(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
-	// TODO: Test
 	_, err := service.SensorCollection(ctx).Find(ctx, bson.M{"_id": bson.M{"$in": rawDataPreset.SensorIds }})
 	return err == nil
 }

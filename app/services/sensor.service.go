@@ -108,16 +108,64 @@ func (service *SensorService) Update(ctx context.Context, updatedSensor *model.S
 
 func (service *SensorService) Delete(ctx context.Context, sensorId string) error {
 	bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
-	if err == nil {
-		_, err := service.SensorCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonSensorId})
-		// TODO: Update the presets if the sensor was removed. 
-		return err
-	} else {
+	if err != nil {
 		return err
 	}
+
+	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
+		return err
+	}
+
+	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+		db := client.Database(service.config.MongoDbName)
+		if _, err := db.Collection("Sensor").DeleteOne(ctx, bson.M{"_id": bsonSensorId}); err != nil {
+			return nil, err
+		}	
+
+		// Remove sensor ID from associated raw data presets
+		cursor, err := db.Collection("RawDataPreset").Find(ctx, bson.M{"sensorIds": bson.M{"$in": []primitive.ObjectID{bsonSensorId}}})
+		if err == nil {
+			var rawDataPresets []*model.RawDataPreset
+			if err = cursor.All(ctx, &rawDataPresets); err == nil {
+				for _, rawDataPreset := range rawDataPresets {
+					var sensorIds []primitive.ObjectID
+					for _, sensorId := range rawDataPreset.SensorIds {
+						if sensorId != bsonSensorId {
+							sensorIds = append(sensorIds, sensorId)
+						}
+					}
+					rawDataPreset.SensorIds = sensorIds
+					if len(sensorIds) == 0 {
+						if _, err := db.Collection("RawDataPreset").DeleteOne(ctx, bson.M{"_id": rawDataPreset.ID}); err != nil {
+							return nil, err
+						}
+					} else {
+						if _, err := db.Collection("RawDataPreset").ReplaceOne(ctx, bson.M{"_id": rawDataPreset.ID}, rawDataPreset); err != nil {
+							return nil, err
+						}
+					}
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
+		// TODO: Remove sensor ID from associated chart presets
+		return nil, nil
+	}
+
+	if _, err := databases.WithTransaction(client, ctx, callback); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *model.Sensor) bool {
+	// TODO: Do with FindOne query rather than fetching everything
 	sensors, err := service.FindByThingId(ctx, newSensor.ThingID.Hex())
 	if err == nil {
 		for _, sensor := range sensors {

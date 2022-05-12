@@ -179,6 +179,7 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 }
 
 func (service *ThingService) IsThingUnique(ctx context.Context, newThing *model.Thing) bool {
+	// TODO: Do with FindOne query rather than fetching everything
 	things, err := service.FindByOrganizationId(ctx, newThing.OrganizationId)
 	if err == nil {
 		for _, thing := range things {
