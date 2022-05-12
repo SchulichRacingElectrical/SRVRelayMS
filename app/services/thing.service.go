@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database-ms/app/models"
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
@@ -168,9 +169,29 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		if _, err := db.Collection("RawDataPreset").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
 			return nil, err
 		}
-		// TODO: There will be a lot more things to delete in the future...
-		// Will need to delete associated runs and sessions and associated comments
-		// Will need to delete associated presets
+		cursor, err := db.Collection("ChartPreset").Find(ctx, bson.M{"thingId": bsonThingId})
+		if err == nil {
+			var chartPresets []*models.ChartPreset
+			if err = cursor.All(ctx, chartPresets); err != nil {
+				return nil, err
+			} else {
+				chartPresetIds := []primitive.ObjectID{}
+				for _, preset := range chartPresets {
+					chartPresetIds = append(chartPresetIds, preset.ID)
+				}
+				if _, err := db.Collection("Chart").DeleteMany(ctx, bson.M{"chartPresetId": bson.M{"$in": chartPresetIds}}); err != nil {
+					return nil, err
+				} else {
+					if _, err := db.Collection("ChartPreset").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
+						return nil, err
+					}
+				}
+			}
+		} else {
+			return nil, err
+		}
+
+		// TODO: Delete associated runs and sessions and associated comments
 		return nil, nil
 	}
 
