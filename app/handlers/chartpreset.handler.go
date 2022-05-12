@@ -21,7 +21,8 @@ func NewChartPresetAPI(service services.ChartPresetServiceInterface, thingServic
 
 func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 	var newChartPreset models.ChartPreset
-	ctx.BindJSON(newChartPreset)
+	ctx.BindJSON(&newChartPreset)
+	print(newChartPreset.ThingId.Hex())
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newChartPreset.ThingId.Hex())
 	if err == nil {

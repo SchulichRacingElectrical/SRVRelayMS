@@ -72,7 +72,6 @@ func (service *ChartPresetService) Create(ctx context.Context, chartPreset *mode
 		for _, id := range res.InsertedIDs {
 			chartIds = append(chartIds, (id).(primitive.ObjectID))
 		}
-		chartPreset.ChartIds = chartIds
 
 		return nil, nil
 	}
@@ -94,37 +93,30 @@ func (service *ChartPresetService) FindByThingId(ctx context.Context, thingId st
 	if chartPresets == nil {
 		chartPresets = []*models.ChartPreset{}
 	} else {
-		// Get all the charts
-		chartIdMap := make(map[primitive.ObjectID]int)
+		// Create a list for all the charts to query
+		chartPresetIds := []primitive.ObjectID{}
 		for _, preset := range chartPresets {
-			chartIdMap[preset.ID] = 0
-		}
-		chartIds := []primitive.ObjectID{}
-		for id, _ := range chartIdMap {
-			chartIds = append(chartIds, id)
+			chartPresetIds = append(chartPresetIds, preset.ID)
+			preset.Charts = []models.Chart{}
 		}
 
-		// Query all the required charts then attach the each preset
-		cursor, err := service.ChartCollection(ctx).Find(ctx, bson.M{"_id": bson.M{"$in": chartIds}})
+		// Fetch all the charts
+		cursor, err := service.ChartCollection(ctx).Find(ctx, bson.M{"chartPresetId": bson.M{"$in": chartPresetIds}})
 		if err == nil {
-			var charts []*models.Chart
+			var charts []models.Chart
 			if err = cursor.All(ctx, &charts); err != nil {
 				return nil, err
 			}
-			chartMap := make(map[primitive.ObjectID]*models.Chart)
+			chartMap := make(map[primitive.ObjectID][]models.Chart)
 			for _, chart := range charts {
-				chartMap[chart.ID] = chart
+				chartMap[chart.ChartPresetID] = append(chartMap[chart.ChartPresetID], chart)
 			}
-			for _, chartPreset := range chartPresets {
-				for _, id := range chartPreset.ChartIds {
-					chartPreset.Charts = append(chartPreset.Charts, chartMap[id])
-				}
+			for _, preset := range chartPresets {
+				preset.Charts = chartMap[preset.ID]
 			}
 		} else {
 			return nil, err
 		}
-
-		return nil, nil
 	}
 	return chartPresets, nil
 }
@@ -169,7 +161,6 @@ func (service *ChartPresetService) Update(ctx context.Context, updatedChartPrese
 		for _, id := range res.InsertedIDs {
 			chartIds = append(chartIds, (id).(primitive.ObjectID))
 		}
-		updatedChartPreset.ChartIds = chartIds
 
 		// Update the chart preset
 		if _, err := db.Collection("ChartPreset").ReplaceOne(ctx, bson.M{"_id": updatedChartPreset.ID}, updatedChartPreset); err != nil {
@@ -180,7 +171,7 @@ func (service *ChartPresetService) Update(ctx context.Context, updatedChartPrese
 		if cursor, err := db.Collection("Chart").Find(ctx, bson.M{"chartPresetId": updatedChartPreset.ID}); err != nil {
 			return nil, err
 		} else {
-			charts := []*models.Chart{}
+			charts := []models.Chart{}
 			if err = cursor.All(ctx, &charts); err != nil {
 				return nil, err
 			} else {
