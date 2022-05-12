@@ -123,6 +123,8 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 			return nil, err
 		}	
 
+		// Put the two below into a function
+
 		// Remove sensor ID from associated raw data presets
 		cursor, err := db.Collection("RawDataPreset").Find(ctx, bson.M{"sensorIds": bson.M{"$in": []primitive.ObjectID{bsonSensorId}}})
 		if err == nil {
@@ -136,14 +138,8 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 						}
 					}
 					rawDataPreset.SensorIds = sensorIds
-					if len(sensorIds) == 0 {
-						if _, err := db.Collection("RawDataPreset").DeleteOne(ctx, bson.M{"_id": rawDataPreset.ID}); err != nil {
-							return nil, err
-						}
-					} else {
-						if _, err := db.Collection("RawDataPreset").ReplaceOne(ctx, bson.M{"_id": rawDataPreset.ID}, rawDataPreset); err != nil {
-							return nil, err
-						}
+					if _, err := db.Collection("RawDataPreset").ReplaceOne(ctx, bson.M{"_id": rawDataPreset.ID}, rawDataPreset); err != nil {
+						return nil, err
 					}
 				}
 			} else {
@@ -153,7 +149,30 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 			return nil, err
 		}
 
-		// TODO: Remove sensor ID from associated chart presets
+		// Remove sensor ID for associated charts
+		cursor, err = db.Collection("Chart").Find(ctx, bson.M{"sensorIds": bson.M{"$in": []primitive.ObjectID{bsonSensorId}}})
+		if err == nil {
+			var charts []*model.Chart
+			if err = cursor.All(ctx, charts); err == nil {
+				for _, chart := range charts {
+					var sensorIds []primitive.ObjectID
+					for _, sensorId := range chart.SensorIds {
+						if sensorId != bsonSensorId {
+							sensorIds = append(sensorIds, sensorId)
+						}
+					}
+					chart.SensorIds = sensorIds
+					if _, err := db.Collection("Chart").ReplaceOne(ctx, bson.M{"_id": chart.ID}, chart); err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
 		return nil, nil
 	}
 
