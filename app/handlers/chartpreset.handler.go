@@ -33,19 +33,19 @@ func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 						result := utils.SuccessPayload(newChartPreset, "Successfully created Chart Preset.")
 						utils.Response(ctx, http.StatusOK, result)
 					} else {
-						// Internal error
+						utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 					}
 				} else {
-					// Bad request
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotUnique))
 				}
 			} else {
-				// Bad request
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotValid))
 			}
 		} else {
-			// Bad Auth
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		}
 	} else {
-		// Bad request
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 	}
 }
 
@@ -59,13 +59,13 @@ func (handler *ChartPresetHandler) GetChartPresets(ctx *gin.Context) {
 				result := utils.SuccessPayload(chartPresets, "Successfully retrieved Chart Presets.")
 				utils.Response(ctx, http.StatusOK, result)
 			} else {
-				// Internal error
+				utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 			}
 		} else {
-			// No auth
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		}
 	} else {
-		// Bad request
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 	}
 }
 
@@ -83,19 +83,19 @@ func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 						result := utils.SuccessPayload(nil, "Successfully Updated.")
 						utils.Response(ctx, http.StatusOK, result)
 					} else {
-						// Something went wrong
+						utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 					}
 				} else {
-					// Bad request
+					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotUnique))
 				}
 			} else {
-				// Bad request
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotValid))
 			}
 		} else {
-			// No auth
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		}
 	} else {
-		// Bad request
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
 	}
 }
 
@@ -111,17 +111,15 @@ func (handler *ChartPresetHandler) DeleteChartPreset(ctx *gin.Context) {
 					result := utils.SuccessPayload(nil, "Successfully deleted.")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
-					// Internal error
+					utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 				}
 			} else {
-				// Not auth
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 			}
 		} else {
-			// Bad request
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
 		}
 	} else {
-		// Bad request
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotFound))
 	}
 }
-
-// TODO: Indicate bad request rather than something else if a thing is found that does not belong to the claim

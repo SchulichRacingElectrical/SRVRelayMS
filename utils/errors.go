@@ -59,6 +59,11 @@ const (
 	// Raw Data Preset Error
 	RawDataPresetNotUnique= "rawDataPresetNotUnique"
 	RawDataPresetNotFound = "rawDataPresetNotFound"
+
+	// Chart Preset Error
+	ChartPresetNotUnique  =	"chartPresetNotUnique"
+	ChartPresetNotValid		= "chartPresetNotValid"
+	ChartPresetNotFound		= "chartPresetNotFound"
 )
 
 // Error code with description
@@ -103,5 +108,10 @@ var errorMessage = map[string]string {
 
 	// Raw Data Preset
 	"rawDataPresetNotUnique":	"Raw Data Preset name must be unique.",
+	"rawDataPresetNotFound":	"Raw Data Preset not found.",
 
+	// Chart Preset
+	"chartPresetNotUnique":		"Chart Preset name must be unique.",
+	"chartPresetNotValid":		"Chart Preset was not valid. Ensure posted Sensors exist.",
+	"chartPresetNotFound":		"Chart Preset was not found.",
 }
