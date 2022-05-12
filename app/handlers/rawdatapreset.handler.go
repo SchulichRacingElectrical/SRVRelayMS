@@ -25,8 +25,8 @@ func (handler *RawDataPresetHandler) CreateRawDataPreset(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newRawDataPreset.ThingId.Hex())
 	if err == nil {
-		if handler.service.DoPresetSensorsExist(ctx, &newRawDataPreset) {
-			if handler.service.IsRawDataPresetUnique(ctx, &newRawDataPreset) {
+		if handler.service.IsPresetValid(ctx, &newRawDataPreset) {
+			if handler.service.IsPresetUnique(ctx, &newRawDataPreset) {
 				if thing.OrganizationId == organization.ID {
 					err := handler.service.Create(ctx.Request.Context(), &newRawDataPreset)
 					if err == nil {
@@ -75,8 +75,8 @@ func (handler *RawDataPresetHandler) UpdateRawDataPreset(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, updatedRawDataPreset.ThingId.Hex())
 	if err == nil {
-		if handler.service.DoPresetSensorsExist(ctx, &updatedRawDataPreset) {
-			if handler.service.IsRawDataPresetUnique(ctx, &updatedRawDataPreset) {
+		if handler.service.IsPresetValid(ctx, &updatedRawDataPreset) {
+			if handler.service.IsPresetUnique(ctx, &updatedRawDataPreset) {
 				if thing.OrganizationId == organization.ID {
 					err := handler.service.Update(ctx.Request.Context(), &updatedRawDataPreset)
 					if err == nil {

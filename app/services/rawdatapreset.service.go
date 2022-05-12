@@ -19,8 +19,8 @@ type RawDataPresetServiceInterface interface {
 	Update(context.Context, *model.RawDataPreset) error
 	Delete(context.Context, string) error
 	FindById(context.Context, string) (*model.RawDataPreset, error)
-	IsRawDataPresetUnique(context.Context, *model.RawDataPreset) bool
-	DoPresetSensorsExist(context.Context, *model.RawDataPreset) bool
+	IsPresetUnique(context.Context, *model.RawDataPreset) bool
+	IsPresetValid(context.Context, *model.RawDataPreset) bool
 }
 
 type RawDataPresetService struct {
@@ -33,6 +33,15 @@ func NewRawDataPresetService(db *mgo.Session, c *config.Configuration) RawDataPr
 }
 
 func (service *RawDataPresetService) Create(ctx context.Context, rawDataPreset *model.RawDataPreset) error {
+	// Remove duplicate sensor Ids from the preset
+	sensorIdMap := make(map[primitive.ObjectID]int)
+	for _, sensorId := range rawDataPreset.SensorIds {
+		sensorIdMap[sensorId] = 0
+	}
+	rawDataPreset.SensorIds = []primitive.ObjectID{}
+	for id, _ := range sensorIdMap {
+		rawDataPreset.SensorIds = append(rawDataPreset.SensorIds, id)
+	}
 	result, err := service.RawDataPresetCollection(ctx).InsertOne(ctx, rawDataPreset)
 	if err == nil {
 		rawDataPreset.ID = (result.InsertedID).(primitive.ObjectID)
@@ -57,6 +66,15 @@ func (service *RawDataPresetService) FindByThingId(ctx context.Context, thingId 
 }
 
 func (service *RawDataPresetService) Update(ctx context.Context, updatedRawDataPreset *model.RawDataPreset) error {
+	// Remove duplicate sensor Ids from the preset
+	sensorIdMap := make(map[primitive.ObjectID]int)
+	for _, sensorId := range updatedRawDataPreset.SensorIds {
+		sensorIdMap[sensorId] = 0
+	}
+	updatedRawDataPreset.SensorIds = []primitive.ObjectID{}
+	for id, _ := range sensorIdMap {
+		updatedRawDataPreset.SensorIds = append(updatedRawDataPreset.SensorIds, id)
+	}
 	_, err := service.RawDataPresetCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedRawDataPreset.ID}, bson.M{"$set": updatedRawDataPreset})
 	return err
 }
@@ -83,7 +101,7 @@ func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPreset
 	return &rawDataPreset, nil
 }
 
-func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, newRawDataPreset *model.RawDataPreset) bool {
+func (service *RawDataPresetService) IsPresetUnique(ctx context.Context, newRawDataPreset *model.RawDataPreset) bool {
 	// TODO: Do with FindOne query rather than fetching everything
 	rawDataPresets, err := service.FindByThingId(ctx, newRawDataPreset.ThingId.Hex())
 	if err == nil {
@@ -98,7 +116,7 @@ func (service *RawDataPresetService) IsRawDataPresetUnique(ctx context.Context, 
 	}
 }
 
-func (service *RawDataPresetService) DoPresetSensorsExist(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
+func (service *RawDataPresetService) IsPresetValid(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
 	_, err := service.SensorCollection(ctx).Find(ctx, bson.M{"_id": bson.M{"$in": rawDataPreset.SensorIds }})
 	return err == nil
 }

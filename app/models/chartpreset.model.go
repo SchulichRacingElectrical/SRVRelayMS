@@ -9,4 +9,5 @@ type ChartPreset struct {
 	Name					string								`json:"name,omitempty" bson:"name,omitempty"`
 	ThingId 			primitive.ObjectID		`json:"thingId,omitempty" bson:"thingId,omitempty"`
 	Charts				[]*Chart							`json:"charts,omitempty" bson:"-"`
+	ChartIds			[]primitive.ObjectID	`json:"-" bson:"chartIds,omitempty"`
 }

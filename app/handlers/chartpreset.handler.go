@@ -26,8 +26,8 @@ func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 	thing, err := handler.thingService.FindById(ctx, newChartPreset.ThingId.Hex())
 	if err == nil {
 		if thing.OrganizationId == organization.ID {
-			if handler.service.AreChartsValid(ctx, &newChartPreset) {
-				if handler.service.IsChartPresetUnique(ctx, &newChartPreset) {
+			if handler.service.IsPresetValid(ctx, &newChartPreset) {
+				if handler.service.IsPresetUnique(ctx, &newChartPreset) {
 					err := handler.service.Create(ctx.Request.Context(), &newChartPreset)
 					if err == nil {
 						result := utils.SuccessPayload(newChartPreset, "Successfully created Chart Preset.")
@@ -76,8 +76,8 @@ func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 	thing, err := handler.thingService.FindById(ctx, updatedChartPreset.ThingId.Hex())
 	if err == nil {
 		if thing.OrganizationId == organization.ID {
-			if handler.service.AreChartsValid(ctx, &updatedChartPreset) {
-				if handler.service.IsChartPresetUnique(ctx, &updatedChartPreset) {
+			if handler.service.IsPresetValid(ctx, &updatedChartPreset) {
+				if handler.service.IsPresetUnique(ctx, &updatedChartPreset) {
 					err := handler.service.Update(ctx, &updatedChartPreset)
 					if err == nil {
 						result := utils.SuccessPayload(nil, "Successfully Updated.")
@@ -120,6 +120,6 @@ func (handler *ChartPresetHandler) DeleteChartPreset(ctx *gin.Context) {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))	
 		}
 	} else {
-				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotFound))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotFound))
 	}
 }
