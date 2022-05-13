@@ -22,7 +22,10 @@ func NewChartPresetAPI(service services.ChartPresetServiceInterface, thingServic
 func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 	var newChartPreset models.ChartPreset
 	ctx.BindJSON(&newChartPreset)
-	print(newChartPreset.ThingId.Hex())
+	if len(newChartPreset.Charts) == 0 {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotValid))	
+		return
+	}
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newChartPreset.ThingId.Hex())
 	if err == nil {
@@ -73,6 +76,10 @@ func (handler *ChartPresetHandler) GetChartPresets(ctx *gin.Context) {
 func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 	var updatedChartPreset models.ChartPreset
 	ctx.BindJSON(&updatedChartPreset)
+	if len(updatedChartPreset.Charts) == 0 {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotValid))	
+		return
+	}
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, updatedChartPreset.ThingId.Hex())
 	if err == nil {

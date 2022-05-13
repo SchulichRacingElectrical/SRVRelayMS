@@ -13,7 +13,7 @@ type Sensor struct {
 	Name                 string             `json:"name,omitempty" bson:"name,omitempty"`
 	Frequency            int                `json:"frequency,omitempty" bson:"frequency,omitempty"`
 	Unit                 string             `json:"unit,omitempty" bson:"unit,omitempty"`
-	CanId                int               	`json:"canId,omitempty" bson:"canId,omitempty"`
+	CanId                int64              `json:"canId,omitempty" bson:"canId,omitempty"`
 	Disabled             *bool              `json:"disabled,omitempty" bson:"disabled,omitempty"`
 	ThingID              primitive.ObjectID `json:"thingId,omitempty" bson:"thingId,omitempty"`
 	UpperCalibration     float64           	`json:"upperCalibration,omitempty" bson:"upperCalibration,omitempty"`

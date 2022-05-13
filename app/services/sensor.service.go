@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database-ms/app/models"
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
@@ -138,8 +139,14 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 						}
 					}
 					rawDataPreset.SensorIds = sensorIds
-					if _, err := db.Collection("RawDataPreset").ReplaceOne(ctx, bson.M{"_id": rawDataPreset.ID}, rawDataPreset); err != nil {
-						return nil, err
+					if len(sensorIds) == 0 {
+						if _, err := db.Collection("RawDataPreset").DeleteOne(ctx, bson.M{"_id": rawDataPreset.ID}); err != nil {
+							return nil, err
+						}
+					} else {
+						if _, err := db.Collection("RawDataPreset").ReplaceOne(ctx, bson.M{"_id": rawDataPreset.ID}, rawDataPreset); err != nil {
+							return nil, err
+						}
 					}
 				}
 			} else {
@@ -150,10 +157,11 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 		}
 
 		// Remove sensor ID for associated charts
+		chartPresetIdsWithDeletions := []primitive.ObjectID{}
 		cursor, err = db.Collection("Chart").Find(ctx, bson.M{"sensorIds": bson.M{"$in": []primitive.ObjectID{bsonSensorId}}})
 		if err == nil {
 			var charts []*model.Chart
-			if err = cursor.All(ctx, charts); err == nil {
+			if err = cursor.All(ctx, &charts); err == nil {
 				for _, chart := range charts {
 					var sensorIds []primitive.ObjectID
 					for _, sensorId := range chart.SensorIds {
@@ -162,8 +170,15 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 						}
 					}
 					chart.SensorIds = sensorIds
-					if _, err := db.Collection("Chart").ReplaceOne(ctx, bson.M{"_id": chart.ID}, chart); err != nil {
-						return nil, err
+					if len(sensorIds) == 0 {
+						if _, err := db.Collection("Chart").DeleteOne(ctx, bson.M{"_id": chart.ID}); err != nil {
+							return nil, err
+						}
+						chartPresetIdsWithDeletions = append(chartPresetIdsWithDeletions, chart.ChartPresetID)
+					} else {
+						if _, err := db.Collection("Chart").ReplaceOne(ctx, bson.M{"_id": chart.ID}, chart); err != nil {
+							return nil, err
+						}
 					}
 				}
 			} else {
@@ -173,6 +188,21 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 			return nil, err
 		}
 
+		// Delete any chart presets if they have no charts
+		for _, chartPresetId := range chartPresetIdsWithDeletions {
+			cursor, err := db.Collection("Chart").Find(ctx, bson.M{"chartPresetId": chartPresetId})
+			var charts []*models.Chart
+			if err = cursor.All(ctx, &charts); err == nil {
+				if len(charts) == 0 {
+					if _, err := db.Collection("ChartPreset").DeleteOne(ctx, bson.M{"_id": chartPresetId}); err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, err
+			}		
+		}
+		
 		return nil, nil
 	}
 

@@ -22,6 +22,10 @@ func NewRawDataPresetAPI(service services.RawDataPresetServiceInterface, thingSe
 func (handler *RawDataPresetHandler) CreateRawDataPreset(ctx *gin.Context) {
 	var newRawDataPreset models.RawDataPreset
 	ctx.BindJSON(&newRawDataPreset)
+	if len(newRawDataPreset.SensorIds) == 0 {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.RawDataPresetNotValid))		
+		return
+	}
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, newRawDataPreset.ThingId.Hex())
 	if err == nil {
@@ -72,6 +76,10 @@ func (handler *RawDataPresetHandler) GetRawDataPresets(ctx *gin.Context) {
 func (handler *RawDataPresetHandler) UpdateRawDataPreset(ctx *gin.Context) {
 	var updatedRawDataPreset models.RawDataPreset
 	ctx.BindJSON(&updatedRawDataPreset)
+	if len(updatedRawDataPreset.SensorIds) == 0 {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.RawDataPresetNotValid))		
+		return
+	}
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.thingService.FindById(ctx, updatedRawDataPreset.ThingId.Hex())
 	if err == nil {

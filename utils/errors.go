@@ -58,6 +58,7 @@ const (
 
 	// Raw Data Preset Error
 	RawDataPresetNotUnique= "rawDataPresetNotUnique"
+	RawDataPresetNotValid =	"rawDataPresetNotValid"
 	RawDataPresetNotFound = "rawDataPresetNotFound"
 
 	// Chart Preset Error
@@ -108,6 +109,7 @@ var errorMessage = map[string]string {
 
 	// Raw Data Preset
 	"rawDataPresetNotUnique":	"Raw Data Preset name must be unique.",
+	"rawDataPresetNotValid":	"Raw Data Preset is not valid.",
 	"rawDataPresetNotFound":	"Raw Data Preset not found.",
 
 	// Chart Preset
