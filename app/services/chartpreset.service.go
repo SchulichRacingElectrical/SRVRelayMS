@@ -45,6 +45,7 @@ func (service *ChartPresetService) Create(ctx context.Context, chartPreset *mode
 		if err != nil {
 			return nil, err
 		}
+		chartPreset.ID = (result.InsertedID).(primitive.ObjectID)
 
 		// Remove duplicate sensor Ids from each chart
 		for _, chart := range chartPreset.Charts {
