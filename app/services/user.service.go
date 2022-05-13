@@ -98,7 +98,7 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 
 func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.User, error) {
 	var users []*model.User
-	cursor, err := service.UserCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
+	cursor, err := service.UserCollection(ctx).Find(ctx, bson.M{"organizationId": organizationId})
 	if err = cursor.All(ctx, &users); err != nil {
 		return nil, err
 	}

@@ -64,7 +64,7 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) err
 
 func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.Thing, error) {
 	var things []*model.Thing
-	cursor, err := service.ThingCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
+	cursor, err := service.ThingCollection(ctx).Find(ctx, bson.M{"organizationId": organizationId})
 	if err = cursor.All(ctx, &things); err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		cursor, err := db.Collection("ChartPreset").Find(ctx, bson.M{"thingId": bsonThingId})
 		if err == nil {
 			var chartPresets []*models.ChartPreset
-			if err = cursor.All(ctx, chartPresets); err != nil {
+			if err = cursor.All(ctx, &chartPresets); err != nil {
 				return nil, err
 			} else {
 				chartPresetIds := []primitive.ObjectID{}
@@ -219,24 +219,20 @@ func (service *ThingService) IsThingUnique(ctx context.Context, newThing *model.
 
 func (service *ThingService) AttachAssociatedOperatorIds(ctx context.Context, thing *model.Thing) {
 	thing.OperatorIds = []primitive.ObjectID{}
-	var thingOperators []*model.ThingOperator
-	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	if err != nil {
-		return
-	}
-	thingOperatorCollection := dbClient.Database(service.config.MongoDbName).Collection("ThingOperator")
-	cursor, err := thingOperatorCollection.Find(ctx, bson.M{"thingId": thing.ID})
-	if err = cursor.All(ctx, &thingOperators); err != nil {
-		return
-	}	
-	var operatorIds []primitive.ObjectID
-	for _, thingOperator := range thingOperators {
-		operatorIds = append(operatorIds, thingOperator.OperatorId)
-	}
-	if len(operatorIds) == 0 {
-		thing.OperatorIds = []primitive.ObjectID{}
+	thingOperators := []*model.ThingOperator{}
+	if cursor, err := service.ThingOperatorCollection(ctx).Find(ctx, bson.M{"thingId": thing.ID}); err == nil {
+		if err = cursor.All(ctx, &thingOperators); err != nil {
+			return
+		}	
+		operatorIds := []primitive.ObjectID{}
+		for _, thingOperator := range thingOperators {
+			operatorIds = append(operatorIds, thingOperator.OperatorId)
+		}
+		if len(operatorIds) > 0 {
+			thing.OperatorIds = operatorIds
+		}
 	} else {
-		thing.OperatorIds = operatorIds
+		println(err.Error())
 	}
 }
 
