@@ -37,7 +37,7 @@ func main() {
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         conf.Address,
-		WriteTimeout: 15 * time.Second,
+		WriteTimeout: 50 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
 

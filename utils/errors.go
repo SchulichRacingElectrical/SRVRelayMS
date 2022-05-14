@@ -56,6 +56,14 @@ const (
 	RunNotFound  = "runNotFound"
 	RunDNE       = "runDNE"
 
+	// File error
+	NoFileReceived         = "noFileReceived"
+	NotCsv                 = "notCsv"
+	FileNotUploaded        = "fileNotUploaded"
+	RunHasAssociatedFile   = "runHasAssociatedFile"
+	RunHasNoAssociatedFile = "runHasNoAssociatedFile"
+	CannotRetrieveFile     = "cannotRetrieveFile"
+
 	// Session error
 	SessionsNotFound = "sessionsNotFound"
 	SessionNotFound  = "sessionNotFound"
@@ -122,6 +130,13 @@ var errorMessage = map[string]string{
 	"runsNotFound": "Runs could not be found",
 	"runNotFound":  "Run could not be found",
 	"runDNE":       "Run does not exist",
+
+	// File
+	"noFileReceived":         "No file is received",
+	"notCsv":                 "Not a csv",
+	"runHasAssociatedFile":   "Run already has associated file",
+	"runHasNoAssociatedFile": "Run does exist or not have associated file",
+	"cannotRetrieveFile":     "Cannot retrieve file",
 
 	// Session errors
 	"sessionssNotFound": "Sesssions could not be found",

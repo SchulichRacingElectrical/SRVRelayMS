@@ -23,7 +23,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
 	thingOperatorAPI := handlers.NewThingOperatorAPI(services.NewThingOperatorService(mgoDbSession, conf), thingService, operatorService)
 	commentService := services.NewCommentService(conf)
-	runAPI := handlers.NewRunAPI(services.NewRunService(conf), commentService)
+	runAPI := handlers.NewRunAPI(services.NewRunService(conf), commentService, operatorService, thingService)
 	sessionAPI := handlers.NewSessionAPI(services.NewSessionService(conf), commentService)
 
 	// Declare public endpoints
@@ -107,7 +107,8 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 
 			// TODO
 			// 	runEndpoints.GET("/:runId/comments", )
-			// 	runEndpoints.POST("/:runId/file", )
+			runEndpoints.POST("/:runId/file", runAPI.UploadFile)
+			runEndpoints.GET("/:runId/file", runAPI.DownloadFile)
 
 			runEndpoints.POST("/:runId/comment", runAPI.AddComment)
 			runEndpoints.GET("/:runId/comments", runAPI.GetComments)

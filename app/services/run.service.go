@@ -1,16 +1,22 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
 	"database-ms/utils"
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"mime/multipart"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/gridfs"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RunServiceI interface {
@@ -19,6 +25,9 @@ type RunServiceI interface {
 	GetRunsByThingId(context.Context, string) ([]*models.Run, error)
 	UpdateRun(context.Context, *models.RunUpdate) error
 	DeleteRun(context.Context, string) error
+	GetRunFileMetaData(context.Context, string) (*models.RunFileMetaData, error)
+	UploadFile(context.Context, *models.RunFileUpload, *multipart.FileHeader) error
+	DownloadFile(context.Context, string) ([]byte, error)
 }
 
 type RunService struct {
@@ -67,7 +76,7 @@ func (service *RunService) FindById(ctx context.Context, runId string) (*models.
 	}
 
 	err = database.Collection("Run").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&run)
-	if err == nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -151,4 +160,110 @@ func (service *RunService) DeleteRun(ctx context.Context, runId string) error {
 
 	_, err = databases.WithTransaction(client, ctx, callback)
 	return err
+}
+
+func (service *RunService) GetRunFileMetaData(ctx context.Context, runId string) (*models.RunFileMetaData, error) {
+	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer database.Client().Disconnect(ctx)
+
+	bsonRunId, err := primitive.ObjectIDFromHex(runId)
+	if err != nil {
+		return nil, err
+	}
+
+	var runFileMetaData models.RunFileMetaData
+	err = database.Collection("fs.files").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&runFileMetaData)
+
+	// TODO for now the id of the file is the same as the run id
+	// err = database.Collection("fs.files").FindOne(
+	// 	ctx,
+	// 	bson.D{
+	// 		{"metadata", bson.D{
+	// 			{"runId", bsonRunId},
+	// 		}},
+	// 	}).Decode(&runFileMetaData)
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, err
+	}
+
+	return &runFileMetaData, nil
+
+}
+
+func (service *RunService) UploadFile(ctx context.Context, metadata *models.RunFileUpload, file *multipart.FileHeader) error {
+	fileContent, err := file.Open()
+	if err != nil {
+		return err
+	}
+
+	byteContainer, err := ioutil.ReadAll(fileContent)
+	if err != nil {
+		return err
+	}
+
+	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer database.Client().Disconnect(ctx)
+
+	bucket, err := gridfs.NewBucket(
+		database,
+	)
+	if err != nil {
+		return err
+	}
+
+	opts := options.GridFSUpload()
+	opts.SetMetadata(metadata)
+	uploadStream, err := bucket.OpenUploadStreamWithID(
+		metadata.RunId,
+		file.Filename,
+		opts,
+	)
+	if err != nil {
+		return err
+	}
+	defer uploadStream.Close()
+
+	fileSize, err := uploadStream.Write(byteContainer)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Write file to DB was successful. File size: %d M\n", fileSize)
+	return nil
+}
+
+func (service *RunService) DownloadFile(ctx context.Context, runId string) ([]byte, error) {
+	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer database.Client().Disconnect(ctx)
+
+	bsonRunId, err := primitive.ObjectIDFromHex(runId)
+	if err != nil {
+		return nil, err
+	}
+
+	var result bson.M
+	err = database.Collection("fs.files").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	bucket, _ := gridfs.NewBucket(database)
+
+	var buf bytes.Buffer
+	_, err = bucket.DownloadToStream(bsonRunId, &buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }

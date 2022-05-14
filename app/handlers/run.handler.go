@@ -6,19 +6,29 @@ import (
 	utils "database-ms/utils"
 	"fmt"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
 
 type RunHandler struct {
-	run     services.RunServiceI
-	comment services.CommentServiceI
+	run      services.RunServiceI
+	comment  services.CommentServiceI
+	operator services.OperatorServiceInterface
+	thing    services.ThingServiceInterface
 }
 
-func NewRunAPI(runService services.RunServiceI, commentService services.CommentServiceI) *RunHandler {
+func NewRunAPI(
+	runService services.RunServiceI,
+	commentService services.CommentServiceI,
+	operatorService services.OperatorServiceInterface,
+	thingService services.ThingServiceInterface,
+) *RunHandler {
 	return &RunHandler{
-		run:     runService,
-		comment: commentService,
+		run:      runService,
+		comment:  commentService,
+		operator: operatorService,
+		thing:    thingService,
 	}
 }
 
@@ -159,4 +169,81 @@ func (handler *RunHandler) DeleteComment(c *gin.Context) {
 		result := utils.NewHTTPError(utils.UserIdMissing)
 		utils.Response(c, http.StatusBadRequest, result)
 	}
+}
+
+func (handler *RunHandler) UploadFile(c *gin.Context) {
+	// Check if run exist
+	run, err := handler.run.FindById(c.Request.Context(), c.PostForm("runId"))
+	if err != nil {
+		utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunNotFound))
+		return
+	}
+
+	// Check if operator exist
+	operator, err := handler.operator.FindById(c.Request.Context(), c.PostForm("operatorId"))
+	if err != nil {
+		utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.OperatorNotFound))
+		return
+	}
+
+	// Check if thing exist
+	thing, err := handler.thing.FindById(c.Request.Context(), c.PostForm("thingId"))
+	if err != nil {
+		utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Check if run alread has a file
+	if runMetadata, _ := handler.run.GetRunFileMetaData(c.Request.Context(), c.PostForm("runId")); runMetadata != nil {
+		utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunHasAssociatedFile))
+		return
+	}
+
+	runFileMetadata := models.RunFileUpload{
+		OperatorId:      operator.ID,
+		RunId:           run.ID,
+		ThingID:         thing.ID,
+		UploadDateEpoch: utils.CurrentTimeInMilli(),
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		result := utils.NewHTTPError(utils.NoFileReceived)
+		utils.Response(c, http.StatusBadRequest, result)
+		return
+	}
+
+	// Verify file extension
+	if extension := filepath.Ext(file.Filename); extension != ".csv" {
+		fmt.Println(extension)
+		result := utils.NewHTTPError(utils.NotCsv)
+		utils.Response(c, http.StatusBadRequest, result)
+		return
+	}
+
+	// Save file
+	err = handler.run.UploadFile(c.Request.Context(), &runFileMetadata, file)
+	if err != nil {
+		utils.Response(c, http.StatusInternalServerError, utils.NewHTTPError(utils.FileNotUploaded))
+	}
+
+	result := utils.SuccessPayload(nil, "Successfully uploaded file")
+	utils.Response(c, http.StatusOK, result)
+}
+
+func (handler *RunHandler) DownloadFile(c *gin.Context) {
+	// Check if run alread has a file
+	runMetadata, err := handler.run.GetRunFileMetaData(c.Request.Context(), c.PostForm("runId"))
+	if err != nil {
+		utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunHasNoAssociatedFile))
+		return
+	}
+
+	byteFile, err := handler.run.DownloadFile(c.Request.Context(), c.PostForm("runId"))
+	if err != nil {
+		utils.Response(c, http.StatusInternalServerError, utils.NewHTTPError(utils.CannotRetrieveFile))
+		return
+	}
+	c.Header("Content-Disposition", "attachment; filename="+runMetadata.FileName)
+	c.Data(http.StatusOK, "application/octet-stream", byteFile)
 }
