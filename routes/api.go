@@ -21,10 +21,12 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)
 	operatorService := services.NewOperatorService(mgoDbSession, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
-	thingOperatorAPI := handlers.NewThingOperatorAPI(services.NewThingOperatorService(mgoDbSession, conf), thingService, operatorService)
 	commentService := services.NewCommentService(conf)
 	runAPI := handlers.NewRunAPI(services.NewRunService(conf), commentService, operatorService, thingService)
 	sessionAPI := handlers.NewSessionAPI(services.NewSessionService(conf), commentService)
+
+	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(mgoDbSession, conf), thingService)
+	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(mgoDbSession, conf), thingService)
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("")
@@ -92,12 +94,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			operatorEndpoints.DELETE("/:operatorId", operatorAPI.DeleteOperator)
 		}
 
-		thingOperatorEndpoints := privateEndpoints.Group("/thing_operator")
-		{
-			thingOperatorEndpoints.POST("", thingOperatorAPI.CreateThingOperatorAssociation)
-			thingOperatorEndpoints.DELETE("/thing/:thingId/operator/:operatorId", thingOperatorAPI.DeleteThingOperator)
-		}
-
 		runEndpoints := privateEndpoints.Group("/runs")
 		{
 			runEndpoints.POST("", runAPI.CreateRun)
@@ -105,8 +101,6 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			runEndpoints.PUT("", runAPI.UpdateRun)
 			runEndpoints.DELETE("/:runId", runAPI.DeleteRun)
 
-			// TODO
-			// 	runEndpoints.GET("/:runId/comments", )
 			runEndpoints.POST("/:runId/file", runAPI.UploadFile)
 			runEndpoints.GET("/:runId/file", runAPI.DownloadFile)
 
@@ -132,22 +126,20 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			sessionEndpoints.DELETE("/comment/:commentId", sessionAPI.DeleteComment)
 		}
 
-		// // TODO
-		// rawDataPresetEndpoints := privateEndpoints.Group("/rawdatapresets")
-		// {
-		// 	rawDataPresetEndpoints.GET("/:thingId", )
-		// 	rawDataPresetEndpoints.POST("", )
-		// 	rawDataPresetEndpoints.PUT("", )
-		// 	rawDataPresetEndpoints.DELETE("/:rdpId", )
-		// }
+		rawDataPresetEndpoints := privateEndpoints.Group("/rawDataPreset")
+		{
+			rawDataPresetEndpoints.GET("/thing/:thingId", rawDataPresetAPI.GetRawDataPresets)
+			rawDataPresetEndpoints.POST("", rawDataPresetAPI.CreateRawDataPreset)
+			rawDataPresetEndpoints.PUT("", rawDataPresetAPI.UpdateRawDataPreset)
+			rawDataPresetEndpoints.DELETE("/:rawDataPresetId", rawDataPresetAPI.DeleteRawDataPreset)
+		}
 
-		// // TODO
-		// chartPresetEndpoints := privateEndpoints.Group("/chartpresets")
-		// {
-		// 	chartPresetEndpoints.GET("/:thingId", )
-		// 	chartPresetEndpoints.POST("", )
-		// 	chartPresetEndpoints.PUT("", )
-		// 	chartPresetEndpoints.DELETE("/:cpId", )
-		// }
+		chartPresetEndpoints := privateEndpoints.Group("/chartPreset")
+		{
+			chartPresetEndpoints.GET("/thing/:thingId", chartPresetAPI.GetChartPresets)
+			chartPresetEndpoints.POST("", chartPresetAPI.CreateChartPreset)
+			chartPresetEndpoints.PUT("", chartPresetAPI.UpdateChartPreset)
+			chartPresetEndpoints.DELETE("/:chartPresetId", chartPresetAPI.DeleteChartPreset)
+		}
 	}
 }

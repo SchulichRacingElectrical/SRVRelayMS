@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database-ms/app/models"
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
@@ -63,7 +64,7 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) err
 
 func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.Thing, error) {
 	var things []*model.Thing
-	cursor, err := service.ThingCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
+	cursor, err := service.ThingCollection(ctx).Find(ctx, bson.M{"organizationId": organizationId})
 	if err = cursor.All(ctx, &things); err != nil {
 		return nil, err
 	}
@@ -165,9 +166,32 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 		if _, err := db.Collection("Thing").DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
 			return nil, err
 		}
-		// TODO: There will be a lot more things to delete in the future...
-		// Will need to delete associated runs and sessions, and their comments
-		// Will need to delete associated presets
+		if _, err := db.Collection("RawDataPreset").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
+			return nil, err
+		}
+		cursor, err := db.Collection("ChartPreset").Find(ctx, bson.M{"thingId": bsonThingId})
+		if err == nil {
+			var chartPresets []*models.ChartPreset
+			if err = cursor.All(ctx, &chartPresets); err != nil {
+				return nil, err
+			} else {
+				chartPresetIds := []primitive.ObjectID{}
+				for _, preset := range chartPresets {
+					chartPresetIds = append(chartPresetIds, preset.ID)
+				}
+				if _, err := db.Collection("Chart").DeleteMany(ctx, bson.M{"chartPresetId": bson.M{"$in": chartPresetIds}}); err != nil {
+					return nil, err
+				} else {
+					if _, err := db.Collection("ChartPreset").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
+						return nil, err
+					}
+				}
+			}
+		} else {
+			return nil, err
+		}
+
+		// TODO: Delete associated runs and sessions and associated comments
 		return nil, nil
 	}
 
@@ -179,6 +203,7 @@ func (service *ThingService) Delete(ctx context.Context, thingId string) error {
 }
 
 func (service *ThingService) IsThingUnique(ctx context.Context, newThing *model.Thing) bool {
+	// TODO: Do with FindOne query rather than fetching everything
 	things, err := service.FindByOrganizationId(ctx, newThing.OrganizationId)
 	if err == nil {
 		for _, thing := range things {
@@ -194,24 +219,20 @@ func (service *ThingService) IsThingUnique(ctx context.Context, newThing *model.
 
 func (service *ThingService) AttachAssociatedOperatorIds(ctx context.Context, thing *model.Thing) {
 	thing.OperatorIds = []primitive.ObjectID{}
-	var thingOperators []*model.ThingOperator
-	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	if err != nil {
-		return
-	}
-	thingOperatorCollection := dbClient.Database(service.config.MongoDbName).Collection("ThingOperator")
-	cursor, err := thingOperatorCollection.Find(ctx, bson.M{"thingId": thing.ID})
-	if err = cursor.All(ctx, &thingOperators); err != nil {
-		return
-	}
-	var operatorIds []primitive.ObjectID
-	for _, thingOperator := range thingOperators {
-		operatorIds = append(operatorIds, thingOperator.OperatorId)
-	}
-	if len(operatorIds) == 0 {
-		thing.OperatorIds = []primitive.ObjectID{}
+	thingOperators := []*model.ThingOperator{}
+	if cursor, err := service.ThingOperatorCollection(ctx).Find(ctx, bson.M{"thingId": thing.ID}); err == nil {
+		if err = cursor.All(ctx, &thingOperators); err != nil {
+			return
+		}
+		operatorIds := []primitive.ObjectID{}
+		for _, thingOperator := range thingOperators {
+			operatorIds = append(operatorIds, thingOperator.OperatorId)
+		}
+		if len(operatorIds) > 0 {
+			thing.OperatorIds = operatorIds
+		}
 	} else {
-		thing.OperatorIds = operatorIds
+		println(err.Error())
 	}
 }
 

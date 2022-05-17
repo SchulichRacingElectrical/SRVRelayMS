@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database-ms/app/models"
 	model "database-ms/app/models"
 	"database-ms/config"
 	"database-ms/databases"
@@ -110,13 +111,110 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 	bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
 	if err != nil {
 		return err
-	} else {
-		_, err := service.SensorCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonSensorId})
+	}
+
+	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	if err != nil {
 		return err
 	}
+
+	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+		db := client.Database(service.config.MongoDbName)
+		if _, err := db.Collection("Sensor").DeleteOne(ctx, bson.M{"_id": bsonSensorId}); err != nil {
+			return nil, err
+		}	
+
+		// Put the two below into a function
+
+		// Remove sensor ID from associated raw data presets
+		cursor, err := db.Collection("RawDataPreset").Find(ctx, bson.M{"sensorIds": bson.M{"$in": []primitive.ObjectID{bsonSensorId}}})
+		if err == nil {
+			var rawDataPresets []*model.RawDataPreset
+			if err = cursor.All(ctx, &rawDataPresets); err == nil {
+				for _, rawDataPreset := range rawDataPresets {
+					var sensorIds []primitive.ObjectID
+					for _, sensorId := range rawDataPreset.SensorIds {
+						if sensorId != bsonSensorId {
+							sensorIds = append(sensorIds, sensorId)
+						}
+					}
+					rawDataPreset.SensorIds = sensorIds
+					if len(sensorIds) == 0 {
+						if _, err := db.Collection("RawDataPreset").DeleteOne(ctx, bson.M{"_id": rawDataPreset.ID}); err != nil {
+							return nil, err
+						}
+					} else {
+						if _, err := db.Collection("RawDataPreset").ReplaceOne(ctx, bson.M{"_id": rawDataPreset.ID}, rawDataPreset); err != nil {
+							return nil, err
+						}
+					}
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
+		// Remove sensor ID for associated charts
+		chartPresetIdsWithDeletions := []primitive.ObjectID{}
+		cursor, err = db.Collection("Chart").Find(ctx, bson.M{"sensorIds": bson.M{"$in": []primitive.ObjectID{bsonSensorId}}})
+		if err == nil {
+			var charts []*model.Chart
+			if err = cursor.All(ctx, &charts); err == nil {
+				for _, chart := range charts {
+					var sensorIds []primitive.ObjectID
+					for _, sensorId := range chart.SensorIds {
+						if sensorId != bsonSensorId {
+							sensorIds = append(sensorIds, sensorId)
+						}
+					}
+					chart.SensorIds = sensorIds
+					if len(sensorIds) == 0 {
+						if _, err := db.Collection("Chart").DeleteOne(ctx, bson.M{"_id": chart.ID}); err != nil {
+							return nil, err
+						}
+						chartPresetIdsWithDeletions = append(chartPresetIdsWithDeletions, chart.ChartPresetID)
+					} else {
+						if _, err := db.Collection("Chart").ReplaceOne(ctx, bson.M{"_id": chart.ID}, chart); err != nil {
+							return nil, err
+						}
+					}
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+
+		// Delete any chart presets if they have no charts
+		for _, chartPresetId := range chartPresetIdsWithDeletions {
+			cursor, err := db.Collection("Chart").Find(ctx, bson.M{"chartPresetId": chartPresetId})
+			var charts []*models.Chart
+			if err = cursor.All(ctx, &charts); err == nil {
+				if len(charts) == 0 {
+					if _, err := db.Collection("ChartPreset").DeleteOne(ctx, bson.M{"_id": chartPresetId}); err != nil {
+						return nil, err
+					}
+				}
+			} else {
+				return nil, err
+			}		
+		}
+		
+		return nil, nil
+	}
+
+	if _, err := databases.WithTransaction(client, ctx, callback); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *model.Sensor) bool {
+	// TODO: Do with FindOne query rather than fetching everything
 	sensors, err := service.FindByThingId(ctx, newSensor.ThingID.Hex())
 	if err == nil {
 		for _, sensor := range sensors {

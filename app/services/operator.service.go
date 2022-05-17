@@ -170,6 +170,7 @@ func (service *OperatorService) Delete(ctx context.Context, operatorId string) e
 }
 
 func (service *OperatorService) IsOperatorUnique(ctx context.Context, newOperator *model.Operator) bool {
+	// TODO: Do with FindOne query rather than fetching everything
 	operators, err := service.FindByOrganizationId(ctx, newOperator.OrganizationId)
 	if err == nil {
 		for _, operator := range operators {
