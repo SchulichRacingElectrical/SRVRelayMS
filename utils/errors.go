@@ -55,6 +55,16 @@ const (
 	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
 	OrganizationsNotFound = "organizationsNotFound"
+
+	// Raw Data Preset Error
+	RawDataPresetNotUnique= "rawDataPresetNotUnique"
+	RawDataPresetNotValid =	"rawDataPresetNotValid"
+	RawDataPresetNotFound = "rawDataPresetNotFound"
+
+	// Chart Preset Error
+	ChartPresetNotUnique  =	"chartPresetNotUnique"
+	ChartPresetNotValid		= "chartPresetNotValid"
+	ChartPresetNotFound		= "chartPresetNotFound"
 )
 
 // Error code with description
@@ -96,4 +106,14 @@ var errorMessage = map[string]string {
 	"organizationDuplicate": 	"Organization name is taken.",
 	"organizationNotFound":  	"Organization could not be found.",
 	"organizationsNotFound": 	"Organizations could not be found.",
+
+	// Raw Data Preset
+	"rawDataPresetNotUnique":	"Raw Data Preset name must be unique.",
+	"rawDataPresetNotValid":	"Raw Data Preset is not valid.",
+	"rawDataPresetNotFound":	"Raw Data Preset not found.",
+
+	// Chart Preset
+	"chartPresetNotUnique":		"Chart Preset name must be unique.",
+	"chartPresetNotValid":		"Chart Preset was not valid. Ensure posted Sensors exist.",
+	"chartPresetNotFound":		"Chart Preset was not found.",
 }

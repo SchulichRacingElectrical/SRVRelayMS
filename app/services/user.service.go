@@ -63,6 +63,7 @@ func (service *UserService) FindByUserId(ctx context.Context, userId string) (*m
 }
 
 func (service *UserService) IsUserUnique(ctx context.Context, newUser *model.User) bool {
+	// TODO: Do with FindOne query rather than fetching everything
 	users, err := service.FindUsersByOrganizationId(ctx, newUser.OrganizationId)
 	if err == nil {
 		for _, user := range users {
@@ -97,7 +98,7 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 
 func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) ([]*model.User, error) {
 	var users []*model.User
-	cursor, err := service.UserCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
+	cursor, err := service.UserCollection(ctx).Find(ctx, bson.M{"organizationId": organizationId})
 	if err = cursor.All(ctx, &users); err != nil {
 		return nil, err
 	}
