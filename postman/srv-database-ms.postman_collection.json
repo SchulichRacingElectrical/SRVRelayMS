@@ -1,0 +1,1475 @@
+{
+	"info": {
+		"_postman_id": "2b55d24d-f4e1-4e67-94b3-020a76534161",
+		"name": "srv-database-ms",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "GET Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password (TODO)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Log In",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"test1@email.com\",\n    \"password\": \"test1\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/auth/login",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sign Up",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New User\",\n    \"email\": \"new@email.com\",\n    \"password\": \"password\",\n    \"organizationId\": \"621c0b887123a28858f2c3b5\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/auth/signup",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"auth",
+								"signup"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sign Out (TODO)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT User",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"_id\": \"623670a6fc8535b6fd19755a\",\n    \"name\": \"Update\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/users",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password (TODO)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT User Promotion",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"_id\": \"625e2008041881da12ded31f\",\n    \"role\": \"Lead\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/users/promote",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"promote"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/users/625e2008041881da12ded31f",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"users",
+								"625e2008041881da12ded31f"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Organization",
+			"item": [
+				{
+					"name": "GET Organizations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/organizations",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"organizations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET Organization",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/organization",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST Organization",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Schulich Racing, FSAE\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/organizations",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"organizations"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT Organization",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"_id\": \"621c0b887123a28858f2c3b5\",\n    \"name\": \"Updated Name\",\n    \"apiKey\": \"x\" // Will not change\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/organization",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"organization"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Issue New API Key",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/organization/issueNewAPIKey",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"organization",
+								"issueNewAPIKey"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE Organization (TODO)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Thing",
+			"item": [
+				{
+					"name": "GET Things",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/things",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"things"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST Thing",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"SR-21\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/things",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"things"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT Thing",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"_id\": \"625ef8efcfcd9f23f16ddcf5\"\n    \"name\": \"SR-22\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/things",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"things"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE Thing",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/things/625f2f87e56858660266d761",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"things",
+								"625f2f87e56858660266d761"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sensor",
+			"item": [
+				{
+					"name": "GET Thing Sensors",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/sensors/thing/625f2f87e56858660266d761",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"sensors",
+								"thing",
+								"625f2f87e56858660266d761"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET Updated Sensors",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/sensors/thing/625f2f87e56858660266d761/lastUpdate/0",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"sensors",
+								"thing",
+								"625f2f87e56858660266d761",
+								"lastUpdate",
+								"0"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST Sensor",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"RPM\",\n    \"type\": \"i\",\n    \"category\": \"Powertrain\",\n    \"frequency\": 10,\n    \"unit\": \"RPM\",\n    \"canId\": 300000,\n    \"thingId\": \"625f2f87e56858660266d761\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/sensors",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"sensors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT Sensor",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"_id\": \"625f340f03459752e78b045d\",\n    \"name\": \"Engine Temp\",\n    \"type\": \"i\",\n    \"category\": \"Powertrain\",\n    \"frequency\": 10,\n    \"unit\": \"Engine Temp\",\n    \"canId\": 20000,\n    \"thingId\": \"625f2f87e56858660266d761\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/sensors",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"sensors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE Sensor",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/sensors/625f340f03459752e78b045d",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"sensors",
+								"625f340f03459752e78b045d"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Operator",
+			"item": [
+				{
+					"name": "GET Operators",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/operators",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"operators"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST Operator",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Justin\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/operators",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"operators"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT Operator",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"_id\": \"6269b446f65f12b7ead92a53\",\n    \"name\": \"Tijunelis\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/operators",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"operators"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE Operator",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/operators/6269b446f65f12b7ead92a53",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"operators",
+								"6269b446f65f12b7ead92a53"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Thing_Operator",
+			"item": [
+				{
+					"name": "Associate Thing and Operator",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"thingId\": \"6261d7676e513949fe16a3bb\",\n    \"operatorId\": \"626ef8b3f729d73c7ff2a919\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/thing_operator",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"thing_operator"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete ThingOperator",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/thing_operator/thing/:thingId/operator/:operatorId",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"thing_operator",
+								"thing",
+								":thingId",
+								"operator",
+								":operatorId"
+							],
+							"variable": [
+								{
+									"key": "thingId",
+									"value": "6261d7676e513949fe16a3bb"
+								},
+								{
+									"key": "operatorId",
+									"value": "6269b519f65f12b7ead92a68"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Run",
+			"item": [
+				{
+					"name": "Create",
+					"item": [
+						{
+							"name": "Valid Run",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"test2\",\n    \"thingId\": \"6261d7676e513949fe16a3bb\",\n    \"sessionId\": \"627568e888ba99904cb3c7d8\",\n    \"startTime\": 1651860218504,\n    \"endTime\": 1651860233919\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Retrieve",
+					"item": [
+						{
+							"name": "Thing Exist",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/runs/thing/6261d7676e513949fe16a3bb",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"thing",
+										"6261d7676e513949fe16a3bb"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Update",
+					"item": [
+						{
+							"name": "Valid update",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"_id\": \"627569328ff74e83708d96b5\",\n    \"name\": \"test rename again\",\n    \"thingId\": \"6261d7676e513949fe16a3bb\",\n    \"sessionId\": \"627568e888ba99904cb3c7d8\",\n    \"startTime\": 1651860218504,\n    \"endTime\": 1651860233919\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Delete",
+					"item": [
+						{
+							"name": "Delete valid run",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/runs/627569838ff74e83708d96bd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"627569838ff74e83708d96bd"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Comment",
+					"item": [
+						{
+							"name": "Create Comment",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"623670a6fc8535b6fd19755a\",\n    \"content\": \"###Heading markdown ##Testy2\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/627bf4a19ce7a338ce854789/comment",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"627bf4a19ce7a338ce854789",
+										"comment"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Run Comments",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/runs/627bf4a19ce7a338ce854789/comments",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"627bf4a19ce7a338ce854789",
+										"comments"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Updating DNE comment",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"623670a6fc8535b6fd19755a\",\n    \"content\": \"###The comment does not exist\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/comment/627569838ff74e83708d96bd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"comment",
+										"627569838ff74e83708d96bd"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Updating Other User Comment",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"627569838ff74e83708d96bd\",\n    \"content\": \"###I don't own the comment\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/comment/627bf6149ce7a338ce854793",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"comment",
+										"627bf6149ce7a338ce854793"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Valid request",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"623670a6fc8535b6fd19755a\",\n    \"content\": \"###I own the comment\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/comment/627bf6149ce7a338ce854793",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"comment",
+										"627bf6149ce7a338ce854793"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Deleting comment",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"627bf6089ce7a338ce85478e\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/comment/627bf6089ce7a338ce85478e",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"comment",
+										"627bf6089ce7a338ce85478e"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "File",
+					"item": [
+						{
+							"name": "Upload",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "",
+										"value": "",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "thingId",
+											"value": "6261d7676e513949fe16a3bb",
+											"type": "text"
+										},
+										{
+											"key": "runId",
+											"value": "627bf4a19ce7a338ce854789",
+											"type": "text"
+										},
+										{
+											"key": "operatorId",
+											"value": "626ef8b3f729d73c7ff2a919",
+											"type": "text"
+										},
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/home/justinf34/Downloads/True.csv"
+										}
+									],
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/6627569328ff74e83708d96b5/file",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"6627569328ff74e83708d96b5",
+										"file"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Upload Copy",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "",
+										"value": "",
+										"type": "text",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "thingId",
+											"value": "6261d7676e513949fe16a3bb",
+											"type": "text"
+										},
+										{
+											"key": "runId",
+											"value": "627bf4a19ce7a338ce854789",
+											"type": "text"
+										},
+										{
+											"key": "operatorId",
+											"value": "626ef8b3f729d73c7ff2a919",
+											"type": "text"
+										},
+										{
+											"key": "file",
+											"type": "file",
+											"src": "/home/justinf34/Downloads/test.csv"
+										}
+									],
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/6627569328ff74e83708d96b5/file",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"6627569328ff74e83708d96b5",
+										"file"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Session",
+			"item": [
+				{
+					"name": "Create",
+					"item": [
+						{
+							"name": "Valid Session",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"test session 1\",\n    \"thingId\": \"6261d7676e513949fe16a3bb\",\n    \"startDate\": 1651860218504,\n    \"endDate\": 1651860233919\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/sessions",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Retrieve",
+					"item": [
+						{
+							"name": "Thing Exist",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/sessions/thing/6261d7676e513949fe16a3bb",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions",
+										"thing",
+										"6261d7676e513949fe16a3bb"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Update",
+					"item": [
+						{
+							"name": "Valid update",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"_id\": \"627bf7c59ce7a338ce8547b9\",\n    \"name\": \"test session rename\",\n    \"thingId\": \"6261d7676e513949fe16a3bb\",\n    \"startDate\": 1651860218504,\n    \"endDate\": 1651860233919\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/sessions",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Delete",
+					"item": [
+						{
+							"name": "Delete valid session",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/runs/627569838ff74e83708d96bd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"627569838ff74e83708d96bd"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Comment",
+					"item": [
+						{
+							"name": "Create Comment",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"623670a6fc8535b6fd19755a\",\n    \"content\": \"###Heading markdown ##Testy2\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/sessions/627bf7c59ce7a338ce8547b9/comment",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions",
+										"627bf7c59ce7a338ce8547b9",
+										"comment"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Session Comments",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:8080/sessions/627bf7c59ce7a338ce8547b9/comments",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions",
+										"627bf7c59ce7a338ce8547b9",
+										"comments"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Updating DNE comment",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"623670a6fc8535b6fd19755a\",\n    \"content\": \"###The comment does not exist\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/sessions/comment/627569838ff74e83708d96bd",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions",
+										"comment",
+										"627569838ff74e83708d96bd"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Updating Other User Comment",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"627569838ff74e83708d96bd\",\n    \"content\": \"###I don't own the comment\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/sessions/comment/627bf83f9ce7a338ce8547cc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions",
+										"comment",
+										"627bf83f9ce7a338ce8547cc"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Valid request",
+							"request": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"623670a6fc8535b6fd19755a\",\n    \"content\": \"###I own the session comment\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/runs/comment/627bf83f9ce7a338ce8547cc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"runs",
+										"comment",
+										"627bf83f9ce7a338ce8547cc"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Deleting comment",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"userId\": \"623670a6fc8535b6fd19755a\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:8080/sessions/comment/627bf8cf9ce7a338ce8547e6",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8080",
+									"path": [
+										"sessions",
+										"comment",
+										"627bf8cf9ce7a338ce8547e6"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "RawDataPreset",
+			"item": [
+				{
+					"name": "GET RawDataPresets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST RawDataPreset",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT RawDataPreset",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE RawDataPreset",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ChartPreset",
+			"item": [
+				{
+					"name": "GET ChartPreset",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST ChartPreset",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "PUT ChartPreset",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE ChartPreset",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": ""
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
