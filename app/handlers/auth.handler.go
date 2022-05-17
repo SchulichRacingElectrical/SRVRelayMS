@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database-ms/app/middleware"
 	models "database-ms/app/models"
 	services "database-ms/app/services"
 	utils "database-ms/utils"
@@ -83,8 +84,14 @@ func (handler *AuthHandler) Login(ctx *gin.Context) {
 }
 
 func (handler *AuthHandler) Validate(ctx *gin.Context) {
-	// TODO: Send back the authorization level
-	utils.Response(ctx, http.StatusOK, "Valid.")
+	response := make(map[string]interface{})
+	user, _ := middleware.GetUserClaim(ctx)
+	if user != nil {
+		response["role"] = user.Role
+	} else {
+		response["role"] = "Admin"
+	}
+	utils.Response(ctx, http.StatusOK, utils.SuccessPayload(response, "Valid."))
 }
 
 func (handler *AuthHandler) SignOut(ctx *gin.Context) {
