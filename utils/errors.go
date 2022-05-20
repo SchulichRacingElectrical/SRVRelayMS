@@ -17,39 +17,62 @@ func NewHTTPCustomError(errorCode, errorMsg string) map[string]interface{} {
 // Error codes - This can be done more nicely
 const (
 	// Other errors
-	InternalError       	= "internalError"
-	InvalidBindingModel 	= "invalidBindingModel"
-	EntityCreationError 	= "entityCreationError"
-	BadRequest          	= "badRequest"
-	Unauthorized					= "unauthorized"
-	Forbidden							= "forbidden"
+	InternalError       = "internalError"
+	InvalidBindingModel = "invalidBindingModel"
+	EntityCreationError = "entityCreationError"
+	BadRequest          = "badRequest"
+	Unauthorized        = "unauthorized"
+	Forbidden           = "forbidden"
 
 	// Sensor errors
-	SensorsNotFound 			= "sensorsNotFound"
-	SensorNotFound  			= "sensorNotFound"
-	SensorAlreadyExists 	= "sensorAlreadyExists"
-	SensorNotUnique				= "sensorNotUnique"
+	SensorsNotFound     = "sensorsNotFound"
+	SensorNotFound      = "sensorNotFound"
+	SensorAlreadyExists = "sensorAlreadyExists"
+	SensorNotUnique     = "sensorNotUnique"
 
 	// User error
-	UserNotFound      		= "userNotFound"
-	UsersNotFound					= "usersNotFound"
-	WrongPassword     		= "wrongPassword"
-	UserNotApproved				= "userPendingApproval"
-	UserConflict					= "userConflict"
-	UserLastAdmin					= "userLastAdmin"
+	UserNotFound    = "userNotFound"
+	UsersNotFound   = "usersNotFound"
+	WrongPassword   = "wrongPassword"
+	UserNotApproved = "userPendingApproval"
+	UserConflict    = "userConflict"
+	UserLastAdmin   = "userLastAdmin"
 
 	// Thing error
-	ThingsNotFound 				= "thingsNotFound"
-	ThingNotFound 				= "thingNotFound"
-	ThingNotUnique				=	"thingNotUnique"
+	ThingsNotFound = "thingsNotFound"
+	ThingNotFound  = "thingNotFound"
+	ThingNotUnique = "thingNotUnique"
 
 	// Operator error
-	OperatorsNotFound			= "operatorsNotFound"
-	OperatorNotFound			= "operatorNotFound"
-	OperatorNotUnique			=	"operatorNotUnique"
+	OperatorsNotFound = "operatorsNotFound"
+	OperatorNotFound  = "operatorNotFound"
+	OperatorNotUnique = "operatorNotUnique"
 
 	// ThingOperator error
-	ThingOperatorNotUnique= "thingOperatorNotUnique"
+	ThingOperatorNotUnique = "thingOperatorNotUnique"
+
+	// Run error
+	RunsNotFound = "runsNotFound"
+	RunNotFound  = "runNotFound"
+	RunDNE       = "runDNE"
+
+	// File error
+	NoFileReceived         = "noFileReceived"
+	NotCsv                 = "notCsv"
+	FileNotUploaded        = "fileNotUploaded"
+	RunHasAssociatedFile   = "runHasAssociatedFile"
+	RunHasNoAssociatedFile = "runHasNoAssociatedFile"
+	CannotRetrieveFile     = "cannotRetrieveFile"
+
+	// Session error
+	SessionsNotFound = "sessionsNotFound"
+	SessionNotFound  = "sessionNotFound"
+
+	// Comment error
+	CommentsNotFound                    = "commentsNotFound"
+	CommentDoesNotExist                 = "commentDoesNotExist"
+	CommentCannotUpdateOtherUserComment = "commentCannotUpdateOtherUserComment"
+	UserIdMissing                       = "userIdMissing"
 
 	// Organization error
 	OrganizationDuplicate = "organizationDuplicate"
@@ -57,63 +80,85 @@ const (
 	OrganizationsNotFound = "organizationsNotFound"
 
 	// Raw Data Preset Error
-	RawDataPresetNotUnique= "rawDataPresetNotUnique"
-	RawDataPresetNotValid =	"rawDataPresetNotValid"
-	RawDataPresetNotFound = "rawDataPresetNotFound"
+	RawDataPresetNotUnique = "rawDataPresetNotUnique"
+	RawDataPresetNotValid  = "rawDataPresetNotValid"
+	RawDataPresetNotFound  = "rawDataPresetNotFound"
 
 	// Chart Preset Error
-	ChartPresetNotUnique  =	"chartPresetNotUnique"
-	ChartPresetNotValid		= "chartPresetNotValid"
-	ChartPresetNotFound		= "chartPresetNotFound"
+	ChartPresetNotUnique = "chartPresetNotUnique"
+	ChartPresetNotValid  = "chartPresetNotValid"
+	ChartPresetNotFound  = "chartPresetNotFound"
 )
 
 // Error code with description
-var errorMessage = map[string]string {
+var errorMessage = map[string]string{
 	// Generic errors
-	"internalError":       		"An internal error occurred.",
-	"invalidBindingModel": 		"The model could not be bound.",
-	"entityCreationError": 		"Could not create entity.",
-	"unauthorized": 					"Unauthorized.",
-	"forbidden":							"Forbidden.",
+	"internalError":       "An internal error occurred.",
+	"invalidBindingModel": "The model could not be bound.",
+	"entityCreationError": "Could not create entity.",
+	"unauthorized":        "Unauthorized.",
+	"forbidden":           "Forbidden.",
 
 	// Sensor errors
-	"sensorAlreadyExists": 		"Sensor already exists.",
-	"sensorsNotFound":     		"Sensors could not be found.",
-	"sensorNotFound":      		"Sensor could not be found.",
-	"sensorNotUnique":				"Sensor name and CAN ID must be unique for a thing.",
+	"sensorAlreadyExists": "Sensor already exists.",
+	"sensorsNotFound":     "Sensors could not be found.",
+	"sensorNotFound":      "Sensor could not be found.",
+	"sensorNotUnique":     "Sensor name and CAN ID must be unique for a thing.",
 
 	// User errors
-	"userNotFound":      			"User could not be found.",
-	"usersNotFound":		 			"Users not found.",	
-	"wrongPassword":     			"Password was incorrect.",
-	"userConflict":						"Email must be globally unique and name must be organizationally unique.",
-	"userLastAdmin":					"The last administrator in the organization cannot be deleted or have their role changed.",
+	"userNotFound":  "User could not be found.",
+	"usersNotFound": "Users not found.",
+	"wrongPassword": "Password was incorrect.",
+	"userConflict":  "Email must be globally unique and name must be organizationally unique.",
+	"userLastAdmin": "The last administrator in the organization cannot be deleted or have their role changed.",
 
 	// Thing
-	"thingsNotFound":					"Things could not be found.",
-	"thingNotFound": 					"Thing could not be found.",
-	"thingNotUnique":					"Thing name must be unique",
+	"thingsNotFound": "Things could not be found.",
+	"thingNotFound":  "Thing could not be found.",
+	"thingNotUnique": "Thing name must be unique",
 
 	// Operator
-	"operatorsNotFound":			"Operators could not be found.",
-	"operatorNotFound":				"Operator could not be found.",
-	"operatorNotUnique":			"Operator name must be unique.",
+	"operatorsNotFound": "Operators could not be found.",
+	"operatorNotFound":  "Operator could not be found.",
+	"operatorNotUnique": "Operator name must be unique.",
 
 	// ThingOperator
-	"thingOperatorNotUnique":	"Thing Operator association already exists.",
+	"thingOperatorNotUnique": "Thing Operator association already exists.",
+
+	// Comment
+	"commentsNotFound":                    "comments could not be found",
+	"commentDoesNotExist":                 "comment does not exist",
+	"commentCannotUpdateOtherUserComment": "cannot update comment of another user",
+	"userIdMissing":                       "userId missing",
 
 	// Organization
-	"organizationDuplicate": 	"Organization name is taken.",
-	"organizationNotFound":  	"Organization could not be found.",
-	"organizationsNotFound": 	"Organizations could not be found.",
+	"organizationNotFound":  "organization could not be found",
+	"organizationsNotFound": "organizations could not be found",
+	"organizationDuplicate": "Organization name is taken.",
+
+	// Run errors
+	"runsNotFound": "Runs could not be found",
+	"runNotFound":  "Run could not be found",
+	"runDNE":       "Run does not exist",
+
+	// File
+	"noFileReceived":         "No file is received",
+	"notCsv":                 "Not a csv",
+	"runHasAssociatedFile":   "Run already has associated file",
+	"runHasNoAssociatedFile": "Run does exist or not have associated file",
+	"cannotRetrieveFile":     "Cannot retrieve file",
+
+	// Session errors
+	"sessionssNotFound": "Sesssions could not be found",
+	"sessionNotFound":   "Session could not be found",
 
 	// Raw Data Preset
-	"rawDataPresetNotUnique":	"Raw Data Preset name must be unique.",
-	"rawDataPresetNotValid":	"Raw Data Preset is not valid.",
-	"rawDataPresetNotFound":	"Raw Data Preset not found.",
+	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",
+	"rawDataPresetNotValid":  "Raw Data Preset is not valid.",
+	"rawDataPresetNotFound":  "Raw Data Preset not found.",
 
 	// Chart Preset
-	"chartPresetNotUnique":		"Chart Preset name must be unique.",
-	"chartPresetNotValid":		"Chart Preset was not valid. Ensure posted Sensors exist.",
-	"chartPresetNotFound":		"Chart Preset was not found.",
+	"chartPresetNotUnique": "Chart Preset name must be unique.",
+	"chartPresetNotValid":  "Chart Preset was not valid. Ensure posted Sensors exist.",
+	"chartPresetNotFound":  "Chart Preset was not found.",
 }
