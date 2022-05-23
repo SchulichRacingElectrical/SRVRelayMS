@@ -68,8 +68,16 @@ func thingDataSession(thingId string, redisClient *redis.Client) {
 				panic(err)
 			}
 
-			// Parse thing data
-			log.Println(thingData)
+			// Parse thing data from JSON
+			var thingDataArray []map[string]int
+			for _, thingDataItem := range thingData {
+				var thingDataItemMap map[string]int
+				json.Unmarshal([]byte(thingDataItem), &thingDataItemMap)
+				thingDataArray = append(thingDataArray, thingDataItemMap)
+			}
+			log.Println(thingDataArray)
+
+			// Process thing data to fill timeseries
 
 			// Save thing data to mongo
 			// Save thing data to csv
