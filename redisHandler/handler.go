@@ -2,20 +2,29 @@ package redisHandler
 
 import (
 	"context"
+	"database-ms/app/services"
 	"database-ms/config"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 
+	"encoding/csv"
 	"encoding/json"
 
 	"github.com/go-redis/redis/v8"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2"
 )
 
 type Message struct {
 	Active  bool   `json:"active"`
 	ThingId string `json:"THING"`
+}
+
+type SensorInfo struct {
+	ID   primitive.ObjectID
+	Name string
 }
 
 func Initialize(conf *config.Configuration, dbSession *mgo.Session) {
@@ -85,31 +94,29 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 			// Fill missing timestamps
 			timeLinearThingData := fillMissingTimestamps(thingDataArray)
 
-			// Convert to 2D array
-			timeLinearThingData2DArray := mapArrayTo2DArray(timeLinearThingData)
-			log.Println(timeLinearThingData2DArray)
+			// Get sorted small ids
+			smallIds := getSortedSmallIds(thingDataArray[0])
 
-			// // Get sensor list
-			// sensorService := services.NewSensorService(dbSession, conf)
-			// sensors, err := sensorService.FindByThingId(ctx, thingId)
-			// if err != nil {
-			// 	panic(err)
-			// }
+			// Convert to 2D arrays
+			timeLinearThingData2DArray := mapArrayTo2DArray(timeLinearThingData, smallIds)
+			// thingData2DArray := mapArrayTo2DArray(thingDataArray, smallIds)
 
-			// // Create map of SmallId to ID and Name
-			// smallIdToInfoMap := make(map[string]struct {
-			// 	ID   primitive.ObjectID
-			// 	Name string
-			// })
-			// for _, sensor := range sensors {
-			// 	smallId := strconv.Itoa(*sensor.SmallId)
-			// 	smallIdToInfoMap[smallId] = struct {
-			// 		ID   primitive.ObjectID
-			// 		Name string
-			// 	}{ID: sensor.ID, Name: sensor.Name}
-			// }
+			// Get sensor list
+			sensorService := services.NewSensorService(dbSession, conf)
+			sensors, err := sensorService.FindByThingId(ctx, thingId)
+			if err != nil {
+				panic(err)
+			}
+
+			// Create map of SmallId to ID and Name
+			smallIdToInfoMap := make(map[string]SensorInfo)
+			for _, sensor := range sensors {
+				smallId := strconv.Itoa(*sensor.SmallId)
+				smallIdToInfoMap[smallId] = SensorInfo{ID: sensor.ID, Name: sensor.Name}
+			}
 
 			// Save thing data to csv
+			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId)
 
 			// Save thing data to mongo
 		}
@@ -193,10 +200,10 @@ func copyMapWithDefaultValues(source map[string]int) map[string]int {
 	return dest
 }
 
-func mapArrayTo2DArray(mapArray []map[string]int) [][]int {
+func getSortedSmallIds(thingDataSample map[string]int) []int {
 	// Create sorted array of smallIds to keep them ordered
 	var smallIds []int
-	for k := range mapArray[0] {
+	for k := range thingDataSample {
 		if k == "ts" {
 			continue
 		}
@@ -204,7 +211,10 @@ func mapArrayTo2DArray(mapArray []map[string]int) [][]int {
 		smallIds = append(smallIds, smallId)
 	}
 	sort.Ints(smallIds)
+	return smallIds
+}
 
+func mapArrayTo2DArray(mapArray []map[string]int, smallIds []int) [][]int {
 	// Create 2D array
 	output := make([][]int, len(mapArray))
 	for i := range mapArray {
@@ -215,4 +225,40 @@ func mapArrayTo2DArray(mapArray []map[string]int) [][]int {
 		}
 	}
 	return output
+}
+
+func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, thingId string) {
+	csvFile, err := os.Create("srv_files/" + thingId + ".csv")
+	if err != nil {
+		panic(err)
+	}
+	defer csvFile.Close()
+
+	csvWriter := csv.NewWriter(csvFile)
+	defer csvWriter.Flush()
+
+	// Write header
+	header := make([]string, len(smallIds)+1)
+	header[0] = "Timestamp"
+	for i, smallId := range smallIds {
+		strSmallId := strconv.Itoa(smallId)
+		sensorName := smallIdToInfoMap[strSmallId].Name
+		header[i+1] = sensorName
+	}
+	err = csvWriter.Write(header)
+	if err != nil {
+		panic(err)
+	}
+
+	// Write data
+	for _, thingDataRecord := range thingData2DArray {
+		strArray := make([]string, len(thingDataRecord))
+		for i, value := range thingDataRecord {
+			strArray[i] = strconv.Itoa(value)
+		}
+		err = csvWriter.Write(strArray)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
