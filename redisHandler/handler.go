@@ -2,8 +2,11 @@ package redisHandler
 
 import (
 	"context"
+	"database-ms/app/models"
+	"database-ms/app/services"
 	"database-ms/config"
 	"log"
+	"strconv"
 
 	"encoding/json"
 
@@ -80,6 +83,16 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 			// Process thing data to fill missing sensor values
 			thingDataArray = fillMissingValues(thingDataArray)
 
+			// Get sensor list
+			sensorService := services.NewSensorService(dbSession, conf)
+			sensors, err := sensorService.FindByThingId(ctx, thingId)
+			if err != nil {
+				panic(err)
+			}
+
+			// Replace SmallId with ID
+			thingDataArray = replaceSmallIdWithId(thingDataArray, sensors)
+
 			// Save thing data to csv
 
 			// Save thing data to mongo
@@ -108,6 +121,25 @@ func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
 			} else {
 				currentDataMap[key] = thingDataItem[key]
 			}
+		}
+	}
+
+	return thingDataArray
+}
+
+func replaceSmallIdWithId(thingDataArray []map[string]int, sensors []*models.Sensor) []map[string]int {
+	// Create map of SmallId to ID
+	smallIdToIdMap := make(map[string]string)
+	for _, sensor := range sensors {
+		smallId := strconv.Itoa(*sensor.SmallId)
+		smallIdToIdMap[smallId] = sensor.ID.Hex()
+	}
+
+	// Replace SmallId with ID
+	for _, thingDataItem := range thingDataArray {
+		for smallId, id := range smallIdToIdMap {
+			thingDataItem[id] = thingDataItem[smallId]
+			delete(thingDataItem, smallId)
 		}
 	}
 
