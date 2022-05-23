@@ -22,10 +22,10 @@ func Initialize(conf *config.Configuration, dbSession *mgo.Session) {
 		Password: conf.RedisPassword,
 	})
 
-	go awaitThingDataSessions(redisClient)
+	go awaitThingDataSessions(redisClient, dbSession, conf)
 }
 
-func awaitThingDataSessions(redisClient *redis.Client) {
+func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_CONNECTION")
 
@@ -37,12 +37,12 @@ func awaitThingDataSessions(redisClient *redis.Client) {
 		message := Message{}
 		json.Unmarshal([]byte(msg.Payload), &message)
 		if message.Active {
-			go thingDataSession(message.ThingId, redisClient)
+			go thingDataSession(message.ThingId, redisClient, dbSession, conf)
 		}
 	}
 }
 
-func thingDataSession(thingId string, redisClient *redis.Client) {
+func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_"+thingId)
 	log.Println("Thing Data Session Started for " + thingId)
@@ -77,10 +77,39 @@ func thingDataSession(thingId string, redisClient *redis.Client) {
 			}
 			log.Println(thingDataArray)
 
-			// Process thing data to fill timeseries
+			// Process thing data to fill missing sensor values
+			thingDataArray = fillMissingValues(thingDataArray)
+
+			// Save thing data to csv
 
 			// Save thing data to mongo
-			// Save thing data to csv
 		}
 	}
+}
+
+func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
+	// use first map from thingDataArray to initialize currentDataMap,
+	// then iterate through thingDataArray and fill missing values in each map,
+	// updating currentDataMap as we go
+
+	// creates a copy of the first map
+	currentDataMap := make(map[string]int)
+	for key, value := range thingDataArray[0] {
+		currentDataMap[key] = value
+	}
+
+	// iterate through the rest of the maps
+	for _, thingDataItem := range thingDataArray {
+		for key := range currentDataMap {
+			// if key doesn't exist on the current map, add it from currentDataMap
+			// if the key does exist, add the value from the current map to currentDataMap
+			if _, ok := thingDataItem[key]; !ok {
+				thingDataItem[key] = currentDataMap[key]
+			} else {
+				currentDataMap[key] = thingDataItem[key]
+			}
+		}
+	}
+
+	return thingDataArray
 }
