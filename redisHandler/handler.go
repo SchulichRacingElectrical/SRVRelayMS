@@ -2,15 +2,14 @@ package redisHandler
 
 import (
 	"context"
-	"database-ms/app/services"
 	"database-ms/config"
 	"log"
+	"sort"
 	"strconv"
 
 	"encoding/json"
 
 	"github.com/go-redis/redis/v8"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2"
 )
 
@@ -85,27 +84,30 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 
 			// Fill missing timestamps
 			timeLinearThingData := fillMissingTimestamps(thingDataArray)
-			log.Println(timeLinearThingData)
 
-			// Get sensor list
-			sensorService := services.NewSensorService(dbSession, conf)
-			sensors, err := sensorService.FindByThingId(ctx, thingId)
-			if err != nil {
-				panic(err)
-			}
+			// Convert to 2D array
+			timeLinearThingData2DArray := mapArrayTo2DArray(timeLinearThingData)
+			log.Println(timeLinearThingData2DArray)
 
-			// Create map of SmallId to ID and Name
-			smallIdToInfoMap := make(map[string]struct {
-				ID   primitive.ObjectID
-				Name string
-			})
-			for _, sensor := range sensors {
-				smallId := strconv.Itoa(*sensor.SmallId)
-				smallIdToInfoMap[smallId] = struct {
-					ID   primitive.ObjectID
-					Name string
-				}{ID: sensor.ID, Name: sensor.Name}
-			}
+			// // Get sensor list
+			// sensorService := services.NewSensorService(dbSession, conf)
+			// sensors, err := sensorService.FindByThingId(ctx, thingId)
+			// if err != nil {
+			// 	panic(err)
+			// }
+
+			// // Create map of SmallId to ID and Name
+			// smallIdToInfoMap := make(map[string]struct {
+			// 	ID   primitive.ObjectID
+			// 	Name string
+			// })
+			// for _, sensor := range sensors {
+			// 	smallId := strconv.Itoa(*sensor.SmallId)
+			// 	smallIdToInfoMap[smallId] = struct {
+			// 		ID   primitive.ObjectID
+			// 		Name string
+			// 	}{ID: sensor.ID, Name: sensor.Name}
+			// }
 
 			// Save thing data to csv
 
@@ -152,7 +154,7 @@ func fillMissingTimestamps(thingDataArray []map[string]int) []map[string]int {
 		// until thingDataItem has a timestamp equal to currentTimestamp,
 		// then add thingDataItem to output
 		if thingDataItem["ts"] > currentTimestamp {
-			for i := currentTimestamp + 1; i < thingDataItem["ts"]; i++ {
+			for i := currentTimestamp; i < thingDataItem["ts"]; i++ {
 				currentDataMap["ts"] = i
 				output[i] = copyMap(currentDataMap)
 			}
@@ -189,4 +191,28 @@ func copyMapWithDefaultValues(source map[string]int) map[string]int {
 		dest[key] = 0
 	}
 	return dest
+}
+
+func mapArrayTo2DArray(mapArray []map[string]int) [][]int {
+	// Create sorted array of smallIds to keep them ordered
+	var smallIds []int
+	for k := range mapArray[0] {
+		if k == "ts" {
+			continue
+		}
+		smallId, _ := strconv.Atoi(k)
+		smallIds = append(smallIds, smallId)
+	}
+	sort.Ints(smallIds)
+
+	// Create 2D array
+	output := make([][]int, len(mapArray))
+	for i := range mapArray {
+		output[i] = make([]int, len(mapArray[i]))
+		output[i][0] = mapArray[i]["ts"]
+		for j, smallId := range smallIds {
+			output[i][j+1] = mapArray[i][strconv.Itoa(smallId)]
+		}
+	}
+	return output
 }
