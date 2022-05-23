@@ -2,7 +2,6 @@ package redisHandler
 
 import (
 	"context"
-	"database-ms/app/models"
 	"database-ms/app/services"
 	"database-ms/config"
 	"log"
@@ -11,6 +10,7 @@ import (
 	"encoding/json"
 
 	"github.com/go-redis/redis/v8"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/mgo.v2"
 )
 
@@ -83,6 +83,10 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 			// Process thing data to fill missing sensor values
 			thingDataArray = fillMissingValues(thingDataArray)
 
+			// Fill missing timestamps
+			timeLinearThingData := fillMissingTimestamps(thingDataArray)
+			log.Println(timeLinearThingData)
+
 			// Get sensor list
 			sensorService := services.NewSensorService(dbSession, conf)
 			sensors, err := sensorService.FindByThingId(ctx, thingId)
@@ -90,8 +94,18 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 				panic(err)
 			}
 
-			// Replace SmallId with ID
-			thingDataArray = replaceSmallIdWithId(thingDataArray, sensors)
+			// Create map of SmallId to ID and Name
+			smallIdToInfoMap := make(map[string]struct {
+				ID   primitive.ObjectID
+				Name string
+			})
+			for _, sensor := range sensors {
+				smallId := strconv.Itoa(*sensor.SmallId)
+				smallIdToInfoMap[smallId] = struct {
+					ID   primitive.ObjectID
+					Name string
+				}{ID: sensor.ID, Name: sensor.Name}
+			}
 
 			// Save thing data to csv
 
@@ -106,10 +120,7 @@ func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
 	// updating currentDataMap as we go
 
 	// creates a copy of the first map
-	currentDataMap := make(map[string]int)
-	for key, value := range thingDataArray[0] {
-		currentDataMap[key] = value
-	}
+	currentDataMap := copyMap(thingDataArray[0])
 
 	// iterate through the rest of the maps
 	for _, thingDataItem := range thingDataArray {
@@ -127,21 +138,55 @@ func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
 	return thingDataArray
 }
 
-func replaceSmallIdWithId(thingDataArray []map[string]int, sensors []*models.Sensor) []map[string]int {
-	// Create map of SmallId to ID
-	smallIdToIdMap := make(map[string]string)
-	for _, sensor := range sensors {
-		smallId := strconv.Itoa(*sensor.SmallId)
-		smallIdToIdMap[smallId] = sensor.ID.Hex()
-	}
+func fillMissingTimestamps(thingDataArray []map[string]int) []map[string]int {
+	lastTimestamp := thingDataArray[len(thingDataArray)-1]["ts"]
+	output := make([]map[string]int, lastTimestamp+1)
 
-	// Replace SmallId with ID
+	// Copy first map with 0 values
+	currentDataMap := copyMapWithDefaultValues(thingDataArray[0])
+	currentTimestamp := 0
+
 	for _, thingDataItem := range thingDataArray {
-		for smallId, id := range smallIdToIdMap {
-			thingDataItem[id] = thingDataItem[smallId]
-			delete(thingDataItem, smallId)
+		// if thingDataItem has a higher timestamp than currentTimestamp,
+		// add currentDataMap to output and increment currentTimestamp
+		// until thingDataItem has a timestamp equal to currentTimestamp,
+		// then add thingDataItem to output
+		if thingDataItem["ts"] > currentTimestamp {
+			for i := currentTimestamp + 1; i < thingDataItem["ts"]; i++ {
+				currentDataMap["ts"] = i
+				output[i] = copyMap(currentDataMap)
+			}
+			currentTimestamp = thingDataItem["ts"]
+		}
+		output[thingDataItem["ts"]] = copyMap(thingDataItem)
+
+		// Update currentDataMap
+		for key := range currentDataMap {
+			// if key doesn't exist on the current map, add it from currentDataMap
+			// if the key does exist, add the value from the current map to currentDataMap
+			if _, ok := thingDataItem[key]; !ok {
+				thingDataItem[key] = currentDataMap[key]
+			} else {
+				currentDataMap[key] = thingDataItem[key]
+			}
 		}
 	}
 
-	return thingDataArray
+	return output
+}
+
+func copyMap(source map[string]int) map[string]int {
+	dest := make(map[string]int)
+	for key, value := range source {
+		dest[key] = value
+	}
+	return dest
+}
+
+func copyMapWithDefaultValues(source map[string]int) map[string]int {
+	dest := make(map[string]int)
+	for key := range source {
+		dest[key] = 0
+	}
+	return dest
 }
