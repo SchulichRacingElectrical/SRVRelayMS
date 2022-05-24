@@ -99,7 +99,7 @@ func (service *SensorService) Update(ctx context.Context, updatedSensor *model.S
 	sensor, err := service.FindBySensorId(ctx, updatedSensor.ID.Hex())
 	if err == nil {
 		updatedSensor.SmallId = sensor.SmallId
-		updatedSensor.LastUpdate = utils.CurrentTimeInMilli() 
+		updatedSensor.LastUpdate = utils.CurrentTimeInMilli()
 		_, err = service.SensorCollection(ctx).ReplaceOne(ctx, bson.M{"_id": updatedSensor.ID}, updatedSensor)
 		return err
 	} else {
@@ -118,11 +118,11 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 		return err
 	}
 
-	callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
 		db := client.Database(service.config.MongoDbName)
 		if _, err := db.Collection("Sensor").DeleteOne(ctx, bson.M{"_id": bsonSensorId}); err != nil {
 			return nil, err
-		}	
+		}
 
 		// Put the two below into a function
 
@@ -200,9 +200,9 @@ func (service *SensorService) Delete(ctx context.Context, sensorId string) error
 				}
 			} else {
 				return nil, err
-			}		
+			}
 		}
-		
+
 		return nil, nil
 	}
 
