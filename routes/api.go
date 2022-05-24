@@ -19,16 +19,19 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	thingService := services.NewThingService(mgoDbSession, conf)
 	thingAPI := handlers.NewThingAPI(thingService)
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)
-	operatorService := services.NewOperatorService(mgoDbSession, conf) 
+	operatorService := services.NewOperatorService(mgoDbSession, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
+	commentService := services.NewCommentService(conf)
+	runAPI := handlers.NewRunAPI(services.NewRunService(conf), commentService, operatorService, thingService)
+	sessionAPI := handlers.NewSessionAPI(services.NewSessionService(conf), commentService)
 
 	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(mgoDbSession, conf), thingService)
 	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(mgoDbSession, conf), thingService)
 
 	// Declare public endpoints
-	publicEndpoints := c.Group("") 
+	publicEndpoints := c.Group("")
 	{
-		organizationEndpoints := publicEndpoints.Group("/organizations") 
+		organizationEndpoints := publicEndpoints.Group("/organizations")
 		{
 			organizationEndpoints.GET("", organizationAPI.GetOrganizations)
 			organizationEndpoints.POST("", organizationAPI.CreateOrganization)
@@ -45,7 +48,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	}
 
 	// Declare private (auth required) endpoints
-	privateEndpoints := c.Group("", middleware.AuthorizationMiddleware(conf, mgoDbSession)) 
+	privateEndpoints := c.Group("", middleware.AuthorizationMiddleware(conf, mgoDbSession))
 	{
 		organizationEndpoints := privateEndpoints.Group("/organization")
 		{
@@ -53,7 +56,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			organizationEndpoints.PUT("", organizationAPI.UpdateOrganization)
 			organizationEndpoints.PUT("/issueNewAPIKey", organizationAPI.IssueNewAPIKey)
 			organizationEndpoints.DELETE("/:organizationId", organizationAPI.DeleteOrganization)
-		}	
+		}
 
 		userEndpoints := privateEndpoints.Group("/users")
 		{
@@ -68,7 +71,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			thingEndpoints.GET("", thingAPI.GetThings)
 			thingEndpoints.POST("", thingAPI.CreateThing)
 			thingEndpoints.PUT("", thingAPI.UpdateThing)
-			thingEndpoints.DELETE("/:thingId", thingAPI.DeleteThing)	
+			thingEndpoints.DELETE("/:thingId", thingAPI.DeleteThing)
 		}
 
 		sensorEndpoints := privateEndpoints.Group("/sensors")
@@ -80,7 +83,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			{
 				thingIdEndpoints.GET("", sensorAPI.FindThingSensors)
 				thingIdEndpoints.GET("/lastUpdate/:lastUpdate", sensorAPI.FindUpdatedSensors)
-			}	
+			}
 		}
 
 		operatorEndpoints := privateEndpoints.Group("/operators")
@@ -91,33 +94,37 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			operatorEndpoints.DELETE("/:operatorId", operatorAPI.DeleteOperator)
 		}
 
-		// // TODO
-		// runEndpoints := privateEndpoints.Group("/runs")
-		// {
-		// 	runEndpoints.GET("/:thingId", )
-		// 	runEndpoints.GET("/:runId/file", )
-		// 	runEndpoints.GET("/:runId/comments", )
-		// 	runEndpoints.POST("", )
-		// 	runEndpoints.POST("/:runId/file", )
-		// 	runEndpoints.POST("/comment", )
-		// 	runEndpoints.PUT("", )
-		// 	runEndpoints.PUT("/comment", )
-		// 	runEndpoints.DELETE("/:runId", )
-		// 	runEndpoints.DELETE("/comment/:commentId", )
-		// }
+		runEndpoints := privateEndpoints.Group("/runs")
+		{
+			runEndpoints.POST("", runAPI.CreateRun)
+			runEndpoints.GET("/thing/:thingId", runAPI.GetRuns)
+			runEndpoints.PUT("", runAPI.UpdateRun)
+			runEndpoints.DELETE("/:runId", runAPI.DeleteRun)
 
-		// // TODO
-		// sessionEndpoints := privateEndpoints.Group("/sessions")
-		// {
-		// 	sessionEndpoints.GET("/:thingId", )
-		// 	sessionEndpoints.GET("/zip", )
-		// 	sessionEndpoints.POST("", )
-		// 	sessionEndpoints.POST("/comment", )
-		// 	sessionEndpoints.PUT("", )
-		// 	sessionEndpoints.PUT("/comment", )
-		// 	sessionEndpoints.DELETE("", )
-		// 	sessionEndpoints.DELETE("/comment", )
-		// }
+			runEndpoints.POST("/:runId/file", runAPI.UploadFile)
+			runEndpoints.GET("/:runId/file", runAPI.DownloadFile)
+
+			runEndpoints.POST("/:runId/comment", runAPI.AddComment)
+			runEndpoints.GET("/:runId/comments", runAPI.GetComments)
+			runEndpoints.PUT("/comment/:commentId", runAPI.UpdateCommentContent)
+			runEndpoints.DELETE("/comment/:commentId", runAPI.DeleteComment)
+		}
+
+		sessionEndpoints := privateEndpoints.Group("/sessions")
+		{
+			sessionEndpoints.POST("", sessionAPI.CreateSession)
+			sessionEndpoints.GET("/thing/:thingId", sessionAPI.GetSessions)
+			sessionEndpoints.PUT("", sessionAPI.UpdateSession)
+			sessionEndpoints.DELETE("/:sessionId", sessionAPI.DeleteSession)
+
+			// TODO
+			// sessionEndpoints.GET("/zip", )
+
+			sessionEndpoints.POST("/:sessionId/comment", sessionAPI.AddComment)
+			sessionEndpoints.GET("/:sessionId/comments", sessionAPI.GetComments)
+			sessionEndpoints.PUT("/comment/:commentId", sessionAPI.UpdateCommentContent)
+			sessionEndpoints.DELETE("/comment/:commentId", sessionAPI.DeleteComment)
+		}
 
 		rawDataPresetEndpoints := privateEndpoints.Group("/rawDataPreset")
 		{
@@ -134,5 +141,5 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			chartPresetEndpoints.PUT("", chartPresetAPI.UpdateChartPreset)
 			chartPresetEndpoints.DELETE("/:chartPresetId", chartPresetAPI.DeleteChartPreset)
 		}
-	}	
+	}
 }
