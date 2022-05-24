@@ -37,7 +37,6 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 					result := utils.SuccessPayload(newSensor, "Successfully created Sensor.")
 					utils.Response(ctx, http.StatusOK, result)
 				} else {
-					print(err.Error())
 					utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 				}
 			} else {
