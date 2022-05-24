@@ -275,6 +275,10 @@ func mapArrayTo2DArray(mapArray []map[string]int, smallIds []int) [][]int {
 }
 
 func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, thingId string, session *models.Session) {
+	err := os.MkdirAll("srv_files/"+thingId, 0777)
+	if err != nil {
+		panic(err)
+	}
 	csvFile, err := os.Create("srv_files/" + thingId + "/" + session.Name + ".csv")
 	if err != nil {
 		panic(err)
