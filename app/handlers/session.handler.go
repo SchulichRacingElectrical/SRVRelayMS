@@ -26,7 +26,7 @@ func (handler *SessionHandler) CreateSession(c *gin.Context) {
 	var newSession models.Session
 	c.BindJSON(&newSession)
 
-	err := handler.session.CreateSession(c.Request.Context(), &newSession)
+	_, err := handler.session.CreateSession(c.Request.Context(), &newSession)
 	if err == nil {
 		res := &createEntityRes{
 			ID: newSession.ID,
