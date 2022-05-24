@@ -58,7 +58,9 @@ func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, c
 			}
 			session := &models.Session{
 				StartDate: time.Now().UnixMilli(),
+				EndDate:   time.Now().UnixMilli(), // EndDate will be updated after session is closed
 				ThingID:   thingObjId,
+				Name:      "Test", // TODO: Allow naming sessions
 			}
 			sessionId, err := sessionService.CreateSession(ctx, session)
 			if err != nil {
@@ -76,6 +78,10 @@ func thingDataSession(thingId string, sessionId primitive.ObjectID, redisClient 
 
 	datumService := services.NewDatumService(dbSession, conf)
 	sessionService := services.NewSessionService(conf)
+	session, err := sessionService.FindById(ctx, sessionId.Hex())
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 		msg, err := subscriber.ReceiveMessage(ctx)
@@ -133,7 +139,7 @@ func thingDataSession(thingId string, sessionId primitive.ObjectID, redisClient 
 			}
 
 			// Save thing data to csv
-			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId)
+			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId, session)
 
 			// Process non-linear thing data for mongo
 			thingDataArray = replaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
@@ -154,12 +160,8 @@ func thingDataSession(thingId string, sessionId primitive.ObjectID, redisClient 
 			datumService.CreateMany(ctx, datumArray)
 
 			// Update session
-			session, err := sessionService.FindById(ctx, sessionId.Hex())
-			if err != nil {
-				panic(err)
-			}
 			session.EndDate = session.StartDate + int64(thingDataArray[len(thingDataArray)-1]["ts"])
-			// session.fileName = "srv_files/" + thingId + ".csv"
+			// session.fileName = "srv_files/" + thingId + "/" + session.Name + ".csv"
 			err = sessionService.UpdateSession(ctx, session)
 			if err != nil {
 				panic(err)
@@ -272,8 +274,8 @@ func mapArrayTo2DArray(mapArray []map[string]int, smallIds []int) [][]int {
 	return output
 }
 
-func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, thingId string) {
-	csvFile, err := os.Create("srv_files/" + thingId + ".csv")
+func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, thingId string, session *models.Session) {
+	csvFile, err := os.Create("srv_files/" + thingId + "/" + session.Name + ".csv")
 	if err != nil {
 		panic(err)
 	}
