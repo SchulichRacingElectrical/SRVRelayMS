@@ -58,7 +58,7 @@ func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, c
 			}
 			session := &models.Session{
 				StartDate: time.Now().UnixMilli(),
-				EndDate:   time.Now().UnixMilli(), // EndDate will be updated after session is closed
+				EndDate:   0, // EndDate will be updated after session is closed
 				ThingID:   thingObjId,
 				Name:      "Test", // TODO: Allow naming sessions
 			}
