@@ -2,12 +2,14 @@ package redisHandler
 
 import (
 	"context"
+	"database-ms/app/models"
 	"database-ms/app/services"
 	"database-ms/config"
 	"log"
 	"os"
 	"sort"
 	"strconv"
+	"time"
 
 	"encoding/csv"
 	"encoding/json"
@@ -40,6 +42,8 @@ func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, c
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_CONNECTION")
 
+	sessionService := services.NewSessionService(conf)
+
 	for {
 		msg, err := subscriber.ReceiveMessage(ctx)
 		if err != nil {
@@ -48,15 +52,30 @@ func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, c
 		message := Message{}
 		json.Unmarshal([]byte(msg.Payload), &message)
 		if message.Active {
-			go thingDataSession(message.ThingId, redisClient, dbSession, conf)
+			thingObjId, err := primitive.ObjectIDFromHex(message.ThingId)
+			if err != nil {
+				panic(err)
+			}
+			session := &models.Session{
+				StartDate: time.Now().UnixMilli(),
+				ThingID:   thingObjId,
+			}
+			sessionId, err := sessionService.CreateSession(ctx, session)
+			if err != nil {
+				panic(err)
+			}
+			go thingDataSession(message.ThingId, sessionId, redisClient, dbSession, conf)
 		}
 	}
 }
 
-func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
+func thingDataSession(thingId string, sessionId primitive.ObjectID, redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_"+thingId)
 	log.Println("Thing Data Session Started for " + thingId)
+
+	datumService := services.NewDatumService(dbSession, conf)
+	sessionService := services.NewSessionService(conf)
 
 	for {
 		msg, err := subscriber.ReceiveMessage(ctx)
@@ -86,7 +105,6 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 				json.Unmarshal([]byte(thingDataItem), &thingDataItemMap)
 				thingDataArray = append(thingDataArray, thingDataItemMap)
 			}
-			log.Println(thingDataArray)
 
 			// Process thing data to fill missing sensor values
 			thingDataArray = fillMissingValues(thingDataArray)
@@ -99,7 +117,6 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 
 			// Convert to 2D arrays
 			timeLinearThingData2DArray := mapArrayTo2DArray(timeLinearThingData, smallIds)
-			// thingData2DArray := mapArrayTo2DArray(thingDataArray, smallIds)
 
 			// Get sensor list
 			sensorService := services.NewSensorService(dbSession, conf)
@@ -118,7 +135,35 @@ func thingDataSession(thingId string, redisClient *redis.Client, dbSession *mgo.
 			// Save thing data to csv
 			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId)
 
+			// Process non-linear thing data for mongo
+			thingDataArray = replaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
+			datumArray := make([]*models.Datum, len(thingDataArray)*len(smallIds))
+			for i, thingDataItem := range thingDataArray {
+				for j, smallId := range smallIds {
+					strSmallId := strconv.Itoa(smallId)
+					datumArray[i*len(smallIds)+j] = &models.Datum{
+						SessionID: sessionId,
+						SensorID:  smallIdToInfoMap[strSmallId].ID,
+						Value:     float64(thingDataItem[strSmallId]),
+						Timestamp: int64(thingDataItem["ts"]),
+					}
+				}
+			}
+
 			// Save thing data to mongo
+			datumService.CreateMany(ctx, datumArray)
+
+			// Update session
+			session, err := sessionService.FindById(ctx, sessionId.Hex())
+			if err != nil {
+				panic(err)
+			}
+			session.EndDate = session.StartDate + int64(thingDataArray[len(thingDataArray)-1]["ts"])
+			// session.fileName = "srv_files/" + thingId + ".csv"
+			err = sessionService.UpdateSession(ctx, session)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }
@@ -261,4 +306,15 @@ func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[
 			panic(err)
 		}
 	}
+}
+
+func replaceSmallIdsWithIds(thingDataArray []map[string]int, smallIdToInfoMap map[string]SensorInfo) []map[string]int {
+	for _, thingDataItem := range thingDataArray {
+		for smallId, sensorInfo := range smallIdToInfoMap {
+			thingDataItem[sensorInfo.ID.Hex()] = thingDataItem[smallId]
+			delete(thingDataItem, smallId)
+		}
+	}
+
+	return thingDataArray
 }
