@@ -66,22 +66,20 @@ func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, c
 			if err != nil {
 				panic(err)
 			}
-			go thingDataSession(message.ThingId, sessionId, redisClient, dbSession, conf)
+			log.Println("Session created with ID: " + sessionId.Hex())
+			session.ID = sessionId
+			go thingDataSession(message.ThingId, session, redisClient, dbSession, conf)
 		}
 	}
 }
 
-func thingDataSession(thingId string, sessionId primitive.ObjectID, redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
+func thingDataSession(thingId string, session *models.Session, redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_"+thingId)
 	log.Println("Thing Data Session Started for " + thingId)
 
 	datumService := services.NewDatumService(dbSession, conf)
 	sessionService := services.NewSessionService(conf)
-	session, err := sessionService.FindById(ctx, sessionId.Hex())
-	if err != nil {
-		panic(err)
-	}
 
 	for {
 		msg, err := subscriber.ReceiveMessage(ctx)
@@ -148,7 +146,7 @@ func thingDataSession(thingId string, sessionId primitive.ObjectID, redisClient 
 				for j, smallId := range smallIds {
 					strSmallId := strconv.Itoa(smallId)
 					datumArray[i*len(smallIds)+j] = &models.Datum{
-						SessionID: sessionId,
+						SessionID: session.ID,
 						SensorID:  smallIdToInfoMap[strSmallId].ID,
 						Value:     float64(thingDataItem[strSmallId]),
 						Timestamp: int64(thingDataItem["ts"]),
@@ -166,6 +164,9 @@ func thingDataSession(thingId string, sessionId primitive.ObjectID, redisClient 
 			if err != nil {
 				panic(err)
 			}
+
+			log.Println("Thing Data Session Ended for " + thingId)
+			return
 		}
 	}
 }
