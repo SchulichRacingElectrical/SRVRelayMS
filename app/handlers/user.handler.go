@@ -117,6 +117,7 @@ func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
 		return
 	}
 	if last {
+		// TODO: This should say "Cannot demote last admin"
 		utils.Response(ctx, http.StatusForbidden, utils.NewHTTPError(utils.UserLastAdmin))
 		return
 	}
@@ -148,7 +149,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	}
 
 	// Attempt to parse the query param
-	userIdToDelete, err := uuid.FromBytes([]byte(ctx.Param("userId")))
+	userIdToDelete, err := uuid.Parse(ctx.Param("userId"))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return

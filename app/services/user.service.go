@@ -40,7 +40,7 @@ func NewUserService(db *gorm.DB, c *config.Configuration) UserServiceInterface {
 
 func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.User, error) {
 	var users []*model.User
-	result := service.db.Where("organization_id <> ?", organizationId).Find(&users)
+	result := service.db.Where("organization_id = ?", organizationId).Find(&users)
 	if result.Error != nil {
 		return nil, result.Error
 	}

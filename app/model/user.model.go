@@ -8,12 +8,12 @@ const TableNameUser = "user"
 
 type User struct {
 	Base
-	DisplayName    string       `gorm:"column:display_name;not null" json:"displayName"`
+	DisplayName    string       `gorm:"column:display_name;not null" json:"name"`
 	Email          string       `gorm:"column:email;not null" json:"email"`
-	Password       string       `gorm:"column:password;not null" json:"password,omitempty"`
+	Password       string       `gorm:"column:password;not null" json:"-"`
 	OrganizationId uuid.UUID    `gorm:"type:uuid;column:organization_id" json:"organizationId"`
 	Role           string       `gorm:"column:role;not null" json:"role"`
-	Organization   Organization `gorm:"foreignKey:OrganizationId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Organization   Organization `gorm:"foreignKey:OrganizationId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"-"`
 }
 
 func (*User) TableName() string {
