@@ -60,7 +60,7 @@ func (handler *OperatorHandler) GetOperators(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	operators, err := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.Id)
 	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingsNotFound))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
 
@@ -118,9 +118,9 @@ func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 }
 
 func (handler *OperatorHandler) DeleteOperator(ctx *gin.Context) {
-	// Attempt to read from the params
+	// Attempt to parse the query param
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	operatorIdToDelete, err := uuid.FromBytes([]byte(ctx.Param("operatorId")))
+	operatorIdToDelete, err := uuid.Parse(ctx.Param("operatorId"))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return

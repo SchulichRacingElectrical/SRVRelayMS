@@ -44,7 +44,7 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) err
 			thingOperator.OperatorId = operatorId
 			thingOperators = append(thingOperators, thingOperator)
 		}
-		result = db.Table("thing_operator").CreateInBatches(thingOperators, 50)
+		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
 		if result.Error != nil {
 			return result.Error
 		}

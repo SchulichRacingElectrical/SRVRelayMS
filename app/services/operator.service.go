@@ -4,6 +4,7 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
+	"database-ms/utils"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -29,144 +30,113 @@ func NewOperatorService(db *gorm.DB, c *config.Configuration) OperatorServiceInt
 }
 
 func (service *OperatorService) Create(ctx context.Context, operator *model.Operator) error {
-	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Create the operator
+		result := db.Create(&operator)
+		if result.Error != nil {
+			return result.Error
+		}
 
-	// callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-	// 	db := client.Database(service.config.MongoDbName)
-	// 	result, err := db.Collection("Operator").InsertOne(ctx, operator)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	operator.ID = (result.InsertedID).(primitive.ObjectID)
-	// 	var thingOperators []interface{}
-	// 	for _, thingId := range operator.ThingIds {
-	// 		thingOperators = append(thingOperators, bson.D{{"operatorId", operator.ID}, {"thingId", thingId}})
-	// 	}
-	// 	if len(thingOperators) > 0 {
-	// 		if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperators); err != nil {
-	// 			return nil, err
-	// 		}
-	// 	}
-	// 	return nil, nil
-	// }
+		// Generate the list of thing operators
+		var thingOperators []model.ThingOperator
+		for _, thingId := range operator.ThingIds {
+			thingOperators = append(thingOperators, model.ThingOperator{
+				OperatorId: operator.Id,
+				ThingId:    thingId,
+			})
+		}
 
-	// _, err = databases.WithTransaction(client, ctx, callback)
-	// return err
+		// Batch insert thing operators
+		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return utils.GetPostgresError(err)
+	}
 	return nil
 }
 
 func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UUID) (*model.Operator, error) {
-	// var operator model.Operator
-	// bsonOperatorId, err := primitive.ObjectIDFromHex(operatorId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// err = service.OperatorCollection(ctx).FindOne(ctx, bson.M{"_id": bsonOperatorId}).Decode(&operator)
-	// if err == nil {
-	// 	service.AttachAssociatedThingIds(ctx, &operator)
-	// }
-	// return &operator, err
-	return nil, nil
+	var operator *model.Operator
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the operator with the given id
+		result := db.Where("id = ?", operatorId).First(&operator)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return operator, nil
 }
 
 func (service *OperatorService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Operator, error) {
-	// var operators []*model.Operator
-	// cursor, err := service.OperatorCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
-	// if err = cursor.All(ctx, &operators); err != nil {
-	// 	return nil, err
-	// }
-	// if operators == nil {
-	// 	operators = []*model.Operator{}
-	// } else {
-	// 	for _, operator := range operators {
-	// 		service.AttachAssociatedThingIds(ctx, operator)
-	// 	}
-	// }
-	// return operators, nil
-	return nil, nil
+	var operators = []*model.Operator{}
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the operators associated with the given organization
+		result := db.Where("organization_id = ?", organizationId).Find(&operators)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return operators, nil
 }
 
 func (service *OperatorService) Update(ctx context.Context, updatedOperator *model.Operator) error {
-	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Save the updated operator
+		db.Save(updatedOperator)
 
-	// callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-	// 	db := client.Database(service.config.MongoDbName)
+		// Delete all of the associated thing operators
+		result := db.Table(model.TableNameThingOperator).Where("operator_id = ?", updatedOperator.Id).Delete(&model.ThingOperator{})
+		if result.Error != nil {
+			return result.Error
+		}
 
-	// 	// Update the operator
-	// 	if _, err := db.Collection("Operator").UpdateOne(ctx, bson.M{"_id": updatedOperator.ID}, bson.M{"$set": updatedOperator}); err != nil {
-	// 		return nil, err
-	// 	}
+		// Regenerate the list of thing operators
+		var thingOperators []model.ThingOperator
+		for _, thingId := range updatedOperator.ThingIds {
+			thingOperators = append(thingOperators, model.ThingOperator{
+				OperatorId: updatedOperator.Id,
+				ThingId:    thingId,
+			})
+		}
 
-	// 	// Find the current operator
-	// 	currentOperator, err := service.FindById(ctx, updatedOperator.ID.Hex())
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	// Resolve which thing-operator relationships to be inserted
-	// 	var thingOperatorsToInsert []interface{}
-	// 	for _, newThingId := range updatedOperator.ThingIds {
-	// 		if !utils.IdInSlice(newThingId, currentOperator.ThingIds) {
-	// 			thingOperatorsToInsert = append(thingOperatorsToInsert, bson.D{{"operatorId", updatedOperator.ID}, {"thingId", newThingId}})
-	// 		}
-	// 	}
-	// 	if len(thingOperatorsToInsert) > 0 {
-	// 		if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperatorsToInsert); err != nil {
-	// 			return nil, err
-	// 		}
-	// 	}
-
-	// 	// Resolve which thing-operator relationships need to be deleted
-	// 	var thingOperatorsToDelete []model.ThingOperator
-	// 	for _, currentThingId := range currentOperator.ThingIds {
-	// 		if !utils.IdInSlice(currentThingId, updatedOperator.ThingIds) {
-	// 			thingOperatorsToDelete = append(thingOperatorsToDelete, model.ThingOperator{OperatorId: updatedOperator.ID, ThingId: currentThingId})
-	// 		}
-	// 	}
-	// 	for _, thingOperator := range thingOperatorsToDelete {
-	// 		if _, err = db.Collection("ThingOperator").DeleteOne(ctx, bson.M{"operatorId": thingOperator.OperatorId, "thingId": thingOperator.ThingId}); err != nil {
-	// 			return nil, err
-	// 		}
-	// 	}
-
-	// 	return nil, nil
-	// }
-
-	// _, err = databases.WithTransaction(client, ctx, callback)
-	// return err
+		// Batch insert thing operators
+		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return utils.GetPostgresError(err)
+	}
 	return nil
 }
 
 func (service *OperatorService) Delete(ctx context.Context, operatorId uuid.UUID) error {
-	// bsonOperatorId, err := primitive.ObjectIDFromHex(operatorId)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-	// 	db := client.Database(service.config.MongoDbName)
-	// 	if _, err := db.Collection("ThingOperator").DeleteMany(ctx, bson.M{"operatorId": bsonOperatorId}); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if _, err := db.Collection("Operator").DeleteOne(ctx, bson.M{"_id": bsonOperatorId}); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	return nil, nil
-	// }
-
-	// _, err = databases.WithTransaction(client, ctx, callback)
-	// return err
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Delete the specified operator
+		operator := model.Operator{Base: model.Base{Id: operatorId}}
+		result := db.Delete(&operator)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return utils.GetPostgresError(err)
+	}
 	return nil
 }
 
