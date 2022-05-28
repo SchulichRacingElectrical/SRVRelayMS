@@ -20,7 +20,7 @@ func NewUserAPI(userService services.UserServiceInterface) *UserHandler {
 }
 
 func (handler *UserHandler) GetUsers(ctx *gin.Context) {
-	// Guard against non-lead+ requestors
+	// Guard against non-lead+ requests
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))

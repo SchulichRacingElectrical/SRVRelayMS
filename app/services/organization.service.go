@@ -4,8 +4,10 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
@@ -14,7 +16,7 @@ type OrganizationServiceInterface interface {
 	FindByOrganizationId(context.Context, uuid.UUID) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
 	FindAllOrganizations(context.Context) ([]*model.Organization, error)
-	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
+	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError)
 	UpdateKey(context.Context, *model.Organization) error
 	Update(context.Context, *model.Organization) error
 	Delete(context.Context, uuid.UUID) error
@@ -58,11 +60,13 @@ func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([
 	return organizations, nil
 }
 
-func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) (*mongo.InsertOneResult, error) {
+func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError) {
 	organization.APIKey = uuid.NewString()
 	result := service.db.Create(&organization)
 	if result.Error != nil {
-		return nil, result.Error
+		var perr *pgconn.PgError
+		errors.As(result.Error, &perr)
+		return nil, perr
 	}
 	return nil, nil
 }

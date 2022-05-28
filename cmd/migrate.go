@@ -37,6 +37,7 @@ func main() {
 		panic(err)
 	}
 
+	// Full migration
 	db.AutoMigrate(
 		&model.Chart{},
 		&model.ChartPreset{},

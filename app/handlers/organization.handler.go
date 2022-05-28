@@ -28,10 +28,13 @@ func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 	}
 
 	// Attempt to create the organizaton
-	_, err = handler.service.Create(ctx.Request.Context(), &newOrganization)
-	if err != nil {
-		result := utils.NewHTTPError(err.Error())
-		utils.Response(ctx, http.StatusBadRequest, result)
+	_, perr := handler.service.Create(ctx.Request.Context(), &newOrganization)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, "")
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, "")
+		}
 		return
 	}
 
