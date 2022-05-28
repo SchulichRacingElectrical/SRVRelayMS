@@ -135,5 +135,10 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 			chartPresetEndpoints.PUT("", chartPresetAPI.UpdateChartPreset)
 			chartPresetEndpoints.DELETE("/:chartPresetId", chartPresetAPI.DeleteChartPreset)
 		}
+
+		dataEndpoints := privateEndpoints.Group("/data")
+		{
+			dataEndpoints.GET("/:sessionId/:sensorId", sessionAPI.GetDatumBySessionIdAndSensorId)
+		}
 	}
 }

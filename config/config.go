@@ -11,15 +11,19 @@ import (
 )
 
 type Configuration struct {
-	Host         string `env:"POSTGRES_HOST,required"`
-	User         string `env:"POSTGRES_USER,required"`
-	Password     string `env:"POSTGRES_PASSWORD,required"`
-	DbName       string `env:"POSTGRES_DB_NAME,required"`
-	Port         string `env:"POSTGRES_PORT,required"`
-	SslMode      string `env:"POSTGRES_SSLMODE,required"`
-	AdminKey     string `env:"ADMIN_API_KEY,required"`
-	AccessSecret string `env:"ACCESS_SECRET,required"`
-	Address      string `env:"ADDRESS" envDefault:":8080"`
+	Host          string `env:"POSTGRES_HOST,required"`
+	User          string `env:"POSTGRES_USER,required"`
+	Password      string `env:"POSTGRES_PASSWORD,required"`
+	DbName        string `env:"POSTGRES_DB_NAME,required"`
+	Port          string `env:"POSTGRES_PORT,required"`
+	SslMode       string `env:"POSTGRES_SSLMODE,required"`
+	AdminKey      string `env:"ADMIN_API_KEY,required"`
+	AccessSecret  string `env:"ACCESS_SECRET,required"`
+	Address       string `env:"ADDRESS" envDefault:":8080"`
+	RedisUrl      string `env:"REDIS_URL,required"`
+	RedisPort     string `env:"REDIS_PORT,required"`
+	RedisUsername string `env:"REDIS_USERNAME"`
+	RedisPassword string `env:"REDIS_PASSWORD,required"`
 }
 
 // NewConfig will read the config data from given .env file

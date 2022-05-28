@@ -67,6 +67,19 @@ const (
 	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
 	OrganizationsNotFound = "organizationsNotFound"
+
+	// Raw Data Preset Error
+	RawDataPresetNotUnique = "rawDataPresetNotUnique"
+	RawDataPresetNotValid  = "rawDataPresetNotValid"
+	RawDataPresetNotFound  = "rawDataPresetNotFound"
+
+	// Chart Preset Error
+	ChartPresetNotUnique = "chartPresetNotUnique"
+	ChartPresetNotValid  = "chartPresetNotValid"
+	ChartPresetNotFound  = "chartPresetNotFound"
+
+	// Datum Error
+	DatumNotFound = "datumNotFound"
 )
 
 // Error code with description
@@ -108,4 +121,33 @@ var errorMessage = map[string]string{
 	"organizationDuplicate": "Organization name is taken.",
 	"organizationNotFound":  "Organization could not be found.",
 	"organizationsNotFound": "Organizations could not be found.",
+
+	// Run errors
+	"runsNotFound": "Runs could not be found",
+	"runNotFound":  "Run could not be found",
+	"runDNE":       "Run does not exist",
+
+	// File
+	"noFileReceived":         "No file is received",
+	"notCsv":                 "Not a csv",
+	"runHasAssociatedFile":   "Run already has associated file",
+	"runHasNoAssociatedFile": "Run does exist or not have associated file",
+	"cannotRetrieveFile":     "Cannot retrieve file",
+
+	// Session errors
+	"sessionssNotFound": "Sesssions could not be found",
+	"sessionNotFound":   "Session could not be found",
+
+	// Raw Data Preset
+	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",
+	"rawDataPresetNotValid":  "Raw Data Preset is not valid.",
+	"rawDataPresetNotFound":  "Raw Data Preset not found.",
+
+	// Chart Preset
+	"chartPresetNotUnique": "Chart Preset name must be unique.",
+	"chartPresetNotValid":  "Chart Preset was not valid. Ensure posted Sensors exist.",
+	"chartPresetNotFound":  "Chart Preset was not found.",
+
+	// Datum
+	"datumNotFound": "Datum could not be found.",
 }
