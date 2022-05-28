@@ -88,6 +88,9 @@ const (
 	ChartPresetNotUnique = "chartPresetNotUnique"
 	ChartPresetNotValid  = "chartPresetNotValid"
 	ChartPresetNotFound  = "chartPresetNotFound"
+
+	// Datum Error
+	DatumNotFound = "datumNotFound"
 )
 
 // Error code with description
@@ -161,4 +164,7 @@ var errorMessage = map[string]string{
 	"chartPresetNotUnique": "Chart Preset name must be unique.",
 	"chartPresetNotValid":  "Chart Preset was not valid. Ensure posted Sensors exist.",
 	"chartPresetNotFound":  "Chart Preset was not found.",
+
+	// Datum
+	"datumNotFound": "Datum could not be found.",
 }

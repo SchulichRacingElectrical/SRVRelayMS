@@ -3,6 +3,7 @@ package main
 import (
 	"database-ms/config"
 	"database-ms/databases"
+	"database-ms/redisHandler"
 	"database-ms/routes"
 	"log"
 	"net/http"
@@ -32,6 +33,9 @@ func main() {
 
 	// TODO setup Swagger
 	// TODO setup logging
+
+	// Redis IoT Sub
+	redisHandler.Initialize(conf, dbSession)
 
 	// Server config
 	srv := &http.Server{

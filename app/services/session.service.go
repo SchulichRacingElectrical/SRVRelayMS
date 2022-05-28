@@ -14,7 +14,7 @@ import (
 )
 
 type SessionServiceI interface {
-	CreateSession(context.Context, *models.Session) error
+	CreateSession(context.Context, *models.Session) (primitive.ObjectID, error)
 	FindById(context.Context, string) (*models.Session, error)
 	GetSessionsByThingId(context.Context, string) ([]*models.Session, error)
 	UpdateSession(context.Context, *models.Session) error
@@ -29,7 +29,7 @@ func NewSessionService(c *config.Configuration) SessionServiceI {
 	return &SessionService{config: c}
 }
 
-func (service *SessionService) CreateSession(ctx context.Context, session *models.Session) error {
+func (service *SessionService) CreateSession(ctx context.Context, session *models.Session) (primitive.ObjectID, error) {
 	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
 	if err != nil {
 		panic(err)
@@ -40,11 +40,14 @@ func (service *SessionService) CreateSession(ctx context.Context, session *model
 	// Check if Thing exists
 	res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": session.ThingID})
 	if res.Err() == mongo.ErrNoDocuments {
-		return errors.New("thing does not exist")
+		return primitive.NilObjectID, errors.New("thing does not exist")
 	}
 
-	_, err = database.Collection("Session").InsertOne(ctx, session)
-	return err
+	result, err := database.Collection("Session").InsertOne(ctx, session)
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+	return result.InsertedID.(primitive.ObjectID), err
 }
 
 func (service *SessionService) FindById(ctx context.Context, sessionId string) (*models.Session, error) {
