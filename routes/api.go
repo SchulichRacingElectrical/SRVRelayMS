@@ -141,5 +141,10 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 			chartPresetEndpoints.PUT("", chartPresetAPI.UpdateChartPreset)
 			chartPresetEndpoints.DELETE("/:chartPresetId", chartPresetAPI.DeleteChartPreset)
 		}
+
+		dataEndpoints := privateEndpoints.Group("/data")
+		{
+			dataEndpoints.GET("/:sessionId/:sensorId", sessionAPI.GetDatumBySessionIdAndSensorId)
+		}
 	}
 }
