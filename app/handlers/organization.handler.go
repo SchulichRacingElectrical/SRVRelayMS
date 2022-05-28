@@ -110,7 +110,7 @@ func (handler *OrganizationHandler) UpdateOrganization(ctx *gin.Context) {
 
 func (handler *OrganizationHandler) IssueNewAPIKey(ctx *gin.Context) {
 	// Guard against non-admin users
-	if middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}

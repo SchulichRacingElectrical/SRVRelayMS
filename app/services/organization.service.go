@@ -69,7 +69,7 @@ func (service *OrganizationService) Create(ctx context.Context, organization *mo
 
 func (service *OrganizationService) UpdateKey(ctx context.Context, organization *model.Organization) error {
 	organization.APIKey = uuid.NewString()
-	result := service.db.Save(&organization)
+	result := service.db.Updates(&organization)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -82,7 +82,7 @@ func (service *OrganizationService) Update(ctx context.Context, updatedOrganizat
 		return err
 	}
 	updatedOrganization.APIKey = prev.APIKey
-	result := service.db.Model(&updatedOrganization).Select("*").Updates(&updatedOrganization)
+	result := service.db.Updates(&updatedOrganization)
 	if result.Error != nil {
 		return result.Error
 	}
