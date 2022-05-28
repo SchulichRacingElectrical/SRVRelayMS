@@ -10,7 +10,7 @@ type Operator struct {
 	Base
 	Name           string       `gorm:"column:name;not null" json:"name"`
 	OrganizationId uuid.UUID    `gorm:"type:uuid;column:organization_id;not null" json:"organizationId"`
-	Organization   Organization `gorm:"foreignKey:OrganizationId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Organization   Organization `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	ThingIds       []uuid.UUID  `gorm:"-" json:"operatorIds,omitempty"`
 }
 

@@ -13,8 +13,8 @@ type Session struct {
 	EndTime      int64      `gorm:"column:end_time" json:"endTime,omitempty"`
 	CollectionId uuid.UUID  `gorm:"type:uuid;column:collection_id" json:"collectionId,omitempty"`
 	ThingId      uuid.UUID  `gorm:"type:uuid;column:thing_id;not null" json:"thingId"`
-	Collection   Collection `gorm:"foreignKey:CollectionId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	Thing        Thing      `gorm:"foreignKey:ThingId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Collection   Collection `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
+	Thing        Thing      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (*Session) TableName() string {

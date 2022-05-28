@@ -10,8 +10,8 @@ type Datum struct {
 	Value     float64   `gorm:"column:value;not null"`
 	SensorId  uuid.UUID `gorm:"column:sensor_id;not null"`
 	SessionId uuid.UUID `gorm:"column:session_id;not null"`
-	Sessor    Sensor    `gorm:"foreignKey:SensorId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Session   Session   `gorm:"foreignKey:SessionId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Sessor    Sensor    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Session   Session   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (*Datum) TableName() string {

@@ -11,7 +11,7 @@ type Collection struct {
 	Name        string    `gorm:"column:name;not null" json:"name"`
 	Description string    `gorm:"column:description" json:"description,omitempty"`
 	ThingId     uuid.UUID `gorm:"type:uuid;column:thing_id;not null" json:"thingId"`
-	Thing       Thing     `gorm:"foreignKey:ThingId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Thing       Thing     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (*Collection) TableName() string {
