@@ -41,14 +41,12 @@ func Initialize(conf *config.Configuration, dbSession *mgo.Session) {
 func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_CONNECTION")
+	defer subscriber.Close()
+	connectionChannel := subscriber.Channel()
 
 	sessionService := services.NewSessionService(conf)
 
-	for {
-		msg, err := subscriber.ReceiveMessage(ctx)
-		if err != nil {
-			panic(err)
-		}
+	for msg := range connectionChannel {
 		message := Message{}
 		json.Unmarshal([]byte(msg.Payload), &message)
 		if message.Active {
@@ -76,16 +74,14 @@ func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, c
 func thingDataSession(thingId string, session *models.Session, redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_"+thingId)
+	defer subscriber.Close()
 	log.Println("Thing Data Session Started for " + thingId)
+	thingDataChannel := subscriber.Channel()
 
 	datumService := services.NewDatumService(dbSession, conf)
 	sessionService := services.NewSessionService(conf)
 
-	for {
-		msg, err := subscriber.ReceiveMessage(ctx)
-		if err != nil {
-			panic(err)
-		}
+	for msg := range thingDataChannel {
 		message := Message{}
 		json.Unmarshal([]byte(msg.Payload), &message)
 
