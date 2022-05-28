@@ -55,7 +55,6 @@ func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	// TODO: What if none? Need empty array
 	return organizations, nil
 }
 
@@ -83,7 +82,7 @@ func (service *OrganizationService) Update(ctx context.Context, updatedOrganizat
 		return err
 	}
 	updatedOrganization.APIKey = prev.APIKey
-	result := service.db.Save(&updatedOrganization)
+	result := service.db.Save(*updatedOrganization)
 	if result.Error != nil {
 		return result.Error
 	}

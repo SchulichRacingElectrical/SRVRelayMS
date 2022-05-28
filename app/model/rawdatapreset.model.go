@@ -11,7 +11,7 @@ type RawDataPreset struct {
 	Name      string      `gorm:"column:name;not null" json:"name"`
 	SensorIds []uuid.UUID `gorm:"type:uuid[];column:sensor_ids;not null" json:"sensorIds"`
 	ThingId   uuid.UUID   `gorm:"type:uuid;column:thing_id;not null" json:"thingId"`
-	Thing     Thing       `gorm:"foreignKey:ThingId;contraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Thing     Thing       `gorm:"foreignKey:ThingId;references:Id;contraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (*RawDataPreset) TableName() string {

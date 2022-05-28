@@ -13,7 +13,7 @@ type User struct {
 	Password       string       `gorm:"column:password;not null" json:"password,omitempty"`
 	OrganizationId uuid.UUID    `gorm:"type:uuid;column:organization_id" json:"organizationId"`
 	Role           string       `gorm:"column:role;not null" json:"role"`
-	Organization   Organization `gorm:"foreignKey:OrganizationId;contraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Organization   Organization `gorm:"foreignKey:OrganizationId;references:Id;contraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (*User) TableName() string {

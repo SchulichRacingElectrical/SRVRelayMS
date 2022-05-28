@@ -30,7 +30,7 @@ func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 	// Attempt to create the organizaton
 	_, err = handler.service.Create(ctx.Request.Context(), &newOrganization)
 	if err != nil {
-		result := utils.NewHTTPError(utils.EntityCreationError)
+		result := utils.NewHTTPError(err.Error())
 		utils.Response(ctx, http.StatusBadRequest, result)
 		return
 	}
@@ -91,7 +91,7 @@ func (handler *OrganizationHandler) UpdateOrganization(ctx *gin.Context) {
 
 	// Guard against cross-tenant organization update
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	if organization.Id == updatedOrganization.Id {
+	if organization.Id != updatedOrganization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
