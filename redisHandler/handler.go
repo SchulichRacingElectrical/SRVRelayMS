@@ -136,19 +136,17 @@ func thingDataSession(thingId string, session *models.Session, redisClient *redi
 				smallIdToInfoMap[smallId] = SensorInfo{ID: sensor.ID, Name: sensor.Name}
 			}
 
-			// Save thing data to csv
-			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId, session)
-
 			// Process non-linear thing data for mongo
 			thingDataArray = replaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
 			datumArray := make([]*models.Datum, len(thingDataArray)*len(smallIds))
 			for i, thingDataItem := range thingDataArray {
 				for j, smallId := range smallIds {
 					strSmallId := strconv.Itoa(smallId)
+					sensorId := smallIdToInfoMap[strSmallId].ID
 					datumArray[i*len(smallIds)+j] = &models.Datum{
 						SessionID: session.ID,
-						SensorID:  smallIdToInfoMap[strSmallId].ID,
-						Value:     float64(thingDataItem[strSmallId]),
+						SensorID:  sensorId,
+						Value:     float64(thingDataItem[sensorId.Hex()]),
 						Timestamp: int64(thingDataItem["ts"]),
 					}
 				}
@@ -159,11 +157,14 @@ func thingDataSession(thingId string, session *models.Session, redisClient *redi
 
 			// Update session
 			session.EndDate = session.StartDate + int64(thingDataArray[len(thingDataArray)-1]["ts"])
-			// session.fileName = "srv_files/" + thingId + "/" + session.Name + ".csv"
+			session.FileName = "srv_files/" + thingId + "/" + session.ID.Hex() + ".csv"
 			err = sessionService.UpdateSession(ctx, session)
 			if err != nil {
 				panic(err)
 			}
+
+			// Save thing data to csv
+			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId, session.FileName)
 
 			log.Println("Thing Data Session Ended for " + thingId)
 			return
@@ -198,6 +199,7 @@ func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
 func fillMissingTimestamps(thingDataArray []map[string]int) []map[string]int {
 	lastTimestamp := thingDataArray[len(thingDataArray)-1]["ts"]
 	output := make([]map[string]int, lastTimestamp+1)
+	log.Println("lastTimestamp: ", lastTimestamp, " len(output): ", len(output))
 
 	// Copy first map with 0 values
 	currentDataMap := copyMapWithDefaultValues(thingDataArray[0])
@@ -275,12 +277,12 @@ func mapArrayTo2DArray(mapArray []map[string]int, smallIds []int) [][]int {
 	return output
 }
 
-func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, thingId string, session *models.Session) {
+func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, thingId string, fileName string) {
 	err := os.MkdirAll("srv_files/"+thingId, 0777)
 	if err != nil {
 		panic(err)
 	}
-	csvFile, err := os.Create("srv_files/" + thingId + "/" + session.Name + ".csv")
+	csvFile, err := os.Create(fileName)
 	if err != nil {
 		panic(err)
 	}

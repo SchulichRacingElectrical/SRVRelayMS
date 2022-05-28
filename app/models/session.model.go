@@ -10,4 +10,5 @@ type Session struct {
 	StartDate int64              `json:"startDate,omitempty" bson:"startDate,omitempty"`
 	EndDate   int64              `json:"endDate,omitempty" bson:"endDate"`
 	ThingID   primitive.ObjectID `json:"thingId,omitempty" bson:"thingId,omitempty"`
+	FileName  string             `json:"fileName,omitempty" bson:"fileName,omitempty"`
 }
