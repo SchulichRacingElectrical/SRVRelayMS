@@ -1,157 +1,265 @@
 package services
 
 import (
-	"database-ms/app/models"
+	"context"
+	"database-ms/app/model"
 	"database-ms/config"
-	"database-ms/databases"
-	"database-ms/utils"
-	"errors"
+	"mime/multipart"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"golang.org/x/net/context"
+	"github.com/google/uuid"
 )
 
-type SessionServiceI interface {
-	CreateSession(context.Context, *models.Session) (primitive.ObjectID, error)
-	FindById(context.Context, string) (*models.Session, error)
-	GetSessionsByThingId(context.Context, string) ([]*models.Session, error)
-	UpdateSession(context.Context, *models.Session) error
-	DeleteSession(context.Context, string) error
+type SessionServiceInterface interface {
+	CreateSession(context.Context, *model.Session) error
+	FindById(context.Context, uuid.UUID) (*model.Session, error)
+	GetSessionsByThingId(context.Context, uuid.UUID) ([]*model.Session, error)
+	UpdateSession(context.Context, *model.Session) error
+	DeleteSession(context.Context, uuid.UUID) error
+	GetSessionFileMetaData(context.Context, uuid.UUID) (*model.Session, error)
+	UploadFile(context.Context, *model.Session, *multipart.FileHeader) error
+	DownloadFile(context.Context, uuid.UUID) ([]byte, error)
 }
 
 type SessionService struct {
 	config *config.Configuration
 }
 
-func NewSessionService(c *config.Configuration) SessionServiceI {
+func NewSessionService(c *config.Configuration) SessionServiceInterface {
 	return &SessionService{config: c}
 }
 
-func (service *SessionService) CreateSession(ctx context.Context, session *models.Session) (primitive.ObjectID, error) {
-	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer database.Client().Disconnect(ctx)
+func (service *SessionService) CreateSession(ctx context.Context, session *model.Session) error {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
 
-	session.ID = primitive.NewObjectID()
-	// Check if Thing exists
-	res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": session.ThingID})
-	if res.Err() == mongo.ErrNoDocuments {
-		return primitive.NilObjectID, errors.New("thing does not exist")
-	}
+	// run.ID = primitive.NewObjectID()
+	// // Check if Thing exists
+	// res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": run.ThingID})
+	// if res.Err() == mongo.ErrNoDocuments {
+	// 	return errors.New("thing does not exist")
+	// }
 
-	result, err := database.Collection("Session").InsertOne(ctx, session)
-	if err != nil {
-		return primitive.NilObjectID, err
-	}
-	return result.InsertedID.(primitive.ObjectID), err
+	// // Check of Session exists
+	// res = database.Collection("Session").FindOne(ctx, bson.M{"_id": run.SessionId})
+	// if res.Err() == mongo.ErrNoDocuments {
+	// 	return errors.New("session does not exist")
+	// }
+
+	// _, err = database.Collection("Run").InsertOne(ctx, run)
+	// return err
+	return nil
 }
 
-func (service *SessionService) FindById(ctx context.Context, sessionId string) (*models.Session, error) {
-	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer database.Client().Disconnect(ctx)
+func (service *SessionService) FindById(ctx context.Context, sessionId uuid.UUID) (*model.Session, error) {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
 
-	var session models.Session
-	bsonSessionId, err := primitive.ObjectIDFromHex(sessionId)
-	if err != nil {
-		return nil, err
-	}
+	// var run models.Run
+	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	err = database.Collection("Session").FindOne(ctx, bson.M{"_id": bsonSessionId}).Decode(&session)
-	if err == nil {
-		return nil, err
-	}
+	// err = database.Collection("Run").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&run)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return &session, err
+	// return &run, err
+	return nil, nil
 }
 
-func (service *SessionService) GetSessionsByThingId(ctx context.Context, thingId string) ([]*models.Session, error) {
-	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer database.Client().Disconnect(ctx)
+func (service *SessionService) GetSessionsByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Session, error) {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
 
-	bsonThingId, err := primitive.ObjectIDFromHex(thingId)
-	if err != nil {
-		return nil, err
-	}
+	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	var sessions []*models.Session
-	cursor, err := database.Collection("Session").Find(ctx, bson.M{"thingId": bsonThingId})
-	if err != nil {
-		return nil, err
-	}
+	// var runs []*models.Run
+	// cursor, err := database.Collection("Run").Find(ctx, bson.M{"thingId": bsonThingId})
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	if err = cursor.All(ctx, &sessions); err != nil {
-		return nil, err
-	}
+	// if err = cursor.All(ctx, &runs); err != nil {
+	// 	return nil, err
+	// }
 
-	return sessions, nil
+	// return runs, nil
+	return nil, nil
 }
 
-func (service *SessionService) UpdateSession(ctx context.Context, updatedSession *models.Session) error {
-	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer database.Client().Disconnect(ctx)
+func (service *SessionService) UpdateSession(ctx context.Context, updatedSession *model.Session) error {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
 
-	// Check that start time < end time
-	if updatedSession.StartDate > updatedSession.EndDate {
-		return errors.New("startTime cannot be larger than Endtime")
-	}
+	// // Check if Thing exists
+	// res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": updatedRun.ThingID})
+	// if res.Err() == mongo.ErrNoDocuments {
+	// 	return errors.New("thing does not exist")
+	// }
 
-	// Check if Thing exists
-	res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": updatedSession.ThingID})
-	if res.Err() == mongo.ErrNoDocuments {
-		return errors.New("thing does not exist")
-	}
+	// // Check of Session exists
+	// res = database.Collection("Session").FindOne(ctx, bson.M{"_id": updatedRun.SessionId})
+	// if res.Err() == mongo.ErrNoDocuments {
+	// 	return errors.New("session does not exist")
+	// }
 
-	_, err = database.Collection("Session").UpdateOne(ctx, bson.M{"_id": updatedSession.ID}, bson.M{"$set": updatedSession})
+	// _, err = database.Collection("Run").UpdateOne(ctx, bson.M{"_id": updatedRun.ID}, bson.M{"$set": updatedRun})
 
-	return err
+	// return err
+	return nil
 }
 
-func (service *SessionService) DeleteSession(ctx context.Context, sessionId string) error {
-	bsonSessionId, err := primitive.ObjectIDFromHex(sessionId)
-	if err != nil {
-		return err
-	}
+func (service *SessionService) DeleteSession(ctx context.Context, sessionId uuid.UUID) error {
+	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
+	// if err != nil {
+	// 	return err
+	// }
 
-	client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	if err != nil {
-		return err
-	}
-	defer client.Disconnect(ctx)
+	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer client.Disconnect(ctx)
 
-	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		db := client.Database(service.config.MongoDbName)
+	// callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+	// 	db := client.Database(service.config.MongoDbName)
 
-		// Delete related comments
-		commentFilter := bson.M{"associatedId": bsonSessionId, "type": utils.Session}
-		if _, err := db.Collection("Comment").DeleteMany(ctx, commentFilter); err != nil {
-			return nil, err
-		}
+	// 	// Delete related comments
+	// 	commentFilter := bson.M{"associatedId": bsonRunId, "type": utils.Run}
+	// 	if _, err := db.Collection("Comment").DeleteMany(ctx, commentFilter); err != nil {
+	// 		return nil, err
+	// 	}
 
-		// Set related run associatedId to empty
-		runFilter := bson.D{{"sessionId", bsonSessionId}}
-		runUpdate := bson.D{{"$set", bson.D{{"sessionId", nil}}}}
-		if _, err := db.Collection("Run").UpdateMany(ctx, runFilter, runUpdate); err != nil {
-			return nil, err
-		}
+	// 	// Delete run
+	// 	_, err := db.Collection("Run").DeleteOne(ctx, bson.M{"_id": bsonRunId})
+	// 	return nil, err
+	// }
 
-		// Delete run
-		_, err := db.Collection("Session").DeleteOne(ctx, bson.M{"_id": bsonSessionId})
-		return nil, err
-	}
+	// _, err = databases.WithTransaction(client, ctx, callback)
+	// return err
+	return nil
+}
 
-	_, err = databases.WithTransaction(client, ctx, callback)
-	return err
+func (service *SessionService) GetSessionFileMetaData(ctx context.Context, sessionId uuid.UUID) (*model.Session, error) {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
+
+	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// var runFileMetaData models.RunFileMetaData
+	// err = database.Collection("fs.files").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&runFileMetaData)
+
+	// // TODO for now the id of the file is the same as the run id
+	// // err = database.Collection("fs.files").FindOne(
+	// // 	ctx,
+	// // 	bson.D{
+	// // 		{"metadata", bson.D{
+	// // 			{"runId", bsonRunId},
+	// // 		}},
+	// // 	}).Decode(&runFileMetaData)
+	// if err != nil {
+	// 	fmt.Println(err.Error())
+	// 	return nil, err
+	// }
+
+	// return &runFileMetaData, nil
+	return nil, nil
+}
+
+func (service *SessionService) UploadFile(ctx context.Context, metadata *model.Session, file *multipart.FileHeader) error {
+	// fileContent, err := file.Open()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// byteContainer, err := ioutil.ReadAll(fileContent)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
+
+	// bucket, err := gridfs.NewBucket(
+	// 	database,
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+
+	// opts := options.GridFSUpload()
+	// opts.SetMetadata(metadata)
+	// uploadStream, err := bucket.OpenUploadStreamWithID(
+	// 	metadata.RunId,
+	// 	file.Filename,
+	// 	opts,
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+	// defer uploadStream.Close()
+
+	// fileSize, err := uploadStream.Write(byteContainer)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// fmt.Printf("Write file to DB was successful. File size: %d M\n", fileSize)
+	return nil
+}
+
+func (service *SessionService) DownloadFile(ctx context.Context, sessionId uuid.UUID) ([]byte, error) {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
+
+	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// var result bson.M
+	// err = database.Collection("fs.files").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&result)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// bucket, _ := gridfs.NewBucket(database)
+
+	// var buf bytes.Buffer
+	// _, err = bucket.DownloadToStream(bsonRunId, &buf)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return buf.Bytes(), nil
+	return nil, nil
 }

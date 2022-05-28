@@ -7,15 +7,16 @@ import (
 	"database-ms/utils"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
 type ThingServiceInterface interface {
-	Create(context.Context, *model.Thing) error
-	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Thing, error)
-	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, error)
-	Update(context.Context, *model.Thing) error
-	Delete(context.Context, uuid.UUID) error
+	Create(context.Context, *model.Thing) *pgconn.PgError
+	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Thing, *pgconn.PgError)
+	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, *pgconn.PgError)
+	Update(context.Context, *model.Thing) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
 	AttachAssociatedOperatorIds(context.Context, *model.Thing)
 }
 
@@ -28,7 +29,7 @@ func NewThingService(db *gorm.DB, c *config.Configuration) ThingServiceInterface
 	return &ThingService{config: c, db: db}
 }
 
-func (service *ThingService) Create(ctx context.Context, thing *model.Thing) error {
+func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Create the thing
 		result := db.Create(&thing)
@@ -56,7 +57,7 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) err
 	return nil
 }
 
-func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, error) {
+func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, *pgconn.PgError) {
 	var things []*model.Thing
 	// cursor, err := service.ThingCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
 	// if err = cursor.All(ctx, &things); err != nil {
@@ -72,7 +73,7 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 	return things, nil
 }
 
-func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, error) {
+func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, *pgconn.PgError) {
 	// var thing model.Thing
 	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
 	// if err != nil {
@@ -86,7 +87,7 @@ func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*
 	return nil, nil
 }
 
-func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) error {
+func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) *pgconn.PgError {
 	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
 	// if err != nil {
 	// 	return err
@@ -140,7 +141,7 @@ func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thi
 	return nil
 }
 
-func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) error {
+func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) *pgconn.PgError {
 	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
 	// if err != nil {
 	// 	return err

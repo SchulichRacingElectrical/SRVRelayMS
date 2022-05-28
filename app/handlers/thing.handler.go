@@ -28,14 +28,6 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-unique things
-	organization, _ := middleware.GetOrganizationClaim(ctx)
-	newThing.OrganizationId = organization.Id
-	if !handler.service.IsThingUnique(ctx, &newThing) {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
-		return
-	}
-
 	// Guard against non-admin requests
 	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
@@ -43,14 +35,18 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	}
 
 	// Attempt to create the thing
-	err = handler.service.Create(ctx.Request.Context(), &newThing)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+	perr := handler.service.Create(ctx.Request.Context(), &newThing)
+	if perr != nil {
+		if perr.Code == "23505" {
+			// TODO
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+		}
 		return
 	}
 
 	// Send the response
-	result := utils.SuccessPayload(newThing, "Succesfully created thing.")
+	result := utils.SuccessPayload(newThing, "Successfully created thing.")
 	utils.Response(ctx, http.StatusOK, result)
 }
 
@@ -94,13 +90,6 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	// Guard against cross-tenant writes
 	if organization.Id != thing.OrganizationId {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
-		return
-	}
-
-	// Guard against non-unique things
-	updatedThing.OrganizationId = thing.OrganizationId
-	if !handler.service.IsThingUnique(ctx, &updatedThing) {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
 		return
 	}
 

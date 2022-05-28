@@ -2,9 +2,10 @@ package redisHandler
 
 import (
 	"context"
-	"database-ms/app/models"
+	"database-ms/app/model"
 	"database-ms/app/services"
 	"database-ms/config"
+	"fmt"
 	"log"
 	"os"
 	"sort"
@@ -15,8 +16,8 @@ import (
 	"encoding/json"
 
 	"github.com/go-redis/redis/v8"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"gopkg.in/mgo.v2"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Message struct {
@@ -25,60 +26,62 @@ type Message struct {
 }
 
 type SensorInfo struct {
-	ID   primitive.ObjectID
+	Id   uuid.UUID
 	Name string
 }
 
-func Initialize(conf *config.Configuration, dbSession *mgo.Session) {
+func Initialize(conf *config.Configuration, db *gorm.DB) {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     conf.RedisUrl + ":" + conf.RedisPort,
 		Password: conf.RedisPassword,
 	})
 
-	go awaitThingDataSessions(redisClient, dbSession, conf)
+	go awaitThingDataSessions(redisClient, db, conf)
 }
 
-func awaitThingDataSessions(redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
+func awaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_CONNECTION")
 	defer subscriber.Close()
 	connectionChannel := subscriber.Channel()
-
 	sessionService := services.NewSessionService(conf)
 
 	for msg := range connectionChannel {
 		message := Message{}
 		json.Unmarshal([]byte(msg.Payload), &message)
 		if message.Active {
-			thingObjId, err := primitive.ObjectIDFromHex(message.ThingId)
+			thingObjId, err := uuid.Parse(message.ThingId)
 			if err != nil {
 				panic(err)
 			}
-			session := &models.Session{
-				StartDate: time.Now().UnixMilli(),
-				EndDate:   0, // EndDate will be updated after session is closed
-				ThingID:   thingObjId,
-				Name:      "Test", // TODO: Allow naming sessions
+			session := &model.Session{
+				StartTime: time.Now().UnixMilli(),
+				EndTime:   0, // EndDate will be updated after session is closed
+				ThingId:   thingObjId,
+				Name:      "Test", // TODO: Allow naming sessions - Generate a name including the start date
 			}
-			sessionId, err := sessionService.CreateSession(ctx, session)
+			err = sessionService.CreateSession(ctx, session)
 			if err != nil {
 				panic(err)
 			}
-			log.Println("Session created with ID: " + sessionId.Hex())
-			session.ID = sessionId
-			go thingDataSession(message.ThingId, session, redisClient, dbSession, conf)
+			log.Println("Session created with ID: " + session.Id.String())
+			thingId, err := uuid.Parse(message.ThingId)
+			if err != nil {
+				// Failed - Do something
+			}
+			go thingDataSession(thingId, session, redisClient, db, conf)
 		}
 	}
 }
 
-func thingDataSession(thingId string, session *models.Session, redisClient *redis.Client, dbSession *mgo.Session, conf *config.Configuration) {
+func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *redis.Client, db *gorm.DB, conf *config.Configuration) {
 	ctx := context.Background()
-	subscriber := redisClient.Subscribe(ctx, "THING_"+thingId)
+	subscriber := redisClient.Subscribe(ctx, "THING_"+thingId.String())
 	defer subscriber.Close()
-	log.Println("Thing Data Session Started for " + thingId)
+	log.Println("Thing Data Session Started for " + thingId.String())
 	thingDataChannel := subscriber.Channel()
 
-	datumService := services.NewDatumService(dbSession, conf)
+	datumService := services.NewDatumService(db, conf)
 	sessionService := services.NewSessionService(conf)
 
 	for msg := range thingDataChannel {
@@ -87,13 +90,13 @@ func thingDataSession(thingId string, session *models.Session, redisClient *redi
 
 		if !message.Active {
 			// Get thing data from redis
-			thingData, err := redisClient.LRange(ctx, "THING_"+thingId, 0, -1).Result()
+			thingData, err := redisClient.LRange(ctx, "THING_"+thingId.String(), 0, -1).Result()
 			if err != nil {
 				panic(err)
 			}
 
 			// Delete thing data from redis
-			err = redisClient.Del(ctx, "THING_"+thingId).Err()
+			err = redisClient.Del(ctx, "THING_"+thingId.String()).Err()
 			if err != nil {
 				panic(err)
 			}
@@ -119,7 +122,7 @@ func thingDataSession(thingId string, session *models.Session, redisClient *redi
 			timeLinearThingData2DArray := mapArrayTo2DArray(timeLinearThingData, smallIds)
 
 			// Get sensor list
-			sensorService := services.NewSensorService(dbSession, conf)
+			sensorService := services.NewSensorService(db, conf)
 			sensors, err := sensorService.FindByThingId(ctx, thingId)
 			if err != nil {
 				panic(err)
@@ -128,21 +131,21 @@ func thingDataSession(thingId string, session *models.Session, redisClient *redi
 			// Create map of SmallId to ID and Name
 			smallIdToInfoMap := make(map[string]SensorInfo)
 			for _, sensor := range sensors {
-				smallId := strconv.Itoa(*sensor.SmallId)
-				smallIdToInfoMap[smallId] = SensorInfo{ID: sensor.ID, Name: sensor.Name}
+				smallId := fmt.Sprint(sensor.SmallId)
+				smallIdToInfoMap[smallId] = SensorInfo{Id: sensor.Id, Name: sensor.Name}
 			}
 
 			// Process non-linear thing data for mongo
 			thingDataArray = replaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
-			datumArray := make([]*models.Datum, len(thingDataArray)*len(smallIds))
+			datumArray := make([]*model.Datum, len(thingDataArray)*len(smallIds))
 			for i, thingDataItem := range thingDataArray {
 				for j, smallId := range smallIds {
 					strSmallId := strconv.Itoa(smallId)
-					sensorId := smallIdToInfoMap[strSmallId].ID
-					datumArray[i*len(smallIds)+j] = &models.Datum{
-						SessionID: session.ID,
-						SensorID:  sensorId,
-						Value:     float64(thingDataItem[sensorId.Hex()]),
+					sensorId := smallIdToInfoMap[strSmallId].Id
+					datumArray[i*len(smallIds)+j] = &model.Datum{
+						SessionId: session.Id,
+						SensorId:  sensorId,
+						Value:     float64(thingDataItem[sensorId.String()]),
 						Timestamp: int64(thingDataItem["ts"]),
 					}
 				}
@@ -152,17 +155,17 @@ func thingDataSession(thingId string, session *models.Session, redisClient *redi
 			datumService.CreateMany(ctx, datumArray)
 
 			// Update session
-			session.EndDate = session.StartDate + int64(thingDataArray[len(thingDataArray)-1]["ts"])
-			session.FileName = "srv_files/" + thingId + "/" + session.ID.Hex() + ".csv"
+			session.EndTime = session.StartTime + int64(thingDataArray[len(thingDataArray)-1]["ts"])
+			session.FileName = "srv_files/" + thingId.String() + "/" + session.Id.String() + ".csv"
 			err = sessionService.UpdateSession(ctx, session)
 			if err != nil {
 				panic(err)
 			}
 
 			// Save thing data to csv
-			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId, session.FileName)
+			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId.String(), session.FileName)
 
-			log.Println("Thing Data Session Ended for " + thingId)
+			log.Println("Thing Data Session Ended for " + thingId.String())
 			return
 		}
 	}
@@ -316,7 +319,7 @@ func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[
 func replaceSmallIdsWithIds(thingDataArray []map[string]int, smallIdToInfoMap map[string]SensorInfo) []map[string]int {
 	for _, thingDataItem := range thingDataArray {
 		for smallId, sensorInfo := range smallIdToInfoMap {
-			thingDataItem[sensorInfo.ID.Hex()] = thingDataItem[smallId]
+			thingDataItem[sensorInfo.Id.String()] = thingDataItem[smallId]
 			delete(thingDataItem, smallId)
 		}
 	}

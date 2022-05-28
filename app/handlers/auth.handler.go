@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
 	utils "database-ms/utils"
