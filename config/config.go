@@ -10,16 +10,16 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Configuration contains static info required to run the apps
 type Configuration struct {
-	Address       string `env:"ADDRESS" envDefault:":8080"`
-	AtlasUri      string `env:"ATLAS_URI,required"`
-	MongoDbName   string `env:"MONGODB_NAME,required"`
-	MongoCluster  string `env:"MONGO_CLUSTERS,required"`
-	MongoUsername string `env:"MONGO_USERNAME,required"`
-	MongoPassword string `env:"MONGO_PASSWORD,required"`
-	AdminKey      string `env:"ADMIN_API_KEY,required"`
-	AccessSecret  string `env:"ACCESS_SECRET,required"`
+	Host         string `env:"POSTGRES_HOST,required"`
+	User         string `env:"POSTGRES_USER,required"`
+	Password     string `env:"POSTGRES_PASSWORD,required"`
+	DbName       string `env:"POSTGRES_DB_NAME,required"`
+	Port         string `env:"POSTGRES_PORT,required"`
+	SslMode      string `env:"POSTGRES_SSLMODE,required"`
+	AdminKey     string `env:"ADMIN_API_KEY,required"`
+	AccessSecret string `env:"ACCESS_SECRET,required"`
+	Address      string `env:"ADDRESS" envDefault:":8080"`
 }
 
 // NewConfig will read the config data from given .env file

@@ -7,26 +7,20 @@ import (
 	config "database-ms/config"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/mgo.v2"
+	"gorm.io/gorm"
 )
 
-func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Configuration) {
+func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	// Initialize APIs
-	organizationService := services.NewOrganizationService(mgoDbSession, conf)
+	organizationService := services.NewOrganizationService(db, conf)
 	organizationAPI := handlers.NewOrganizationAPI(organizationService)
-	userAPI := handlers.NewUserAPI(services.NewUserService(mgoDbSession, conf))
-	authAPI := handlers.NewAuthAPI(services.NewUserService(mgoDbSession, conf), organizationService)
-	thingService := services.NewThingService(mgoDbSession, conf)
+	userAPI := handlers.NewUserAPI(services.NewUserService(db, conf))
+	authAPI := handlers.NewAuthAPI(services.NewUserService(db, conf), organizationService)
+	thingService := services.NewThingService(db, conf)
 	thingAPI := handlers.NewThingAPI(thingService)
-	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(mgoDbSession, conf), thingService)
-	operatorService := services.NewOperatorService(mgoDbSession, conf)
+	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(db, conf), thingService)
+	operatorService := services.NewOperatorService(db, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
-	commentService := services.NewCommentService(conf)
-	runAPI := handlers.NewRunAPI(services.NewRunService(conf), commentService, operatorService, thingService)
-	sessionAPI := handlers.NewSessionAPI(services.NewSessionService(conf), commentService)
-
-	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(mgoDbSession, conf), thingService)
-	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(mgoDbSession, conf), thingService)
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("")
@@ -48,7 +42,7 @@ func InitializeRoutes(c *gin.Engine, mgoDbSession *mgo.Session, conf *config.Con
 	}
 
 	// Declare private (auth required) endpoints
-	privateEndpoints := c.Group("", middleware.AuthorizationMiddleware(conf, mgoDbSession))
+	privateEndpoints := c.Group("", middleware.AuthorizationMiddleware(conf, db))
 	{
 		organizationEndpoints := privateEndpoints.Group("/organization")
 		{

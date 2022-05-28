@@ -2,124 +2,104 @@ package services
 
 import (
 	"context"
-	model "database-ms/app/models"
+	"database-ms/app/model"
 	"database-ms/config"
-	"database-ms/databases"
+	"database-ms/utils"
+	"errors"
 
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/jackc/pgconn"
 	"go.mongodb.org/mongo-driver/mongo"
-	"gopkg.in/mgo.v2"
+	"gorm.io/gorm"
 )
 
 type OrganizationServiceInterface interface {
-	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
-	FindByOrganizationId(context.Context, primitive.ObjectID) (*model.Organization, error) // Should probably just cut this
-	FindByOrganizationIdString(context.Context, string) (*model.Organization, error)
-	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
-	FindAllOrganizations(context.Context) ([]*model.Organization, error)
-	Update(context.Context, *model.Organization) error
-	UpdateKey(context.Context, *model.Organization) (string, error)
-	Delete(context.Context, primitive.ObjectID) error
-	IsOrganizationUnique(context.Context, *model.Organization) bool
+	FindByOrganizationId(context.Context, uuid.UUID) (*model.Organization, *pgconn.PgError)
+	FindByOrganizationApiKey(context.Context, string) (*model.Organization, *pgconn.PgError)
+	FindAllOrganizations(context.Context) ([]*model.Organization, *pgconn.PgError)
+	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError)
+	UpdateKey(context.Context, *model.Organization) *pgconn.PgError
+	Update(context.Context, *model.Organization) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
 }
 
 type OrganizationService struct {
-	db     *mgo.Session
+	db     *gorm.DB
 	config *config.Configuration
 }
 
-func NewOrganizationService(db *mgo.Session, c *config.Configuration) OrganizationServiceInterface {
+func NewOrganizationService(db *gorm.DB, c *config.Configuration) OrganizationServiceInterface {
 	return &OrganizationService{config: c, db: db}
 }
 
-func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) (*mongo.InsertOneResult, error) {
-	organization.ApiKey = uuid.NewString()
-	res, err := service.OrganizationCollection(ctx).InsertOne(ctx, organization)
-	organization.ID = (res.InsertedID).(primitive.ObjectID)
-	return res, err
-}
-
-func (service *OrganizationService) FindByOrganizationIdString(ctx context.Context, organizationId string) (*model.Organization, error) {
-	bsonOrganizationId, err := primitive.ObjectIDFromHex(organizationId)
-	if err != nil {
-		return nil, err
+func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) (*model.Organization, *pgconn.PgError) {
+	organization := model.Organization{}
+	organization.Id = organizationId
+	result := service.db.First(&organization)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
 	}
-	var organization model.Organization
-	err = service.OrganizationCollection(ctx).FindOne(ctx, bson.M{"_id": bsonOrganizationId}).Decode(&organization)
-	return &organization, err
+	return &organization, nil
 }
 
-func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId primitive.ObjectID) (*model.Organization, error) {
-	var organization model.Organization
-	err := service.OrganizationCollection(ctx).FindOne(ctx, bson.M{"_id": organizationId}).Decode(&organization)
-	return &organization, err
+func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, APIKey string) (*model.Organization, *pgconn.PgError) {
+	organization := model.Organization{}
+	organization.APIKey = APIKey
+	result := service.db.First(&organization)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return &organization, nil
 }
 
-func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, api_key string) (*model.Organization, error) {
-	var organization model.Organization
-	err := service.OrganizationCollection(ctx).FindOne(ctx, bson.M{"apiKey": api_key}).Decode(&organization)
-	return &organization, err
-}
-
-func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([]*model.Organization, error) {
+func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([]*model.Organization, *pgconn.PgError) {
 	var organizations []*model.Organization
-	cursor, err := service.OrganizationCollection(ctx).Find(ctx, bson.D{})
-	if err != nil || cursor.All(ctx, &organizations) != nil {
-		return nil, err
+	result := service.db.Find(&organizations)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
 	}
-	if organizations == nil {
-		organizations = []*model.Organization{}
-	}
-	return organizations, err
+	return organizations, nil
 }
 
-func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) error {
-	organization, err := service.FindByOrganizationIdString(ctx, updatedOrganization.ID.Hex())
-	if err == nil {
-		updatedOrganization.ApiKey = organization.ApiKey
-		_, err = service.OrganizationCollection(ctx).UpdateOne(ctx, bson.M{"_id": updatedOrganization.ID}, bson.M{"$set": updatedOrganization})
-		return err
-	} else {
-		return err
+func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError) {
+	organization.APIKey = uuid.NewString()
+	result := service.db.Create(&organization)
+	if result.Error != nil {
+		var perr *pgconn.PgError
+		errors.As(result.Error, &perr)
+		return nil, perr
 	}
+	return nil, nil
 }
 
-func (service *OrganizationService) UpdateKey(ctx context.Context, organization *model.Organization) (string, error) {
-	organization.ApiKey = uuid.NewString()	
-	_, err := service.OrganizationCollection(ctx).UpdateOne(ctx, bson.M{"_id": organization.ID}, bson.M{"$set": organization})
-	return organization.ApiKey, err
-}
-
-func (service *OrganizationService) Delete(ctx context.Context, organizationId primitive.ObjectID) error {
-	// TODO
-	// Transaction will be super nasty :(
-	// Will need to delete all associated users, things, sensors, raw data presets, 
-	// chart presets, runs, sessions, and comments!
+func (service *OrganizationService) UpdateKey(ctx context.Context, organization *model.Organization) *pgconn.PgError {
+	organization.APIKey = uuid.NewString()
+	result := service.db.Updates(&organization)
+	if result.Error != nil {
+		return utils.GetPostgresError(result.Error)
+	}
 	return nil
 }
 
-func (service *OrganizationService) IsOrganizationUnique(ctx context.Context, organization *model.Organization) bool {
-	organizations, err := service.FindAllOrganizations(ctx)
-	if err == nil {
-		for _, org := range organizations {
-			if organization.Name == org.Name {
-				return false
-			}
-		}
-		return true
-	} else {
-		return false
+func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) *pgconn.PgError {
+	prev, err := service.FindByOrganizationId(ctx, updatedOrganization.Id)
+	if err != nil {
+		return utils.GetPostgresError(err)
 	}
+	updatedOrganization.APIKey = prev.APIKey
+	result := service.db.Updates(&updatedOrganization)
+	if result.Error != nil {
+		return utils.GetPostgresError(result.Error)
+	}
+	return nil
 }
 
-// ============== Service Helper Method(s) ================
-
-func (service *OrganizationService) OrganizationCollection(ctx context.Context) *mongo.Collection {
-	dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	if err != nil {
-		panic(err)
+func (service *OrganizationService) Delete(ctx context.Context, organizationId uuid.UUID) *pgconn.PgError {
+	organization := model.Organization{}
+	organization.Id = organizationId
+	result := service.db.Delete(&organization)
+	if result.Error != nil {
+		return utils.GetPostgresError(result.Error)
 	}
-	return dbClient.Database(service.config.MongoDbName).Collection("Organization")
+	return nil
 }

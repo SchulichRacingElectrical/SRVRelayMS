@@ -10,39 +10,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	cors "github.com/rs/cors/wrapper/gin"
-	"gopkg.in/mgo.v2"
 )
 
 func main() {
-
 	// Initialize config
 	conf := config.NewConfig("./env")
 
-	// Connect to DB using mgov2
-	// TODO remove this later after refactoring to using mongo-go-driver
-	mongoConn := databases.GetInstance(conf)
-	dbSession := mongoConn.Copy()
-	dbSession.SetSafe(&mgo.Safe{})
-	defer dbSession.Close()
+	// Connect to the Postgres DB
+	db := databases.InitPostgres(conf)
+	// defer db.Close() -> Need to close somehow?
 
 	// Router
 	router := gin.Default()
-	routes.InitializeRoutes(router, dbSession, conf)
+	routes.InitializeRoutes(router, db, conf)
 	router.Use(cors.Default())
-
-	// TODO setup Swagger
-	// TODO setup logging
 
 	// Server config
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         conf.Address,
-		WriteTimeout: 50 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		ReadTimeout:  30 * time.Second,
 	}
 
-	log.Println("SRV-DB-MS running at ", conf.Address)
-
 	// Serving microservice at specified port
+	log.Println("SRV-DB-MS running at ", conf.Address)
 	log.Fatal(srv.ListenAndServe())
 }

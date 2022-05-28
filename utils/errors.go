@@ -1,5 +1,11 @@
 package utils
 
+import (
+	"errors"
+
+	"github.com/jackc/pgconn"
+)
+
 func NewHTTPError(errorCode string) map[string]interface{} {
 	m := make(map[string]interface{})
 	m["error"] = errorCode
@@ -12,6 +18,12 @@ func NewHTTPCustomError(errorCode, errorMsg string) map[string]interface{} {
 	m["error"] = errorCode
 	m["error_description"] = errorMsg
 	return m
+}
+
+func GetPostgresError(err error) *pgconn.PgError {
+	var perr *pgconn.PgError
+	errors.As(err, &perr)
+	return perr
 }
 
 // Error codes - This can be done more nicely
@@ -51,43 +63,10 @@ const (
 	// ThingOperator error
 	ThingOperatorNotUnique = "thingOperatorNotUnique"
 
-	// Run error
-	RunsNotFound = "runsNotFound"
-	RunNotFound  = "runNotFound"
-	RunDNE       = "runDNE"
-
-	// File error
-	NoFileReceived         = "noFileReceived"
-	NotCsv                 = "notCsv"
-	FileNotUploaded        = "fileNotUploaded"
-	RunHasAssociatedFile   = "runHasAssociatedFile"
-	RunHasNoAssociatedFile = "runHasNoAssociatedFile"
-	CannotRetrieveFile     = "cannotRetrieveFile"
-
-	// Session error
-	SessionsNotFound = "sessionsNotFound"
-	SessionNotFound  = "sessionNotFound"
-
-	// Comment error
-	CommentsNotFound                    = "commentsNotFound"
-	CommentDoesNotExist                 = "commentDoesNotExist"
-	CommentCannotUpdateOtherUserComment = "commentCannotUpdateOtherUserComment"
-	UserIdMissing                       = "userIdMissing"
-
 	// Organization error
 	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
 	OrganizationsNotFound = "organizationsNotFound"
-
-	// Raw Data Preset Error
-	RawDataPresetNotUnique = "rawDataPresetNotUnique"
-	RawDataPresetNotValid  = "rawDataPresetNotValid"
-	RawDataPresetNotFound  = "rawDataPresetNotFound"
-
-	// Chart Preset Error
-	ChartPresetNotUnique = "chartPresetNotUnique"
-	ChartPresetNotValid  = "chartPresetNotValid"
-	ChartPresetNotFound  = "chartPresetNotFound"
 )
 
 // Error code with description
@@ -125,40 +104,8 @@ var errorMessage = map[string]string{
 	// ThingOperator
 	"thingOperatorNotUnique": "Thing Operator association already exists.",
 
-	// Comment
-	"commentsNotFound":                    "comments could not be found",
-	"commentDoesNotExist":                 "comment does not exist",
-	"commentCannotUpdateOtherUserComment": "cannot update comment of another user",
-	"userIdMissing":                       "userId missing",
-
 	// Organization
-	"organizationNotFound":  "organization could not be found",
-	"organizationsNotFound": "organizations could not be found",
 	"organizationDuplicate": "Organization name is taken.",
-
-	// Run errors
-	"runsNotFound": "Runs could not be found",
-	"runNotFound":  "Run could not be found",
-	"runDNE":       "Run does not exist",
-
-	// File
-	"noFileReceived":         "No file is received",
-	"notCsv":                 "Not a csv",
-	"runHasAssociatedFile":   "Run already has associated file",
-	"runHasNoAssociatedFile": "Run does exist or not have associated file",
-	"cannotRetrieveFile":     "Cannot retrieve file",
-
-	// Session errors
-	"sessionssNotFound": "Sesssions could not be found",
-	"sessionNotFound":   "Session could not be found",
-
-	// Raw Data Preset
-	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",
-	"rawDataPresetNotValid":  "Raw Data Preset is not valid.",
-	"rawDataPresetNotFound":  "Raw Data Preset not found.",
-
-	// Chart Preset
-	"chartPresetNotUnique": "Chart Preset name must be unique.",
-	"chartPresetNotValid":  "Chart Preset was not valid. Ensure posted Sensors exist.",
-	"chartPresetNotFound":  "Chart Preset was not found.",
+	"organizationNotFound":  "Organization could not be found.",
+	"organizationsNotFound": "Organizations could not be found.",
 }
