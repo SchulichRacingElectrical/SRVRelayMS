@@ -52,7 +52,7 @@ func (service *UserService) FindByUserEmail(ctx context.Context, email string) (
 	return nil, nil
 }
 
-func (service *UserService) FindByUserId(ctx context.Context, userID uuid.UUID) (*model.User, error) {
+func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) (*model.User, error) {
 	// bsonUserId, err := primitive.ObjectIDFromHex(userId)
 	// if err != nil {
 	// 	return nil, err
@@ -98,7 +98,7 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 	return false, nil
 }
 
-func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationID uuid.UUID) ([]*model.User, error) {
+func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.User, error) {
 	// var users []*model.User
 	// cursor, err := service.UserCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
 	// if err = cursor.All(ctx, &users); err != nil {
@@ -120,7 +120,7 @@ func (service *UserService) Update(ctx context.Context, user *model.User) error 
 	return nil
 }
 
-func (service *UserService) Delete(ctx context.Context, userID uuid.UUID) error {
+func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) error {
 	// bsonUserId, err := primitive.ObjectIDFromHex(userId)
 	// if err != nil {
 	// 	return err

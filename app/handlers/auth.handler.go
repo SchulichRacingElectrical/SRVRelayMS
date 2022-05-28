@@ -28,7 +28,7 @@ func (handler *AuthHandler) SignUp(ctx *gin.Context) {
 	}
 
 	// Ensure the organization exists
-	_, err = handler.organizationService.FindByOrganizationID(ctx, newUser.OrganizationId)
+	_, err = handler.organizationService.FindByOrganizationId(ctx, newUser.OrganizationId)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return

@@ -88,7 +88,7 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 				ctx.Abort()
 				return
 			}
-			organization, err := organizationService.FindByOrganizationID(context.TODO(), user.OrganizationId)
+			organization, err := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId)
 			if err != nil {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 				ctx.Abort()

@@ -11,7 +11,7 @@ import (
 )
 
 type OrganizationServiceInterface interface {
-	FindByOrganizationID(context.Context, uuid.UUID) (*model.Organization, error)
+	FindByOrganizationId(context.Context, uuid.UUID) (*model.Organization, error)
 	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
 	FindAllOrganizations(context.Context) ([]*model.Organization, error)
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, error)
@@ -29,9 +29,9 @@ func NewOrganizationService(db *gorm.DB, c *config.Configuration) OrganizationSe
 	return &OrganizationService{config: c, db: db}
 }
 
-func (service *OrganizationService) FindByOrganizationID(ctx context.Context, organizationID uuid.UUID) (*model.Organization, error) {
+func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) (*model.Organization, error) {
 	organization := model.Organization{}
-	organization.Id = organizationID
+	organization.Id = organizationId
 	result := service.db.First(&organization)
 	if result.Error != nil {
 		return nil, result.Error
@@ -78,7 +78,7 @@ func (service *OrganizationService) UpdateKey(ctx context.Context, organization 
 }
 
 func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) error {
-	prev, err := service.FindByOrganizationID(ctx, updatedOrganization.Id)
+	prev, err := service.FindByOrganizationId(ctx, updatedOrganization.Id)
 	if err != nil {
 		return err
 	}
@@ -90,9 +90,9 @@ func (service *OrganizationService) Update(ctx context.Context, updatedOrganizat
 	return nil
 }
 
-func (service *OrganizationService) Delete(ctx context.Context, organizationID uuid.UUID) error {
+func (service *OrganizationService) Delete(ctx context.Context, organizationId uuid.UUID) error {
 	organization := model.Organization{}
-	organization.Id = organizationID
+	organization.Id = organizationId
 	result := service.db.Delete(&organization)
 	if result.Error != nil {
 		return result.Error

@@ -64,7 +64,7 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 
 func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 	// Attempt to read from the params
-	thingID, err := uuid.FromBytes([]byte(ctx.Param("thingId")))
+	thingId, err := uuid.FromBytes([]byte(ctx.Param("thingId")))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return
@@ -72,7 +72,7 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 
 	// Attempt to find the thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, thingID)
+	thing, err := handler.thingService.FindById(ctx, thingId)
 	if err == nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
@@ -85,7 +85,7 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 	}
 
 	// Attempt to read the sensors
-	sensors, err := handler.sensorService.FindByThingId(ctx.Request.Context(), thingID)
+	sensors, err := handler.sensorService.FindByThingId(ctx.Request.Context(), thingId)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
 		return
@@ -99,7 +99,7 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 // TODO: Returns list of all sensors Ids
 func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 	// Attempt to read from the params
-	thingID, err := uuid.FromBytes([]byte(ctx.Param("thingId")))
+	thingId, err := uuid.FromBytes([]byte(ctx.Param("thingId")))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return
@@ -107,7 +107,7 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 
 	// Attempt to find the thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, thingID)
+	thing, err := handler.thingService.FindById(ctx, thingId)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
@@ -127,7 +127,7 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 	}
 
 	// Attempt to fetch the updated sensors
-	sensors, err := handler.sensorService.FindUpdatedSensors(ctx.Request.Context(), thingID, lastUpdate)
+	sensors, err := handler.sensorService.FindUpdatedSensors(ctx.Request.Context(), thingId, lastUpdate)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
 		return
@@ -181,7 +181,7 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 
 func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 	// Attempt to read from the params
-	sensorID, err := uuid.FromBytes([]byte(ctx.Param("sensorId")))
+	sensorId, err := uuid.FromBytes([]byte(ctx.Param("sensorId")))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return
@@ -189,7 +189,7 @@ func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 
 	// Attempt to find the sensor
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	sensor, err := handler.sensorService.FindBySensorId(ctx, sensorID)
+	sensor, err := handler.sensorService.FindBySensorId(ctx, sensorId)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
 		return
@@ -209,7 +209,7 @@ func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 	}
 
 	// Attempt to delete the sensor
-	err = handler.sensorService.Delete(ctx.Request.Context(), sensorID)
+	err = handler.sensorService.Delete(ctx.Request.Context(), sensorId)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return

@@ -58,7 +58,7 @@ func (service *OperatorService) Create(ctx context.Context, operator *model.Oper
 	return nil
 }
 
-func (service *OperatorService) FindById(ctx context.Context, operatorID uuid.UUID) (*model.Operator, error) {
+func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UUID) (*model.Operator, error) {
 	// var operator model.Operator
 	// bsonOperatorId, err := primitive.ObjectIDFromHex(operatorId)
 	// if err != nil {
@@ -72,7 +72,7 @@ func (service *OperatorService) FindById(ctx context.Context, operatorID uuid.UU
 	return nil, nil
 }
 
-func (service *OperatorService) FindByOrganizationId(ctx context.Context, organizationID uuid.UUID) ([]*model.Operator, error) {
+func (service *OperatorService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Operator, error) {
 	// var operators []*model.Operator
 	// cursor, err := service.OperatorCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
 	// if err = cursor.All(ctx, &operators); err != nil {
@@ -143,7 +143,7 @@ func (service *OperatorService) Update(ctx context.Context, updatedOperator *mod
 	return nil
 }
 
-func (service *OperatorService) Delete(ctx context.Context, operatorID uuid.UUID) error {
+func (service *OperatorService) Delete(ctx context.Context, operatorId uuid.UUID) error {
 	// bsonOperatorId, err := primitive.ObjectIDFromHex(operatorId)
 	// if err != nil {
 	// 	return err

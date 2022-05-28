@@ -58,7 +58,7 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) err
 	return nil
 }
 
-func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationID uuid.UUID) ([]*model.Thing, error) {
+func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, error) {
 	var things []*model.Thing
 	// cursor, err := service.ThingCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
 	// if err = cursor.All(ctx, &things); err != nil {
@@ -74,7 +74,7 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 	return things, nil
 }
 
-func (service *ThingService) FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, error) {
+func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, error) {
 	// var thing model.Thing
 	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
 	// if err != nil {
@@ -142,7 +142,7 @@ func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thi
 	return nil
 }
 
-func (service *ThingService) Delete(ctx context.Context, thingID uuid.UUID) error {
+func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) error {
 	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
 	// if err != nil {
 	// 	return err

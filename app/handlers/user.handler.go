@@ -148,7 +148,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	}
 
 	// Attempt to parse the query param
-	userIDToDelete, err := uuid.FromBytes([]byte(ctx.Param("userId")))
+	userIdToDelete, err := uuid.FromBytes([]byte(ctx.Param("userId")))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return
@@ -159,7 +159,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if err == nil {
 		// Only allow the user to delete if the request comes from themselves
-		if user.Id == userIDToDelete {
+		if user.Id == userIdToDelete {
 			// Guard against deletion of last admin user
 			last, err := handler.service.IsLastAdmin(ctx, user)
 			if err != nil {
@@ -172,7 +172,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 			}
 
 			// Send the response
-			completion(ctx, userIDToDelete)
+			completion(ctx, userIdToDelete)
 			return
 		}
 
@@ -183,7 +183,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 		}
 
 		// Attempt to find the user
-		user, err := handler.service.FindByUserId(ctx, userIDToDelete)
+		user, err := handler.service.FindByUserId(ctx, userIdToDelete)
 		if err != nil {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 			return
@@ -196,7 +196,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 		}
 
 		// Send the response
-		completion(ctx, userIDToDelete)
+		completion(ctx, userIdToDelete)
 		return
 	}
 
@@ -207,7 +207,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	}
 
 	// Attempt to find the user
-	user, err = handler.service.FindByUserId(ctx, userIDToDelete)
+	user, err = handler.service.FindByUserId(ctx, userIdToDelete)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
@@ -231,7 +231,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	}
 
 	// Send the response
-	completion(ctx, userIDToDelete)
+	completion(ctx, userIdToDelete)
 }
 
 func (handler *UserHandler) ChangePassword(ctx *gin.Context) {
