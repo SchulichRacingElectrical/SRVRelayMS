@@ -13,11 +13,10 @@ import (
 
 type ThingServiceInterface interface {
 	Create(context.Context, *model.Thing) *pgconn.PgError
-	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Thing, *pgconn.PgError)
-	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, *pgconn.PgError)
-	Update(context.Context, *model.Thing) *pgconn.PgError
-	Delete(context.Context, uuid.UUID) *pgconn.PgError
-	AttachAssociatedOperatorIds(context.Context, *model.Thing)
+	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Thing, error)
+	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, error)
+	Update(context.Context, *model.Thing) error
+	Delete(context.Context, uuid.UUID) error
 }
 
 type ThingService struct {
@@ -37,7 +36,7 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pg
 			return result.Error
 		}
 
-		// Create ThingOperators for insertion
+		// Generate the list of thing-operators
 		thingOperators := []model.ThingOperator{}
 		for _, operatorId := range thing.OperatorIds {
 			thingOperator := model.ThingOperator{}
@@ -45,6 +44,8 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pg
 			thingOperator.OperatorId = operatorId
 			thingOperators = append(thingOperators, thingOperator)
 		}
+
+		// Batch insert thing-operators
 		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
 		if result.Error != nil {
 			return result.Error
@@ -57,144 +58,83 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pg
 	return nil
 }
 
-func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, *pgconn.PgError) {
+func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, error) {
 	var things []*model.Thing
-	// cursor, err := service.ThingCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
-	// if err = cursor.All(ctx, &things); err != nil {
-	// 	return nil, err
-	// }
-	// if things == nil {
-	// 	things = []*model.Thing{}
-	// } else {
-	// 	for _, thing := range things {
-	// 		service.AttachAssociatedOperatorIds(ctx, thing)
-	// 	}
-	// }
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the things associated with the given organization
+		result := db.Where("organization_id = ?", organizationId).Find(&things)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
 	return things, nil
 }
 
-func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, *pgconn.PgError) {
-	// var thing model.Thing
-	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// err = service.ThingCollection(ctx).FindOne(ctx, bson.M{"_id": bsonThingId}).Decode(&thing)
-	// if err == nil {
-	// 	service.AttachAssociatedOperatorIds(ctx, &thing)
-	// }
-	// return &thing, err
-	return nil, nil
+func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, error) {
+	var thing *model.Thing
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the thing with the given id
+		result := db.Where("id = ?", thingId).First(&thing)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return thing, nil
 }
 
-func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) *pgconn.PgError {
-	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return err
-	// }
+func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) error {
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Save the updated thing
+		db.Save(updatedThing)
 
-	// callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-	// 	db := client.Database(service.config.MongoDbName)
+		// Delete all of the associated thing-operators
+		result := db.Table(model.TableNameThingOperator).Where("thing_id = ?", updatedThing.Id).Delete(&model.ThingOperator{})
+		if result.Error != nil {
+			return result.Error
+		}
 
-	// 	// Create the thing
-	// 	if _, err := db.Collection("Thing").UpdateOne(ctx, bson.M{"_id": updatedThing.ID}, bson.M{"$set": updatedThing}); err != nil {
-	// 		return nil, err
-	// 	}
+		// Generate the list of thing-operators
+		thingOperators := []model.ThingOperator{}
+		for _, operatorId := range updatedThing.OperatorIds {
+			thingOperator := model.ThingOperator{}
+			thingOperator.ThingId = updatedThing.Id
+			thingOperator.OperatorId = operatorId
+			thingOperators = append(thingOperators, thingOperator)
+		}
 
-	// 	// Find the current thing
-	// 	currentThing, err := service.FindById(ctx, updatedThing.ID.Hex())
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	// Resolve which thing-operator relationships need to be inserted
-	// 	var thingOperatorsToInsert []interface{}
-	// 	for _, newOperatorId := range updatedThing.OperatorIds {
-	// 		if !utils.IdInSlice(newOperatorId, currentThing.OperatorIds) {
-	// 			thingOperatorsToInsert = append(thingOperatorsToInsert, bson.D{{"operatorId", newOperatorId}, {"thingId", updatedThing.ID}})
-	// 		}
-	// 	}
-	// 	if len(thingOperatorsToInsert) > 0 {
-	// 		if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperatorsToInsert); err != nil {
-	// 			return nil, err
-	// 		}
-	// 	}
-
-	// 	// Resolve which thing-operator relationships need to be deleted
-	// 	var thingOperatorsToDelete []model.ThingOperator
-	// 	for _, currentOperatorId := range currentThing.OperatorIds {
-	// 		if !utils.IdInSlice(currentOperatorId, updatedThing.OperatorIds) {
-	// 			thingOperatorsToDelete = append(thingOperatorsToDelete, model.ThingOperator{OperatorId: currentOperatorId, ThingId: updatedThing.ID})
-	// 		}
-	// 	}
-	// 	for _, thingOperator := range thingOperatorsToDelete {
-	// 		if _, err = db.Collection("ThingOperator").DeleteOne(ctx, bson.M{"operatorId": thingOperator.OperatorId, "thingId": thingOperator.ThingId}); err != nil {
-	// 			return nil, err
-	// 		}
-	// 	}
-
-	// 	return nil, nil
-	// }
-
-	// _, err = databases.WithTransaction(client, ctx, callback)
-	// return err
+		// Batch insert thing-operators
+		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return utils.GetPostgresError(err)
+	}
 	return nil
 }
 
-func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) *pgconn.PgError {
-	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-	// 	db := client.Database(service.config.MongoDbName)
-	// 	if _, err := db.Collection("ThingOperator").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if _, err := db.Collection("Sensor").DeleteMany(ctx, bson.M{"thingId": bsonThingId}); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	if _, err := db.Collection("Thing").DeleteOne(ctx, bson.M{"_id": bsonThingId}); err != nil {
-	// 		return nil, err
-	// 	}
-	// 	// TODO: There will be a lot more things to delete in the future...
-	// 	// Will need to delete associated runs and sessions
-	// 	// Will need to delete associated presets
-	// 	return nil, nil
-	// }
-
-	// if _, err := databases.WithTransaction(client, ctx, callback); err != nil {
-	// 	return err
-	// }
-
+func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) error {
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Delete the specified thing
+		thing := model.Thing{Base: model.Base{Id: thingId}}
+		result := db.Delete(&thing)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return utils.GetPostgresError(err)
+	}
 	return nil
-}
-
-func (service *ThingService) AttachAssociatedOperatorIds(ctx context.Context, thing *model.Thing) {
-	// thing.OperatorIds = []primitive.ObjectID{}
-	// var thingOperators []*model.ThingOperator
-	// dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return
-	// }
-	// thingOperatorCollection := dbClient.Database(service.config.MongoDbName).Collection("ThingOperator")
-	// cursor, err := thingOperatorCollection.Find(ctx, bson.M{"thingId": thing.ID})
-	// if err = cursor.All(ctx, &thingOperators); err != nil {
-	// 	return
-	// }
-	// var operatorIds []primitive.ObjectID
-	// for _, thingOperator := range thingOperators {
-	// 	operatorIds = append(operatorIds, thingOperator.OperatorId)
-	// }
-	// if len(operatorIds) == 0 {
-	// 	thing.OperatorIds = []primitive.ObjectID{}
-	// } else {
-	// 	thing.OperatorIds = operatorIds
-	// }
 }
