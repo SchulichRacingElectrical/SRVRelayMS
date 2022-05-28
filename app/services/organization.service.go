@@ -82,7 +82,7 @@ func (service *OrganizationService) Update(ctx context.Context, updatedOrganizat
 		return err
 	}
 	updatedOrganization.APIKey = prev.APIKey
-	result := service.db.Save(*updatedOrganization)
+	result := service.db.Model(&updatedOrganization).Select("*").Updates(&updatedOrganization)
 	if result.Error != nil {
 		return result.Error
 	}

@@ -30,7 +30,7 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 
 	// Guard against non-unique things
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	newThing.OrganizationID = organization.Id
+	newThing.OrganizationId = organization.Id
 	if !handler.service.IsThingUnique(ctx, &newThing) {
 		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
 		return
@@ -92,13 +92,13 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant writes
-	if organization.Id != thing.OrganizationID {
+	if organization.Id != thing.OrganizationId {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
 	// Guard against non-unique things
-	updatedThing.OrganizationID = thing.OrganizationID
+	updatedThing.OrganizationId = thing.OrganizationId
 	if !handler.service.IsThingUnique(ctx, &updatedThing) {
 		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
 		return
@@ -139,7 +139,7 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant deletion
-	if organization.Id != thing.OrganizationID {
+	if organization.Id != thing.OrganizationId {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}

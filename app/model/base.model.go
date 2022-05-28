@@ -6,7 +6,7 @@ import (
 )
 
 type Base struct {
-	Id uuid.UUID `gorm:"type:uuid;column:id,primaryKey;" json:"_id"`
+	Id uuid.UUID `gorm:"type:uuid;column:id;primaryKey;" json:"_id"`
 }
 
 func (base *Base) BeforeCreate(tx *gorm.DB) error {

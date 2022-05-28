@@ -45,7 +45,7 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant writing
-	if thing.OrganizationID != organization.Id {
+	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
@@ -79,7 +79,7 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant reading
-	if thing.OrganizationID == organization.Id {
+	if thing.OrganizationId == organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
@@ -114,7 +114,7 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant reading
-	if thing.OrganizationID != organization.Id {
+	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
@@ -156,7 +156,7 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant updates
-	if thing.OrganizationID != organization.Id {
+	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
@@ -203,7 +203,7 @@ func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant deletion
-	if thing.OrganizationID != organization.Id {
+	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
