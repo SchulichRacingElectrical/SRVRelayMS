@@ -4,6 +4,7 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
+	"database-ms/utils"
 	"errors"
 
 	"github.com/google/uuid"
@@ -13,13 +14,13 @@ import (
 )
 
 type OrganizationServiceInterface interface {
-	FindByOrganizationId(context.Context, uuid.UUID) (*model.Organization, error)
-	FindByOrganizationApiKey(context.Context, string) (*model.Organization, error)
-	FindAllOrganizations(context.Context) ([]*model.Organization, error)
+	FindByOrganizationId(context.Context, uuid.UUID) (*model.Organization, *pgconn.PgError)
+	FindByOrganizationApiKey(context.Context, string) (*model.Organization, *pgconn.PgError)
+	FindAllOrganizations(context.Context) ([]*model.Organization, *pgconn.PgError)
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError)
-	UpdateKey(context.Context, *model.Organization) error
-	Update(context.Context, *model.Organization) error
-	Delete(context.Context, uuid.UUID) error
+	UpdateKey(context.Context, *model.Organization) *pgconn.PgError
+	Update(context.Context, *model.Organization) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
 }
 
 type OrganizationService struct {
@@ -31,31 +32,31 @@ func NewOrganizationService(db *gorm.DB, c *config.Configuration) OrganizationSe
 	return &OrganizationService{config: c, db: db}
 }
 
-func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) (*model.Organization, error) {
+func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) (*model.Organization, *pgconn.PgError) {
 	organization := model.Organization{}
 	organization.Id = organizationId
 	result := service.db.First(&organization)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return &organization, nil
 }
 
-func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, APIKey string) (*model.Organization, error) {
+func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, APIKey string) (*model.Organization, *pgconn.PgError) {
 	organization := model.Organization{}
 	organization.APIKey = APIKey
 	result := service.db.First(&organization)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return &organization, nil
 }
 
-func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([]*model.Organization, error) {
+func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([]*model.Organization, *pgconn.PgError) {
 	var organizations []*model.Organization
 	result := service.db.Find(&organizations)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return organizations, nil
 }
@@ -71,34 +72,34 @@ func (service *OrganizationService) Create(ctx context.Context, organization *mo
 	return nil, nil
 }
 
-func (service *OrganizationService) UpdateKey(ctx context.Context, organization *model.Organization) error {
+func (service *OrganizationService) UpdateKey(ctx context.Context, organization *model.Organization) *pgconn.PgError {
 	organization.APIKey = uuid.NewString()
 	result := service.db.Updates(&organization)
 	if result.Error != nil {
-		return result.Error
+		return utils.GetPostgresError(result.Error)
 	}
 	return nil
 }
 
-func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) error {
+func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) *pgconn.PgError {
 	prev, err := service.FindByOrganizationId(ctx, updatedOrganization.Id)
 	if err != nil {
-		return err
+		return utils.GetPostgresError(err)
 	}
 	updatedOrganization.APIKey = prev.APIKey
 	result := service.db.Updates(&updatedOrganization)
 	if result.Error != nil {
-		return result.Error
+		return utils.GetPostgresError(result.Error)
 	}
 	return nil
 }
 
-func (service *OrganizationService) Delete(ctx context.Context, organizationId uuid.UUID) error {
+func (service *OrganizationService) Delete(ctx context.Context, organizationId uuid.UUID) *pgconn.PgError {
 	organization := model.Organization{}
 	organization.Id = organizationId
 	result := service.db.Delete(&organization)
 	if result.Error != nil {
-		return result.Error
+		return utils.GetPostgresError(result.Error)
 	}
 	return nil
 }
