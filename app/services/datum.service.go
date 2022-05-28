@@ -15,7 +15,7 @@ import (
 type DatumServiceInterface interface {
 	Create(context.Context, *models.Datum) error
 	CreateMany(context.Context, []*models.Datum) error
-	FindBySessionIdAndSensorId(context.Context, string, string) ([]*models.Datum, error)
+	FindBySessionIdAndSensorId(context.Context, string, string) ([]models.FormattedDatum, error)
 }
 
 type DatumService struct {
@@ -44,7 +44,7 @@ func (service *DatumService) CreateMany(ctx context.Context, datumArray []*model
 	return err
 }
 
-func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId string, sensorId string) ([]*models.Datum, error) {
+func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId string, sensorId string) ([]models.FormattedDatum, error) {
 	database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
 	if err != nil {
 		panic(err)
@@ -70,7 +70,15 @@ func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, ses
 		return nil, err
 	}
 
-	return datumArray, nil
+	var formattedDatumArray []models.FormattedDatum
+	for _, datum := range datumArray {
+		formattedDatumArray = append(formattedDatumArray, models.FormattedDatum{
+			X: datum.Value,
+			Y: datum.Timestamp,
+		})
+	}
+
+	return formattedDatumArray, nil
 }
 
 // ============== Common DB Operations ===================

@@ -11,3 +11,8 @@ type Datum struct {
 	Value     float64            `json:"value" bson:"value"`
 	Timestamp int64              `json:"timestamp" bson:"timestamp"`
 }
+
+type FormattedDatum struct {
+	X float64 // Value `json:"x`
+	Y int64   // Timestamp `json:"y"`
+}
