@@ -129,6 +129,6 @@ func (handler *OrganizationHandler) IssueNewAPIKey(ctx *gin.Context) {
 }
 
 func (handler *OrganizationHandler) DeleteOrganization(ctx *gin.Context) {
-	// TODO: Only the super admin can do this
-	// Will not do this for now
+	// Not allowed for comp.
+	utils.Response(ctx, http.StatusForbidden, "")
 }

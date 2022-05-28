@@ -10,7 +10,7 @@ type ChartPreset struct {
 	Base
 	Name    string    `gorm:"column:name;not null" json:"name"`
 	ThingId uuid.UUID `gorm:"type:uuid;column:thing_id;not null" json:"thingId"`
-	Thing   Thing     `gorm:"foreignKey:ThingId;references:Id;contraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Thing   Thing     `gorm:"foreignKey:ThingId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (*ChartPreset) TableName() string {
