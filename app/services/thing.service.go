@@ -4,6 +4,7 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
+	"database-ms/utils"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -15,7 +16,6 @@ type ThingServiceInterface interface {
 	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, error)
 	Update(context.Context, *model.Thing) error
 	Delete(context.Context, uuid.UUID) error
-	IsThingUnique(context.Context, *model.Thing) bool
 	AttachAssociatedOperatorIds(context.Context, *model.Thing)
 }
 
@@ -29,32 +29,30 @@ func NewThingService(db *gorm.DB, c *config.Configuration) ThingServiceInterface
 }
 
 func (service *ThingService) Create(ctx context.Context, thing *model.Thing) error {
-	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Create the thing
+		result := db.Create(&thing)
+		if result.Error != nil {
+			return result.Error
+		}
 
-	// callback := func (sessCtx mongo.SessionContext) (interface{}, error) {
-	// 	db := client.Database(service.config.MongoDbName)
-	// 	result, err := db.Collection("Thing").InsertOne(ctx, thing)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	thing.ID = (result.InsertedID).(primitive.ObjectID)
-	// 	var thingOperators []interface{}
-	// 	for _, operatorId := range thing.OperatorIds {
-	// 		thingOperators = append(thingOperators, bson.D{{"operatorId", operatorId}, {"thingId", thing.ID}})
-	// 	}
-	// 	if len(thingOperators) > 0 {
-	// 		if _, err = db.Collection("ThingOperator").InsertMany(ctx, thingOperators); err != nil {
-	// 			return nil, err
-	// 		}
-	// 	}
-	// 	return nil, nil
-	// }
-
-	// _, err = databases.WithTransaction(client, ctx, callback)
-	// return err
+		// Create ThingOperators for insertion
+		thingOperators := []model.ThingOperator{}
+		for _, operatorId := range thing.OperatorIds {
+			thingOperator := model.ThingOperator{}
+			thingOperator.ThingId = thing.Id
+			thingOperator.OperatorId = operatorId
+			thingOperators = append(thingOperators, thingOperator)
+		}
+		result = db.Table("thing_operator").CreateInBatches(thingOperators, 50)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return utils.GetPostgresError(err)
+	}
 	return nil
 }
 
@@ -175,21 +173,6 @@ func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) erro
 	// }
 
 	return nil
-}
-
-func (service *ThingService) IsThingUnique(ctx context.Context, newThing *model.Thing) bool {
-	// things, err := service.FindByOrganizationId(ctx, newThing.OrganizationId)
-	// if err == nil {
-	// 	for _, thing := range things {
-	// 		if newThing.Name == thing.Name && newThing.ID != thing.ID {
-	// 			return false
-	// 		}
-	// 	}
-	// 	return true
-	// } else {
-	// 	return false
-	// }
-	return false
 }
 
 func (service *ThingService) AttachAssociatedOperatorIds(ctx context.Context, thing *model.Thing) {
