@@ -20,10 +20,10 @@ type UserServiceInterface interface {
 	FindByUserEmail(context.Context, string) (*model.User, error)
 	FindByUserId(context.Context, uuid.UUID) (*model.User, error)
 	Create(context.Context, *model.User) (*mongo.InsertOneResult, error)
-	IsUserUnique(context.Context, *model.User) bool
-	IsLastAdmin(context.Context, *model.User) (bool, error)
 	Update(context.Context, *model.User) error
 	Delete(context.Context, uuid.UUID) error
+	IsUserUnique(context.Context, *model.User) bool
+	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
 	HashPassword(string) string
 	CheckPasswordHash(string, string) bool
@@ -38,97 +38,91 @@ func NewUserService(db *gorm.DB, c *config.Configuration) UserServiceInterface {
 	return &UserService{config: c, db: db}
 }
 
-func (service *UserService) Create(ctx context.Context, user *model.User) (*mongo.InsertOneResult, error) {
-	// res, err := service.UserCollection(ctx).InsertOne(ctx, user)
-	// user.ID = (res.InsertedID).(primitive.ObjectID)
-	// return res, err
-	return nil, nil
+func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.User, error) {
+	var users []*model.User
+	result := service.db.Where("organization_id <> ?", organizationId).Find(&users)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return users, nil
 }
 
 func (service *UserService) FindByUserEmail(ctx context.Context, email string) (*model.User, error) {
-	// var user model.User
-	// err := service.UserCollection(ctx).FindOne(ctx, bson.M{"email": email}).Decode(&user)
-	// return &user, err
-	return nil, nil
+	var user *model.User
+	result := service.db.Where("email = ?", email).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return user, nil
 }
 
 func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) (*model.User, error) {
-	// bsonUserId, err := primitive.ObjectIDFromHex(userId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// var user model.User
-	// err = service.UserCollection(ctx).FindOne(ctx, bson.M{"_id": bsonUserId}).Decode(&user)
-	// return &user, err
-	return nil, nil
+	user := model.User{}
+	user.Id = userId
+	result := service.db.First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
 }
 
-func (service *UserService) IsUserUnique(ctx context.Context, newUser *model.User) bool {
-	// users, err := service.FindUsersByOrganizationId(ctx, newUser.OrganizationId)
-	// if err == nil {
-	// 	for _, user := range users {
-	// 		// Email must be globally unique
-	// 		if newUser.Email == user.Email && newUser.ID != user.ID {
-	// 			return false
-	// 		}
-	// 		// Display name must be unique within the organization
-	// 		if newUser.DisplayName == user.DisplayName && newUser.OrganizationId == user.OrganizationId && newUser.ID != user.ID {
-	// 			return false
-	// 		}
-	// 	}
-	// 	return true
-	// } else {
-	// 	return false
-	// }
-	return false
-}
-
-func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (bool, error) {
-	// users, err := service.FindUsersByOrganizationId(ctx, user.OrganizationId)
-	// if err == nil {
-	// 	for _, existingUser := range users {
-	// 		if user.ID != existingUser.ID && existingUser.Role == "Admin" {
-	// 			return false, nil
-	// 		}
-	// 	}
-	// 	return true, nil
-	// } else {
-	// 	return false, err
-	// }
-	return false, nil
-}
-
-func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.User, error) {
-	// var users []*model.User
-	// cursor, err := service.UserCollection(ctx).Find(ctx, bson.D{{"organizationId", organizationId}})
-	// if err = cursor.All(ctx, &users); err != nil {
-	// 	return nil, err
-	// }
-	// for _, user := range users {
-	// 	user.Password = ""
-	// }
-	// if users == nil {
-	// 	users = []*model.User{}
-	// }
-	// return users, nil
+func (service *UserService) Create(ctx context.Context, user *model.User) (*mongo.InsertOneResult, error) {
+	result := service.db.Create(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	return nil, nil
 }
 
 func (service *UserService) Update(ctx context.Context, user *model.User) error {
-	// _, err := service.UserCollection(ctx).UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{"$set": user})
-	// return err
+	result := service.db.Updates(&user)
+	if result.Error != nil {
+		return result.Error
+	}
 	return nil
 }
 
 func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) error {
-	// bsonUserId, err := primitive.ObjectIDFromHex(userId)
-	// if err != nil {
-	// 	return err
-	// } else {
-	// 	_, err := service.UserCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonUserId})
-	// 	return err
-	// }
+	user := model.User{}
+	user.Id = userId
+	result := service.db.Delete(&user)
+	if result.Error != nil {
+		return result.Error
+	}
 	return nil
+}
+
+func (service *UserService) IsUserUnique(ctx context.Context, newUser *model.User) bool {
+	users, err := service.FindUsersByOrganizationId(ctx, newUser.OrganizationId)
+	if err == nil {
+		for _, user := range users {
+			// Email must be globally unique
+			if newUser.Email == user.Email && newUser.Id != user.Id {
+				return false
+			}
+			// Display name must be unique within the organization
+			if newUser.DisplayName == user.DisplayName && newUser.OrganizationId == user.OrganizationId && newUser.Id != user.Id {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
+}
+
+func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (bool, error) {
+	users, err := service.FindUsersByOrganizationId(ctx, user.OrganizationId)
+	if err == nil {
+		for _, existingUser := range users {
+			if user.Id != existingUser.Id && existingUser.Role == "Admin" {
+				return false, nil
+			}
+		}
+		return true, nil
+	} else {
+		return false, err
+	}
 }
 
 // ============== Service Helper Method(s) ================
