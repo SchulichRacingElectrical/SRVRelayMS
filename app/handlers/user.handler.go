@@ -64,16 +64,14 @@ func (handler *UserHandler) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-unique users
-	if !handler.service.IsUserUnique(ctx, &updatedUser) {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.UserConflict))
-		return
-	}
-
 	// Attempt to update the user
-	err = handler.service.Update(ctx, &updatedUser)
+	perr := handler.service.Update(ctx, &updatedUser)
 	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.UserConflict))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
 		return
 	}
 

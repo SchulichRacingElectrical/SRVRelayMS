@@ -4,11 +4,13 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
+	"database-ms/utils"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,13 +18,12 @@ import (
 )
 
 type UserServiceInterface interface {
-	FindUsersByOrganizationId(context.Context, uuid.UUID) ([]*model.User, error)
-	FindByUserEmail(context.Context, string) (*model.User, error)
-	FindByUserId(context.Context, uuid.UUID) (*model.User, error)
-	Create(context.Context, *model.User) (*mongo.InsertOneResult, error)
-	Update(context.Context, *model.User) error
-	Delete(context.Context, uuid.UUID) error
-	IsUserUnique(context.Context, *model.User) bool
+	FindUsersByOrganizationId(context.Context, uuid.UUID) ([]*model.User, *pgconn.PgError)
+	FindByUserEmail(context.Context, string) (*model.User, *pgconn.PgError)
+	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
+	Create(context.Context, *model.User) (*mongo.InsertOneResult, *pgconn.PgError)
+	Update(context.Context, *model.User) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
 	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
 	HashPassword(string) string
@@ -38,56 +39,56 @@ func NewUserService(db *gorm.DB, c *config.Configuration) UserServiceInterface {
 	return &UserService{config: c, db: db}
 }
 
-func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.User, error) {
+func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.User, *pgconn.PgError) {
 	var users []*model.User
 	result := service.db.Where("organization_id = ?", organizationId).Find(&users)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return users, nil
 }
 
-func (service *UserService) FindByUserEmail(ctx context.Context, email string) (*model.User, error) {
+func (service *UserService) FindByUserEmail(ctx context.Context, email string) (*model.User, *pgconn.PgError) {
 	var user *model.User
 	result := service.db.Where("email = ?", email).First(&user)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return user, nil
 }
 
-func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) (*model.User, error) {
+func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) (*model.User, *pgconn.PgError) {
 	user := model.User{}
 	user.Id = userId
 	result := service.db.First(&user)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return &user, nil
 }
 
-func (service *UserService) Create(ctx context.Context, user *model.User) (*mongo.InsertOneResult, error) {
+func (service *UserService) Create(ctx context.Context, user *model.User) (*mongo.InsertOneResult, *pgconn.PgError) {
 	result := service.db.Create(&user)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return nil, nil
 }
 
-func (service *UserService) Update(ctx context.Context, user *model.User) error {
+func (service *UserService) Update(ctx context.Context, user *model.User) *pgconn.PgError {
 	result := service.db.Updates(&user)
 	if result.Error != nil {
-		return result.Error
+		return utils.GetPostgresError(result.Error)
 	}
 	return nil
 }
 
-func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) error {
+func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) *pgconn.PgError {
 	user := model.User{}
 	user.Id = userId
 	result := service.db.Delete(&user)
 	if result.Error != nil {
-		return result.Error
+		return utils.GetPostgresError(result.Error)
 	}
 	return nil
 }

@@ -34,13 +34,6 @@ func (handler *AuthHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	// Ensure the user is unique
-	if !handler.service.IsUserUnique(ctx.Request.Context(), &newUser) {
-		result := utils.NewHTTPError(utils.UserConflict)
-		utils.Response(ctx, http.StatusConflict, result)
-		return
-	}
-
 	// Attempt to get all the users
 	users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), newUser.OrganizationId)
 	if err != nil {
@@ -58,10 +51,13 @@ func (handler *AuthHandler) SignUp(ctx *gin.Context) {
 	newUser.Password = handler.service.HashPassword(newUser.Password)
 
 	// Attempt to create the user
-	_, err = handler.service.Create(ctx.Request.Context(), &newUser)
+	_, perr := handler.service.Create(ctx.Request.Context(), &newUser)
 	if err != nil {
-		result := utils.NewHTTPError(utils.EntityCreationError)
-		utils.Response(ctx, http.StatusBadRequest, result)
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.UserConflict))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
 		return
 	}
 
