@@ -52,5 +52,6 @@ func main() {
 		&model.ThingOperator{},
 		&model.Thing{},
 		&model.User{},
+		&model.Datum{},
 	)
 }
