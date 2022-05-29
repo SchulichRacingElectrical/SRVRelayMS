@@ -48,48 +48,30 @@ func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) 
 
 func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Sensor, error) {
 	var sensors []*model.Sensor
-	err := service.db.Transaction(func(db *gorm.DB) error {
-		// Get the sensors associated with the given thing
-		result := db.Where("thing_id = ?", thingId).Find(&sensors)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, utils.GetPostgresError(err)
+	// Get the sensors associated with the given thing
+	result := service.db.Where("thing_id = ?", thingId).Find(&sensors)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return sensors, nil
 }
 
 func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, error) {
 	var sensor *model.Sensor
-	err := service.db.Transaction(func(db *gorm.DB) error {
-		// Get the sensor with the given id
-		result := db.Where("id = ?", sensorId).First(&sensor)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, utils.GetPostgresError(err)
+	// Get the sensor with the given id
+	result := service.db.Where("id = ?", sensorId).First(&sensor)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return sensor, nil
 }
 
 func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) ([]*model.Sensor, error) {
 	var sensors []*model.Sensor
-	err := service.db.Transaction(func(db *gorm.DB) error {
-		// Get the sensor with the given id
-		result := db.Where("thing_id = ? AND last_update > ?", thingId, lastUpdate).Find(&sensors)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, utils.GetPostgresError(err)
+	// Get the sensor with the given id
+	result := service.db.Where("thing_id = ? AND last_update > ?", thingId, lastUpdate).Find(&sensors)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return sensors, nil
 }
