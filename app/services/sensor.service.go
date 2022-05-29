@@ -4,6 +4,7 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
+	"database-ms/utils"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -29,105 +30,100 @@ func NewSensorService(db *gorm.DB, c *config.Configuration) SensorServiceInterfa
 }
 
 func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) error {
-	// newSmallId, err := service.FindAvailableSmallId(sensor.ThingID, ctx)
-	// if err != nil {
-	// 	return err
-	// } else {
-	// 	sensor.SmallId = &newSmallId
-	// 	sensor.LastUpdate = utils.CurrentTimeInMilli()
-	// 	result, err := service.SensorCollection(ctx).InsertOne(ctx, sensor)
-	// 	if err == nil {
-	// 		sensor.ID = (result.InsertedID).(primitive.ObjectID)
-	// 	}
-	// 	return err
-	// }
+	// Generate a small id
+	newSmallId, err := service.FindAvailableSmallId(sensor.ThingId, ctx)
+	if err != nil {
+		return err
+	}
+
+	// Create the sensor
+	sensor.SmallId = int32(newSmallId)
+	sensor.LastUpdate = utils.CurrentTimeInMilli()
+	result := service.db.Create(&sensor)
+	if result.Error != nil {
+		return err
+	}
 	return nil
 }
 
 func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Sensor, error) {
-	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// var sensors []*model.Sensor
-	// cursor, err := service.SensorCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}})
-	// if err = cursor.All(ctx, &sensors); err != nil {
-	// 	return nil, err
-	// }
-	// if sensors == nil {
-	// 	sensors = []*model.Sensor{}
-	// }
-	// return sensors, nil
-	return nil, nil
+	var sensors []*model.Sensor
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the sensors associated with the given thing
+		result := db.Where("thing_id = ?", thingId).Find(&sensors)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return sensors, nil
 }
 
 func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, error) {
-	// bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// var sensor model.Sensor
-	// if err = service.SensorCollection(ctx).FindOne(ctx, bson.M{"_id": bsonSensorId}).Decode(&sensor); err != nil {
-	// 	return nil, err
-	// }
-	// return &sensor, nil
-	return nil, nil
+	var sensor *model.Sensor
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the sensor with the given id
+		result := db.Where("id = ?", sensorId).First(&sensor)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return sensor, nil
 }
 
 func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) ([]*model.Sensor, error) {
-	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// var sensors []*model.Sensor
-	// cursor, err := service.SensorCollection(ctx).Find(ctx, bson.D{{"thingId", bsonThingId}, {"lastUpdate", bson.D{{"$gt", lastUpdate}}}})
-	// if err = cursor.All(ctx, &sensors); err != nil {
-	// 	return nil, err
-	// }
-	// if sensors == nil {
-	// 	sensors = []*model.Sensor{}
-	// }
-	// return sensors, nil
-	return nil, nil
+	var sensors []*model.Sensor
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the sensor with the given id
+		result := db.Where("thing_id = ? AND last_update > ?", thingId, lastUpdate).Find(&sensors)
+		if result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return sensors, nil
 }
 
 func (service *SensorService) Update(ctx context.Context, updatedSensor *model.Sensor) error {
-	// sensor, err := service.FindBySensorId(ctx, updatedSensor.ID.Hex())
-	// if err == nil {
-	// 	updatedSensor.SmallId = sensor.SmallId
-	// 	updatedSensor.LastUpdate = utils.CurrentTimeInMilli()
-	// 	_, err = service.SensorCollection(ctx).ReplaceOne(ctx, bson.M{"_id": updatedSensor.ID}, updatedSensor)
-	// 	return err
-	// } else {
-	// 	return err
-	// }
-	return nil
+	sensor, err := service.FindBySensorId(ctx, updatedSensor.Id)
+	if err != nil {
+		return err
+	}
+	updatedSensor.SmallId = sensor.SmallId
+	updatedSensor.LastUpdate = utils.CurrentTimeInMilli()
+	result := service.db.Save(&updatedSensor)
+	return result.Error
 }
 
 func (service *SensorService) Delete(ctx context.Context, sensorId uuid.UUID) error {
-	// bsonSensorId, err := primitive.ObjectIDFromHex(sensorId)
-	// if err != nil {
-	// 	return err
-	// } else {
-	// 	_, err := service.SensorCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonSensorId})
-	// 	return err
-	// }
-	return nil
+	sensor := model.Sensor{Base: model.Base{Id: sensorId}}
+	result := service.db.Delete(&sensor)
+	return result.Error
 }
 
 func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *model.Sensor) bool {
-	// sensors, err := service.FindByThingId(ctx, newSensor.ThingID.Hex())
-	// if err == nil {
-	// 	for _, sensor := range sensors {
-	// 		if (newSensor.Name == sensor.Name || newSensor.CanId == sensor.CanId) && newSensor.ID != sensor.ID {
-	// 			return false
-	// 		}
-	// 	}
-	// 	return true
-	// } else {
-	// 	return false
-	// }
-	return false
+	sensors, err := service.FindByThingId(ctx, newSensor.ThingId)
+
+	if err == nil {
+		for _, sensor := range sensors {
+			if (newSensor.Name == sensor.Name || newSensor.CanID == sensor.CanID) && newSensor.Id != sensor.Id {
+				return false
+			}
+		}
+		return true
+	} else {
+		return false
+	}
 }
 
 // ============== Service Helper Method(s) ================
