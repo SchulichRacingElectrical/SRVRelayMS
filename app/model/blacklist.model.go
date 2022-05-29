@@ -9,5 +9,5 @@ type Blacklist struct {
 }
 
 func (*Blacklist) TableName() string {
-	return TableNameChart
+	return TableNameBlacklist
 }

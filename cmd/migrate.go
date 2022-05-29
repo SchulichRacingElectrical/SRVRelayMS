@@ -39,10 +39,12 @@ func main() {
 
 	// Full migration
 	db.AutoMigrate(
+		&model.Blacklist{},
 		&model.Chart{},
 		&model.ChartPreset{},
 		&model.CollectionComment{},
 		&model.Collection{},
+		&model.Datum{},
 		&model.Operator{},
 		&model.Organization{},
 		&model.RawDataPreset{},
@@ -52,6 +54,7 @@ func main() {
 		&model.ThingOperator{},
 		&model.Thing{},
 		&model.User{},
-		&model.Datum{},
 	)
+
+	println("Finished migration.")
 }

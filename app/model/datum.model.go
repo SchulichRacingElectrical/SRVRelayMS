@@ -15,5 +15,5 @@ type Datum struct {
 }
 
 func (*Datum) TableName() string {
-	return TableNameChart
+	return TableNameDatum
 }
