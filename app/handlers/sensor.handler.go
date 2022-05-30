@@ -32,8 +32,8 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 
 	// Attempt to find the thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, newSensor.ThingId)
-	if err != nil {
+	thing, perr := handler.thingService.FindById(ctx, newSensor.ThingId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
@@ -45,10 +45,10 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	}
 
 	// Attempt to create the sensor
-	perr := handler.sensorService.Create(ctx.Request.Context(), &newSensor)
-	if perr == nil {
+	perr = handler.sensorService.Create(ctx.Request.Context(), &newSensor)
+	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
