@@ -34,7 +34,31 @@ func (*Sensor) TableName() string {
 	return TableNameSensor
 }
 
-func (s *Sensor) AfterDelete(db *gorm.DB) error {
+func (s *Sensor) BeforeDelete(db *gorm.DB) error {
+	// Find the raw data ids associated with the sensor
+	var presetSensors []*RawDataPresetSensor
+	result := db.Table(TableNameRawdataPresetSensor).Where("sensor_id = ?", s.Id).Find(&presetSensors)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// For each raw data preset, delete it if there are no sensors remaining
+	for _, presetSensor := range presetSensors {
+		var allPresetSensors []*RawDataPresetSensor
+		result := db.Table(TableNameRawdataPresetSensor).Where("rawdatapreset_id", presetSensor.RawDataPresetId).Find(&allPresetSensors)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Delete the preset if the sensor about to be deleted is the last one in the preset
+		if len(allPresetSensors) == 1 {
+			preset := &RawDataPreset{Base: Base{Id: presetSensor.RawDataPresetId}}
+			result := db.Delete(&preset)
+			if result.Error != nil {
+				return result.Error
+			}
+		}
+	}
 	// TODO: Delete presets if they do not have any sensors remaining
 	return nil
 }
