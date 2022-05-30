@@ -13,10 +13,10 @@ import (
 
 type ThingServiceInterface interface {
 	Create(context.Context, *model.Thing) *pgconn.PgError
-	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Thing, error)
-	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, error)
-	Update(context.Context, *model.Thing) error
-	Delete(context.Context, uuid.UUID) error
+	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Thing, *pgconn.PgError)
+	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, *pgconn.PgError)
+	Update(context.Context, *model.Thing) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
 }
 
 type ThingService struct {
@@ -47,18 +47,12 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pg
 
 		// Batch insert thing-operators
 		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
+		return result.Error
 	})
-	if err != nil {
-		return utils.GetPostgresError(err)
-	}
-	return nil
+	return utils.GetPostgresError(err)
 }
 
-func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, error) {
+func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, *pgconn.PgError) {
 	var things []*model.Thing
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Get the things associated with the given organization
@@ -78,7 +72,7 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 				thing.OperatorIds = append(thing.OperatorIds, thingOperator.OperatorId)
 			}
 		}
-		return nil
+		return result.Error
 	})
 	if err != nil {
 		return nil, utils.GetPostgresError(err)
@@ -87,7 +81,7 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 }
 
 // Internal function
-func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, error) {
+func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, *pgconn.PgError) {
 	var thing *model.Thing
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Get the thing with the given id
@@ -95,7 +89,8 @@ func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*
 		if result.Error != nil {
 			return result.Error
 		}
-		return nil
+		// Todo, get the operatorIds
+		return result.Error
 	})
 	if err != nil {
 		return nil, utils.GetPostgresError(err)
@@ -103,7 +98,7 @@ func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*
 	return thing, nil
 }
 
-func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) error {
+func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Save the updated thing
 		db.Save(updatedThing)
@@ -125,29 +120,13 @@ func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thi
 
 		// Batch insert thing-operators
 		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
+		return result.Error
 	})
-	if err != nil {
-		return utils.GetPostgresError(err)
-	}
-	return nil
+	return utils.GetPostgresError(err)
 }
 
-func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) error {
-	err := service.db.Transaction(func(db *gorm.DB) error { // Remove transaction
-		// Delete the specified thing
-		thing := model.Thing{Base: model.Base{Id: thingId}}
-		result := db.Delete(&thing)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
-	})
-	if err != nil {
-		return utils.GetPostgresError(err)
-	}
-	return nil
+func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) *pgconn.PgError {
+	thing := model.Thing{Base: model.Base{Id: thingId}}
+	result := service.db.Delete(&thing)
+	return utils.GetPostgresError(result.Error)
 }

@@ -38,12 +38,6 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-unique sensor
-	if !handler.sensorService.IsSensorUnique(ctx, &newSensor) {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.SensorNotUnique))
-		return
-	}
-
 	// Guard against cross-tenant writing
 	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
@@ -51,9 +45,13 @@ func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
 	}
 
 	// Attempt to create the sensor
-	err = handler.sensorService.Create(ctx.Request.Context(), &newSensor)
-	if err == nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+	perr := handler.sensorService.Create(ctx.Request.Context(), &newSensor)
+	if perr == nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+		}
 		return
 	}
 
@@ -161,16 +159,14 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-unique sensor
-	if !handler.sensorService.IsSensorUnique(ctx, &updatedSensor) {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.SensorNotUnique))
-		return
-	}
-
 	// Attempt to update the sensor
-	err = handler.sensorService.Update(ctx.Request.Context(), &updatedSensor)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+	perr := handler.sensorService.Update(ctx.Request.Context(), &updatedSensor)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.SensorNotUnique))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
 		return
 	}
 

@@ -7,16 +7,16 @@ import (
 	"database-ms/utils"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
 type OperatorServiceInterface interface {
-	Create(context.Context, *model.Operator) error
-	FindById(context.Context, uuid.UUID) (*model.Operator, error)
-	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Operator, error)
-	Update(context.Context, *model.Operator) error
-	Delete(context.Context, uuid.UUID) error
-	IsOperatorUnique(context.Context, *model.Operator) bool
+	Create(context.Context, *model.Operator) *pgconn.PgError
+	FindById(context.Context, uuid.UUID) (*model.Operator, *pgconn.PgError)
+	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Operator, *pgconn.PgError)
+	Update(context.Context, *model.Operator) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
 }
 
 type OperatorService struct {
@@ -28,7 +28,7 @@ func NewOperatorService(db *gorm.DB, c *config.Configuration) OperatorServiceInt
 	return &OperatorService{db: db, config: c}
 }
 
-func (service *OperatorService) Create(ctx context.Context, operator *model.Operator) error {
+func (service *OperatorService) Create(ctx context.Context, operator *model.Operator) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Create the operator
 		result := db.Create(&operator)
@@ -47,19 +47,13 @@ func (service *OperatorService) Create(ctx context.Context, operator *model.Oper
 
 		// Batch insert thing operators
 		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
+		return result.Error
 	})
-	if err != nil {
-		return utils.GetPostgresError(err)
-	}
-	return nil
+	return utils.GetPostgresError(err)
 }
 
 // Internal function
-func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UUID) (*model.Operator, error) {
+func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UUID) (*model.Operator, *pgconn.PgError) {
 	var operator *model.Operator
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Get the operator with the given id
@@ -67,7 +61,8 @@ func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UU
 		if result.Error != nil {
 			return result.Error
 		}
-		return nil
+		// Todo, get the thingIds
+		return result.Error
 	})
 	if err != nil {
 		return nil, utils.GetPostgresError(err)
@@ -75,7 +70,7 @@ func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UU
 	return operator, nil
 }
 
-func (service *OperatorService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Operator, error) {
+func (service *OperatorService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Operator, *pgconn.PgError) {
 	var operators = []*model.Operator{}
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Get the operators associated with the given organization
@@ -95,7 +90,7 @@ func (service *OperatorService) FindByOrganizationId(ctx context.Context, organi
 				operator.ThingIds = append(operator.ThingIds, thingOperator.ThingId)
 			}
 		}
-		return nil
+		return result.Error
 	})
 	if err != nil {
 		return nil, utils.GetPostgresError(err)
@@ -103,7 +98,7 @@ func (service *OperatorService) FindByOrganizationId(ctx context.Context, organi
 	return operators, nil
 }
 
-func (service *OperatorService) Update(ctx context.Context, updatedOperator *model.Operator) error {
+func (service *OperatorService) Update(ctx context.Context, updatedOperator *model.Operator) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Save the updated operator
 		db.Save(updatedOperator)
@@ -125,44 +120,13 @@ func (service *OperatorService) Update(ctx context.Context, updatedOperator *mod
 
 		// Batch insert thing-operators
 		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
+		return result.Error
 	})
-	if err != nil {
-		return utils.GetPostgresError(err)
-	}
-	return nil
+	return utils.GetPostgresError(err)
 }
 
-func (service *OperatorService) Delete(ctx context.Context, operatorId uuid.UUID) error {
-	err := service.db.Transaction(func(db *gorm.DB) error { // Remove transaction
-		// Delete the specified operator
-		operator := model.Operator{Base: model.Base{Id: operatorId}}
-		result := db.Delete(&operator)
-		if result.Error != nil {
-			return result.Error
-		}
-		return nil
-	})
-	if err != nil {
-		return utils.GetPostgresError(err)
-	}
-	return nil
-}
-
-// Probably don't need this
-func (service *OperatorService) IsOperatorUnique(ctx context.Context, newOperator *model.Operator) bool {
-	operators, err := service.FindByOrganizationId(ctx, newOperator.OrganizationId)
-	if err == nil {
-		for _, operator := range operators {
-			if newOperator.Name == operator.Name && newOperator.Id != operator.Id {
-				return false
-			}
-		}
-		return true
-	} else {
-		return false
-	}
+func (service *OperatorService) Delete(ctx context.Context, operatorId uuid.UUID) *pgconn.PgError {
+	operator := model.Operator{Base: model.Base{Id: operatorId}}
+	result := service.db.Delete(&operator)
+	return utils.GetPostgresError(result.Error)
 }

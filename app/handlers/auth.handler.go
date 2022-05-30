@@ -52,8 +52,8 @@ func (handler *AuthHandler) SignUp(ctx *gin.Context) {
 	newUser.Password = handler.service.HashPassword(newUser.Password)
 
 	// Attempt to create the user
-	_, perr := handler.service.Create(ctx.Request.Context(), &newUser)
-	if err != nil {
+	perr := handler.service.Create(ctx.Request.Context(), &newUser)
+	if perr != nil {
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.UserConflict))
 		} else {

@@ -38,7 +38,7 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	perr := handler.service.Create(ctx.Request.Context(), &newThing)
 	if perr != nil {
 		if perr.Code == "23505" {
-			// TODO
+			utils.Response(ctx, http.StatusConflict, "") // TODO, create error enum
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
@@ -95,9 +95,13 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 
 	// Attempt to update the thing
 	updatedThing.OrganizationId = organization.Id
-	err = handler.service.Update(ctx.Request.Context(), &updatedThing)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+	perr := handler.service.Update(ctx.Request.Context(), &updatedThing)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, "") // TODO, create error enum
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+		}
 		return
 	}
 

@@ -38,15 +38,14 @@ func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-unique operators in the organization
-	if !handler.service.IsOperatorUnique(ctx, &newOperator) {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
-	}
-
 	// Attempt to create the operator
-	err = handler.service.Create(ctx.Request.Context(), &newOperator)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+	perr := handler.service.Create(ctx.Request.Context(), &newOperator)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+		}
 		return
 	}
 
@@ -98,18 +97,15 @@ func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-unique operator names
-	updatedOperator.OrganizationId = operator.OrganizationId
-	if !handler.service.IsOperatorUnique(ctx, &updatedOperator) {
-		utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
-		return
-	}
-
 	// Attempt to update the operator
 	updatedOperator.OrganizationId = organization.Id
-	err = handler.service.Update(ctx.Request.Context(), &updatedOperator)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+	perr := handler.service.Update(ctx.Request.Context(), &updatedOperator)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+		}
 		return
 	}
 

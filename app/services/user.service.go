@@ -13,7 +13,6 @@ import (
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -21,7 +20,7 @@ type UserServiceInterface interface {
 	FindUsersByOrganizationId(context.Context, uuid.UUID) ([]*model.User, *pgconn.PgError)
 	FindByUserEmail(context.Context, string) (*model.User, *pgconn.PgError)
 	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
-	Create(context.Context, *model.User) (*mongo.InsertOneResult, *pgconn.PgError)
+	Create(context.Context, *model.User) *pgconn.PgError
 	Update(context.Context, *model.User) *pgconn.PgError
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
 	IsLastAdmin(context.Context, *model.User) (bool, error)
@@ -67,49 +66,21 @@ func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) 
 	return &user, nil
 }
 
-func (service *UserService) Create(ctx context.Context, user *model.User) (*mongo.InsertOneResult, *pgconn.PgError) {
+func (service *UserService) Create(ctx context.Context, user *model.User) *pgconn.PgError {
 	result := service.db.Create(&user)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return nil, nil
+	return utils.GetPostgresError(result.Error)
 }
 
 func (service *UserService) Update(ctx context.Context, user *model.User) *pgconn.PgError {
 	result := service.db.Updates(&user)
-	if result.Error != nil {
-		return utils.GetPostgresError(result.Error)
-	}
-	return nil
+	return utils.GetPostgresError(result.Error)
 }
 
 func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) *pgconn.PgError {
 	user := model.User{}
 	user.Id = userId
 	result := service.db.Delete(&user)
-	if result.Error != nil {
-		return utils.GetPostgresError(result.Error)
-	}
-	return nil
-}
-
-func (service *UserService) IsUserUnique(ctx context.Context, newUser *model.User) bool {
-	users, err := service.FindUsersByOrganizationId(ctx, newUser.OrganizationId)
-	if err == nil {
-		for _, user := range users {
-			// Email must be globally unique
-			if newUser.Email == user.Email && newUser.Id != user.Id {
-				return false
-			}
-			// Display name must be unique within the organization
-			if newUser.DisplayName == user.DisplayName && newUser.OrganizationId == user.OrganizationId && newUser.Id != user.Id {
-				return false
-			}
-		}
-		return true
-	} else {
-		return false
-	}
+	return utils.GetPostgresError(result.Error)
 }
 
 func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (bool, error) {

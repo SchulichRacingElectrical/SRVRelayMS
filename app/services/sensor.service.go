@@ -7,17 +7,17 @@ import (
 	"database-ms/utils"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
 type SensorServiceInterface interface {
-	Create(context.Context, *model.Sensor) error
-	FindByThingId(context.Context, uuid.UUID) ([]*model.Sensor, error)
-	FindBySensorId(context.Context, uuid.UUID) (*model.Sensor, error)
-	FindUpdatedSensors(context.Context, uuid.UUID, int64) ([]*model.Sensor, error)
-	Update(context.Context, *model.Sensor) error
-	Delete(context.Context, uuid.UUID) error
-	IsSensorUnique(context.Context, *model.Sensor) bool
+	Create(context.Context, *model.Sensor) *pgconn.PgError
+	FindByThingId(context.Context, uuid.UUID) ([]*model.Sensor, *pgconn.PgError)
+	FindBySensorId(context.Context, uuid.UUID) (*model.Sensor, *pgconn.PgError)
+	FindUpdatedSensors(context.Context, uuid.UUID, int64) ([]*model.Sensor, *pgconn.PgError)
+	Update(context.Context, *model.Sensor) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
 }
 
 type SensorService struct {
@@ -29,26 +29,22 @@ func NewSensorService(db *gorm.DB, c *config.Configuration) SensorServiceInterfa
 	return &SensorService{config: c, db: db}
 }
 
-func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) error {
+func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) *pgconn.PgError {
 	// Generate a small id
 	newSmallId, err := service.FindAvailableSmallId(sensor.ThingId, ctx)
 	if err != nil {
-		return err
+		return utils.GetPostgresError(err) // Check if this works
 	}
 
 	// Create the sensor
 	sensor.SmallId = int32(newSmallId)
 	sensor.LastUpdate = utils.CurrentTimeInMilli()
 	result := service.db.Create(&sensor)
-	if result.Error != nil {
-		return err
-	}
-	return nil
+	return utils.GetPostgresError(result.Error)
 }
 
-func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Sensor, error) {
+func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Sensor, *pgconn.PgError) {
 	var sensors []*model.Sensor
-	// Get the sensors associated with the given thing
 	result := service.db.Where("thing_id = ?", thingId).Find(&sensors)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
@@ -56,9 +52,8 @@ func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UU
 	return sensors, nil
 }
 
-func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, error) {
+func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, *pgconn.PgError) {
 	var sensor *model.Sensor
-	// Get the sensor with the given id
 	result := service.db.Where("id = ?", sensorId).First(&sensor)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
@@ -66,9 +61,8 @@ func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.
 	return sensor, nil
 }
 
-func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) ([]*model.Sensor, error) {
+func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) ([]*model.Sensor, *pgconn.PgError) {
 	var sensors []*model.Sensor
-	// Get the sensor with the given id
 	result := service.db.Where("thing_id = ? AND last_update > ?", thingId, lastUpdate).Find(&sensors)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
@@ -76,7 +70,7 @@ func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uu
 	return sensors, nil
 }
 
-func (service *SensorService) Update(ctx context.Context, updatedSensor *model.Sensor) error {
+func (service *SensorService) Update(ctx context.Context, updatedSensor *model.Sensor) *pgconn.PgError {
 	sensor, err := service.FindBySensorId(ctx, updatedSensor.Id)
 	if err != nil {
 		return err
@@ -84,29 +78,13 @@ func (service *SensorService) Update(ctx context.Context, updatedSensor *model.S
 	updatedSensor.SmallId = sensor.SmallId
 	updatedSensor.LastUpdate = utils.CurrentTimeInMilli()
 	result := service.db.Save(&updatedSensor)
-	return result.Error
+	return utils.GetPostgresError(result.Error)
 }
 
-func (service *SensorService) Delete(ctx context.Context, sensorId uuid.UUID) error {
+func (service *SensorService) Delete(ctx context.Context, sensorId uuid.UUID) *pgconn.PgError {
 	sensor := model.Sensor{Base: model.Base{Id: sensorId}}
 	result := service.db.Delete(&sensor)
-	return result.Error
-}
-
-// Probably don't need this
-func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *model.Sensor) bool {
-	sensors, err := service.FindByThingId(ctx, newSensor.ThingId)
-
-	if err == nil {
-		for _, sensor := range sensors {
-			if (newSensor.Name == sensor.Name || newSensor.CanID == sensor.CanID) && newSensor.Id != sensor.Id {
-				return false
-			}
-		}
-		return true
-	} else {
-		return false
-	}
+	return utils.GetPostgresError(result.Error)
 }
 
 // ============== Service Helper Method(s) ================
