@@ -58,6 +58,7 @@ func (service *OperatorService) Create(ctx context.Context, operator *model.Oper
 	return nil
 }
 
+// Internal function
 func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UUID) (*model.Operator, error) {
 	var operator *model.Operator
 	err := service.db.Transaction(func(db *gorm.DB) error {
@@ -81,6 +82,18 @@ func (service *OperatorService) FindByOrganizationId(ctx context.Context, organi
 		result := db.Where("organization_id = ?", organizationId).Find(&operators)
 		if result.Error != nil {
 			return result.Error
+		}
+
+		// Get the ids of the relationship with operator
+		var thingOperators []*model.ThingOperator
+		for _, operator := range operators {
+			result = db.Table(model.TableNameThingOperator).Where("operator_id = ?", operator).Find(&thingOperators)
+			if result.Error != nil {
+				return result.Error
+			}
+			for _, thingOperator := range thingOperators {
+				operator.ThingIds = append(operator.ThingIds, thingOperator.ThingId)
+			}
 		}
 		return nil
 	})
@@ -124,7 +137,7 @@ func (service *OperatorService) Update(ctx context.Context, updatedOperator *mod
 }
 
 func (service *OperatorService) Delete(ctx context.Context, operatorId uuid.UUID) error {
-	err := service.db.Transaction(func(db *gorm.DB) error {
+	err := service.db.Transaction(func(db *gorm.DB) error { // Remove transaction
 		// Delete the specified operator
 		operator := model.Operator{Base: model.Base{Id: operatorId}}
 		result := db.Delete(&operator)
@@ -139,6 +152,7 @@ func (service *OperatorService) Delete(ctx context.Context, operatorId uuid.UUID
 	return nil
 }
 
+// Probably don't need this
 func (service *OperatorService) IsOperatorUnique(ctx context.Context, newOperator *model.Operator) bool {
 	operators, err := service.FindByOrganizationId(ctx, newOperator.OrganizationId)
 	if err == nil {

@@ -93,6 +93,7 @@ func (service *SensorService) Delete(ctx context.Context, sensorId uuid.UUID) er
 	return result.Error
 }
 
+// Probably don't need this
 func (service *SensorService) IsSensorUnique(ctx context.Context, newSensor *model.Sensor) bool {
 	sensors, err := service.FindByThingId(ctx, newSensor.ThingId)
 

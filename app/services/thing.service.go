@@ -66,6 +66,18 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 		if result.Error != nil {
 			return result.Error
 		}
+
+		// Get the ids of the relationship with operator
+		var thingOperators []*model.ThingOperator
+		for _, thing := range things {
+			result = db.Table(model.TableNameThingOperator).Where("thing_id = ?", thing).Find(&thingOperators)
+			if result.Error != nil {
+				return result.Error
+			}
+			for _, thingOperator := range thingOperators {
+				thing.OperatorIds = append(thing.OperatorIds, thingOperator.OperatorId)
+			}
+		}
 		return nil
 	})
 	if err != nil {
@@ -74,6 +86,7 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 	return things, nil
 }
 
+// Internal function
 func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, error) {
 	var thing *model.Thing
 	err := service.db.Transaction(func(db *gorm.DB) error {
@@ -124,7 +137,7 @@ func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thi
 }
 
 func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) error {
-	err := service.db.Transaction(func(db *gorm.DB) error {
+	err := service.db.Transaction(func(db *gorm.DB) error { // Remove transaction
 		// Delete the specified thing
 		thing := model.Thing{Base: model.Base{Id: thingId}}
 		result := db.Delete(&thing)
