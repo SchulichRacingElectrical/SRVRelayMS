@@ -52,13 +52,62 @@ func (s *Sensor) BeforeDelete(db *gorm.DB) error {
 
 		// Delete the preset if the sensor about to be deleted is the last one in the preset
 		if len(allPresetSensors) == 1 {
-			preset := &RawDataPreset{Base: Base{Id: presetSensor.RawDataPresetId}}
-			result := db.Delete(&preset)
-			if result.Error != nil {
-				return result.Error
+			if allPresetSensors[1].SensorId == s.Id {
+				preset := &RawDataPreset{Base: Base{Id: presetSensor.RawDataPresetId}}
+				result := db.Delete(&preset)
+				if result.Error != nil {
+					return result.Error
+				}
 			}
 		}
 	}
-	// TODO: Delete presets if they do not have any sensors remaining
+
+	// Find the chart ids associated with the sensor
+	var chartSensors []*ChartSensor
+	result = db.Table(TableNameChartSensor).Where("sensor_id = ?", s.Id).Find(&chartSensors)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// For each chart, delete it if there are no sensors remaining
+	var presetsToCheck []uuid.UUID
+	for _, chartSensor := range chartSensors {
+		var allChartSensors []*ChartSensor
+		result := db.Table(TableNameChartSensor).Where("chart_id", chartSensor.ChartId).Find(&allChartSensors)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Delete the chart if the sensor about to be deleted is the last one in the chart
+		if len(allChartSensors) == 1 {
+			if allChartSensors[1].SensorId == s.Id {
+				chart := &Chart{Base: Base{Id: chartSensor.ChartId}}
+
+				// Find the chart and add its preset to the list to check
+				result := db.First(&chart)
+				if result.Error != nil {
+					return result.Error
+				}
+				presetsToCheck = append(presetsToCheck, chart.ChartPresetId)
+
+				// Delete the chart
+				result = db.Delete(&chart)
+				if result.Error != nil {
+					return result.Error
+				}
+			}
+		}
+	}
+
+	// Check all of the chartPresets and check if they need to be deleted (if there are no charts left)
+	for _, chartPresetId := range presetsToCheck {
+		// Find the preset
+		preset := ChartPreset{Base: Base{Id: chartPresetId}}
+		result := db.Find(&preset)
+		if result.Error != nil {
+			continue
+		}
+
+	}
 	return nil
 }

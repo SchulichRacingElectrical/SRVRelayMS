@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 const TableNameChartpreset = "chartpreset"
@@ -18,11 +19,25 @@ func (*ChartPreset) TableName() string {
 	return TableNameChartpreset
 }
 
-// func (c *ChartPreset) AfterCreate() error {
-// 	// Insert charts and their relationship with sensors
-// 	return nil
-// }
+func (c *ChartPreset) AfterCreate(db *gorm.DB) (err error) {
+	result := db.Table(TableNameChart).CreateInBatches(c.Charts, 100)
+	return result.Error
+}
 
-// func (c *ChartPreset) AfterFind() error {
-// 	return nil
-// }
+func (c *ChartPreset) AfterUpdate(db *gorm.DB) (err error) {
+	// Delete all the associated charts
+	result := db.Table(TableNameChart).Where("chartpreset_id = ?", c.Id).Delete(&Chart{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Insert the new charts
+	result = db.Table(TableNameChart).CreateInBatches(c.Charts, 100)
+	return result.Error
+}
+
+func (c *ChartPreset) AfterFind(db *gorm.DB) (err error) {
+	c.Charts = []Chart{}
+	result := db.Table(TableNameChart).Where("chartpreset_id = ?", c.Id).Find(&c.Charts)
+	return result.Error
+}

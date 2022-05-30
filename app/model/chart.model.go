@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 const TableNameChart = "chart"
@@ -17,4 +18,53 @@ type Chart struct {
 
 func (*Chart) TableName() string {
 	return TableNameChart
+}
+
+func (c *Chart) AfterCreate(db *gorm.DB) (err error) {
+	return InsertChartSensors(c, db)
+}
+
+func (c *Chart) AfterUpdate(db *gorm.DB) (err error) {
+	// Delete all the associated chart-sensors
+	result := db.Table(TableNameChartSensor).Where("chart_id = ?", c.Id).Delete(&ChartSensor{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Write the new chart-sensors
+	return InsertChartSensors(c, db)
+}
+
+func (c *Chart) AfterFind(db *gorm.DB) (err error) {
+	var chartSensors []*ChartSensor
+	c.SensorIds = []uuid.UUID{}
+	result := db.Table(TableNameChartSensor).Where("chart_id = ?", c.Id).Find(&chartSensors)
+	if result.Error != nil {
+		return result.Error
+	}
+	for _, chartSensor := range chartSensors {
+		c.SensorIds = append(c.SensorIds, chartSensor.SensorId)
+	}
+	return nil
+}
+
+func InsertChartSensors(c *Chart, db *gorm.DB) (err error) {
+	// Generate the new list of chart-sensors
+	chartSensors := []ChartSensor{}
+	for _, sensorId := range c.SensorIds {
+		chartSensor := ChartSensor{}
+		chartSensor.ChartId = c.Id
+		chartSensor.SensorId = sensorId
+		chartSensors = append(chartSensors, chartSensor)
+	}
+
+	// Insert empty sensorIds
+	if len(c.SensorIds) == 0 {
+		c.SensorIds = []uuid.UUID{}
+		return
+	}
+
+	// Batch insert the chart-sensors
+	result := db.Table(TableNameChartSensor).CreateInBatches(chartSensors, 100)
+	return result.Error
 }

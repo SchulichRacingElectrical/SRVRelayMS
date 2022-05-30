@@ -20,23 +20,7 @@ func (*Operator) TableName() string {
 }
 
 func (o *Operator) AfterCreate(db *gorm.DB) (err error) {
-	// Generate the list of thing operators
-	var thingOperators []ThingOperator
-	for _, thingId := range o.ThingIds {
-		thingOperators = append(thingOperators, ThingOperator{
-			OperatorId: o.Id,
-			ThingId:    thingId,
-		})
-	}
-
-	// Insert empty thingIds
-	if len(o.ThingIds) == 0 {
-		o.ThingIds = []uuid.UUID{}
-	}
-
-	// Batch insert thing operators
-	result := db.Table(TableNameThingOperator).CreateInBatches(thingOperators, 100)
-	return result.Error
+	return InsertOperatorThings(o, db)
 }
 
 func (o *Operator) AfterUpdate(db *gorm.DB) (err error) {
@@ -46,6 +30,25 @@ func (o *Operator) AfterUpdate(db *gorm.DB) (err error) {
 		return result.Error
 	}
 
+	// Write the new operator-things
+	return InsertOperatorThings(o, db)
+}
+
+func (o *Operator) AfterFind(db *gorm.DB) (err error) {
+	// Get the ids of the relationship with thing
+	var thingOperators []*ThingOperator
+	o.ThingIds = []uuid.UUID{}
+	result := db.Table(TableNameThingOperator).Where("operator_id = ?", o.Id).Find(&thingOperators)
+	if result.Error != nil {
+		return result.Error
+	}
+	for _, thingOperator := range thingOperators {
+		o.ThingIds = append(o.ThingIds, thingOperator.ThingId)
+	}
+	return nil
+}
+
+func InsertOperatorThings(o *Operator, db *gorm.DB) (err error) {
 	// Regenerate the list of thing-operators
 	var thingOperators []ThingOperator
 	for _, thingId := range o.ThingIds {
@@ -61,20 +64,6 @@ func (o *Operator) AfterUpdate(db *gorm.DB) (err error) {
 	}
 
 	// Batch insert thing-operators
-	result = db.Table(TableNameThingOperator).CreateInBatches(thingOperators, 100)
+	result := db.Table(TableNameThingOperator).CreateInBatches(thingOperators, 100)
 	return result.Error
-}
-
-func (o *Operator) AfterFind(db *gorm.DB) (err error) {
-	// Get the ids of the relationship with thing
-	var thingOperators []*ThingOperator
-	o.ThingIds = []uuid.UUID{}
-	result := db.Table(TableNameThingOperator).Where("operator_id = ?", o.Id).Find(&thingOperators)
-	if result.Error != nil {
-		return result.Error
-	}
-	for _, thingOperator := range thingOperators {
-		o.ThingIds = append(o.ThingIds, thingOperator.ThingId)
-	}
-	return nil
 }
