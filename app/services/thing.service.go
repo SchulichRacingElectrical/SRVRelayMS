@@ -33,35 +33,6 @@ func NewThingService(db *gorm.DB, c *config.Configuration) ThingServiceInterface
 
 // PUBLIC FUNCTIONS
 
-func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, *pgconn.PgError) {
-	var things []*model.Thing
-	err := service.db.Transaction(func(db *gorm.DB) error {
-		// Get the things associated with the given organization
-		result := db.Where("organization_id = ?", organizationId).Find(&things)
-		if result.Error != nil {
-			return result.Error
-		}
-
-		// Get the ids of the relationship with operator
-		var thingOperators []*model.ThingOperator
-		for _, thing := range things {
-			thing.OperatorIds = []uuid.UUID{}
-			result = db.Table(model.TableNameThingOperator).Where("thing_id = ?", thing.Id).Find(&thingOperators)
-			if result.Error != nil {
-				return result.Error
-			}
-			for _, thingOperator := range thingOperators {
-				thing.OperatorIds = append(thing.OperatorIds, thingOperator.OperatorId)
-			}
-		}
-		return result.Error
-	})
-	if err != nil {
-		return nil, utils.GetPostgresError(err)
-	}
-	return things, nil
-}
-
 func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Create the thing
@@ -91,13 +62,45 @@ func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pg
 	return utils.GetPostgresError(err)
 }
 
+func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, *pgconn.PgError) {
+	var things []*model.Thing
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the things associated with the given organization
+		result := db.Where("organization_id = ?", organizationId).Find(&things)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Get the ids of the relationship with operator
+		for _, thing := range things {
+			var thingOperators []*model.ThingOperator
+			thing.OperatorIds = []uuid.UUID{}
+			result = db.Table(model.TableNameThingOperator).Where("thing_id = ?", thing.Id).Find(&thingOperators)
+			if result.Error != nil {
+				return result.Error
+			}
+			for _, thingOperator := range thingOperators {
+				thing.OperatorIds = append(thing.OperatorIds, thingOperator.OperatorId)
+			}
+		}
+		return result.Error
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return things, nil
+}
+
 func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Save the updated thing
-		db.Updates(updatedThing)
+		result := db.Updates(updatedThing)
+		if result.Error != nil {
+			return result.Error
+		}
 
 		// Delete all of the associated thing-operators
-		result := db.Table(model.TableNameThingOperator).Where("thing_id = ?", updatedThing.Id).Delete(&model.ThingOperator{})
+		result = db.Table(model.TableNameThingOperator).Where("thing_id = ?", updatedThing.Id).Delete(&model.ThingOperator{})
 		if result.Error != nil {
 			return result.Error
 		}
@@ -133,17 +136,9 @@ func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) *pgc
 
 func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, *pgconn.PgError) {
 	var thing *model.Thing
-	err := service.db.Transaction(func(db *gorm.DB) error {
-		// Get the thing with the given id
-		result := db.Where("id = ?", thingId).First(&thing)
-		if result.Error != nil {
-			return result.Error
-		}
-		// Todo, get the operatorIds
-		return result.Error
-	})
-	if err != nil {
-		return nil, utils.GetPostgresError(err)
+	result := service.db.Where("id = ?", thingId).First(&thing)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return thing, nil
 }

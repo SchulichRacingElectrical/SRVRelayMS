@@ -24,8 +24,8 @@ type UserServiceInterface interface {
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
 
 	// Private
-	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
 	FindByUserEmail(context.Context, string) (*model.User, *pgconn.PgError)
+	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
 	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
 	HashPassword(string) string
@@ -63,8 +63,7 @@ func (service *UserService) Update(ctx context.Context, user *model.User) *pgcon
 }
 
 func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) *pgconn.PgError {
-	user := model.User{}
-	user.Id = userId
+	user := model.User{Base: model.Base{Id: userId}}
 	result := service.db.Delete(&user)
 	return utils.GetPostgresError(result.Error)
 }
@@ -81,8 +80,7 @@ func (service *UserService) FindByUserEmail(ctx context.Context, email string) (
 }
 
 func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) (*model.User, *pgconn.PgError) {
-	user := model.User{}
-	user.Id = userId
+	user := model.User{Base: model.Base{Id: userId}}
 	result := service.db.First(&user)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
@@ -103,8 +101,6 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 		return false, err
 	}
 }
-
-// ============== Service Helper Method(s) ================
 
 func (service *UserService) CreateToken(c *gin.Context, user *model.User) (string, error) {
 	atClaims := jwt.MapClaims{}
