@@ -59,7 +59,7 @@ func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) 
 	// Generate a small id
 	newSmallId, err := service.FindAvailableSmallId(sensor.ThingId, ctx)
 	if err != nil {
-		return utils.GetPostgresError(err) // Check if this works
+		return utils.GetPostgresError(err)
 	}
 
 	// Create the sensor
