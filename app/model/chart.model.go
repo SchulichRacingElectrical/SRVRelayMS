@@ -48,6 +48,25 @@ func (c *Chart) AfterFind(db *gorm.DB) (err error) {
 	return nil
 }
 
+func (c *Chart) BeforeDelete(db *gorm.DB) (err error) {
+	// Find all of the associated charts to the preset
+	var allCharts []*Chart
+	result := db.Table(TableNameChart).Where("chartpreset_id = ?", c.ChartPresetId).Find(&allCharts)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Delete the preset if the only chart remaining is c
+	if len(allCharts) == 1 {
+		chartPreset := ChartPreset{Base: Base{Id: c.ChartPresetId}}
+		result := db.Delete(&chartPreset)
+		if result.Error != nil {
+			return result.Error
+		}
+	}
+	return nil
+}
+
 func InsertChartSensors(c *Chart, db *gorm.DB) (err error) {
 	// Generate the new list of chart-sensors
 	chartSensors := []ChartSensor{}
