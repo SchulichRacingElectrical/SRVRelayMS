@@ -81,15 +81,23 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			userID, err := uuid.FromBytes([]byte(fmt.Sprintf("%s", claims["userId"])))
-			user, err := userService.FindByUserId(context.TODO(), userID)
+			userId, err := uuid.Parse(fmt.Sprintf("%s", claims["userId"]))
+			print(fmt.Sprintf("%s", claims["userId"]))
 			if err != nil {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 				ctx.Abort()
 				return
 			}
-			organization, err := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId)
-			if err != nil {
+
+			user, perr := userService.FindByUserId(context.TODO(), userId)
+			if perr != nil {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+				ctx.Abort()
+				return
+			}
+
+			organization, perr := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId)
+			if perr != nil {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 				ctx.Abort()
 				return
