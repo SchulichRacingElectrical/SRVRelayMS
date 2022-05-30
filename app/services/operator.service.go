@@ -45,6 +45,11 @@ func (service *OperatorService) Create(ctx context.Context, operator *model.Oper
 			})
 		}
 
+		// Insert empty thingIds
+		if len(operator.ThingIds) == 0 {
+			operator.ThingIds = []uuid.UUID{}
+		}
+
 		// Batch insert thing operators
 		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
 		return result.Error
@@ -117,6 +122,11 @@ func (service *OperatorService) Update(ctx context.Context, updatedOperator *mod
 				OperatorId: updatedOperator.Id,
 				ThingId:    thingId,
 			})
+		}
+
+		// Insert empty thingIds
+		if len(updatedOperator.ThingIds) == 0 {
+			updatedOperator.ThingIds = []uuid.UUID{}
 		}
 
 		// Batch insert thing-operators
