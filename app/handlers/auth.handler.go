@@ -29,15 +29,15 @@ func (handler *AuthHandler) SignUp(ctx *gin.Context) {
 	}
 
 	// Ensure the organization exists
-	_, err = handler.organizationService.FindByOrganizationId(ctx, newUser.OrganizationId)
-	if err != nil {
+	_, perr := handler.organizationService.FindByOrganizationId(ctx, newUser.OrganizationId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
 
 	// Attempt to get all the users
-	users, err := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), newUser.OrganizationId)
-	if err != nil {
+	users, perr := handler.service.FindUsersByOrganizationId(ctx.Request.Context(), newUser.OrganizationId)
+	if perr != nil {
 		result := utils.SuccessPayload("", "Invalid Organization.")
 		utils.Response(ctx, http.StatusBadRequest, result)
 		return
@@ -52,7 +52,7 @@ func (handler *AuthHandler) SignUp(ctx *gin.Context) {
 	newUser.Password = handler.service.HashPassword(newUser.Password)
 
 	// Attempt to create the user
-	perr := handler.service.Create(ctx.Request.Context(), &newUser)
+	perr = handler.service.Create(ctx.Request.Context(), &newUser)
 	if perr != nil {
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.UserConflict))
@@ -78,8 +78,8 @@ func (handler *AuthHandler) Login(ctx *gin.Context) {
 	}
 
 	// Check if the user exists
-	DBuser, err := handler.service.FindByUserEmail(ctx.Request.Context(), loggingInUser.Email)
-	if err != nil {
+	DBuser, perr := handler.service.FindByUserEmail(ctx.Request.Context(), loggingInUser.Email)
+	if perr != nil {
 		result := utils.NewHTTPError(utils.UserNotFound)
 		utils.Response(ctx, http.StatusBadRequest, result)
 		return
