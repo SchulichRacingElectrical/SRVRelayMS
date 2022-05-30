@@ -133,7 +133,7 @@ func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPreset
 	var preset *model.RawDataPreset
 	result := service.db.Where("id = ?", rawDataPresetId).First(&preset)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return preset, nil
 }

@@ -138,7 +138,7 @@ func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*
 	var thing *model.Thing
 	result := service.db.Where("id = ?", thingId).First(&thing)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return thing, nil
 }

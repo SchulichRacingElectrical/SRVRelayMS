@@ -74,7 +74,7 @@ func (service *UserService) FindByUserEmail(ctx context.Context, email string) (
 	var user *model.User
 	result := service.db.Where("email = ?", email).First(&user)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return user, nil
 }
@@ -83,7 +83,7 @@ func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) 
 	user := model.User{Base: model.Base{Id: userId}}
 	result := service.db.First(&user)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return &user, nil
 }

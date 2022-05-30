@@ -92,7 +92,7 @@ func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.
 	var sensor *model.Sensor
 	result := service.db.Where("id = ?", sensorId).First(&sensor)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return sensor, nil
 }

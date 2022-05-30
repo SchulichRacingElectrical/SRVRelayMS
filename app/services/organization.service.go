@@ -5,7 +5,6 @@ import (
 	"database-ms/app/model"
 	"database-ms/config"
 	"database-ms/utils"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -42,7 +41,7 @@ func (service *OrganizationService) FindByOrganizationId(ctx context.Context, or
 	organization.Id = organizationId
 	result := service.db.First(&organization)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return &organization, nil
 }
@@ -51,7 +50,7 @@ func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([
 	var organizations []*model.Organization
 	result := service.db.Find(&organizations)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return organizations, nil
 }
@@ -60,9 +59,7 @@ func (service *OrganizationService) Create(ctx context.Context, organization *mo
 	organization.APIKey = uuid.NewString()
 	result := service.db.Create(&organization)
 	if result.Error != nil {
-		var perr *pgconn.PgError
-		errors.As(result.Error, &perr)
-		return nil, perr
+		return nil, utils.GetPostgresError(result.Error)
 	}
 	return nil, nil
 }
@@ -77,9 +74,9 @@ func (service *OrganizationService) UpdateKey(ctx context.Context, organization 
 }
 
 func (service *OrganizationService) Update(ctx context.Context, updatedOrganization *model.Organization) *pgconn.PgError {
-	prev, err := service.FindByOrganizationId(ctx, updatedOrganization.Id)
-	if err != nil {
-		return utils.GetPostgresError(err)
+	prev, perr := service.FindByOrganizationId(ctx, updatedOrganization.Id)
+	if perr != nil {
+		return perr
 	}
 	updatedOrganization.APIKey = prev.APIKey
 	result := service.db.Updates(&updatedOrganization)
@@ -106,7 +103,7 @@ func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context
 	organization.APIKey = APIKey
 	result := service.db.First(&organization)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return &organization, nil
 }
