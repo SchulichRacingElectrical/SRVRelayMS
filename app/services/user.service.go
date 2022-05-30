@@ -91,7 +91,6 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 				return false, nil
 			}
 		}
-		print("here")
 		return true, nil
 	} else {
 		return false, err

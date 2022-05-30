@@ -64,7 +64,7 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 		// Get the ids of the relationship with operator
 		var thingOperators []*model.ThingOperator
 		for _, thing := range things {
-			result = db.Table(model.TableNameThingOperator).Where("thing_id = ?", thing).Find(&thingOperators)
+			result = db.Table(model.TableNameThingOperator).Where("thing_id = ?", thing.Id).Find(&thingOperators)
 			if result.Error != nil {
 				return result.Error
 			}
@@ -101,7 +101,7 @@ func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*
 func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
 		// Save the updated thing
-		db.Save(updatedThing)
+		db.Updates(updatedThing)
 
 		// Delete all of the associated thing-operators
 		result := db.Table(model.TableNameThingOperator).Where("thing_id = ?", updatedThing.Id).Delete(&model.ThingOperator{})

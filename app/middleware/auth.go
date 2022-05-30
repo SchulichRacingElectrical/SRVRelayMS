@@ -82,7 +82,6 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 			userId, err := uuid.Parse(fmt.Sprintf("%s", claims["userId"]))
-			print(fmt.Sprintf("%s", claims["userId"]))
 			if err != nil {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 				ctx.Abort()

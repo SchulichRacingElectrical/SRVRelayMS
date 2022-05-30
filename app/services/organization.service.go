@@ -39,7 +39,6 @@ func (service *OrganizationService) FindByOrganizationId(ctx context.Context, or
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}
-	print(organization.APIKey)
 	return &organization, nil
 }
 

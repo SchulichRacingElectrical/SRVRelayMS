@@ -35,6 +35,8 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	}
 
 	// Attempt to create the thing
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	newThing.OrganizationId = organization.Id
 	perr := handler.service.Create(ctx.Request.Context(), &newThing)
 	if perr != nil {
 		if perr.Code == "23505" {
@@ -53,8 +55,8 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 func (handler *ThingHandler) GetThings(ctx *gin.Context) {
 	// Attempt to fetch the things
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	things, err := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.Id)
-	if err != nil {
+	things, perr := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.Id)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingsNotFound))
 		return
 	}
@@ -69,6 +71,7 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	var updatedThing model.Thing
 	err := ctx.BindJSON(&updatedThing)
 	if err != nil {
+		println(err.Error())
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
@@ -81,8 +84,8 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 
 	// Attempt to find the thing we are updated
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.service.FindById(ctx, updatedThing.Id)
-	if err != nil {
+	thing, perr := handler.service.FindById(ctx, updatedThing.Id)
+	if perr != nil {
 		utils.Response(ctx, http.StatusNotFound, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
@@ -95,7 +98,7 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 
 	// Attempt to update the thing
 	updatedThing.OrganizationId = organization.Id
-	perr := handler.service.Update(ctx.Request.Context(), &updatedThing)
+	perr = handler.service.Update(ctx.Request.Context(), &updatedThing)
 	if perr != nil {
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusConflict, "") // TODO, create error enum
@@ -126,8 +129,8 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 
 	// Attempt to find the thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.service.FindById(ctx, thingIdToDelete)
-	if err != nil {
+	thing, perr := handler.service.FindById(ctx, thingIdToDelete)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
@@ -139,8 +142,8 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 	}
 
 	// Attempt to delete the thing
-	err = handler.service.Delete(ctx.Request.Context(), thingIdToDelete)
-	if err != nil {
+	perr = handler.service.Delete(ctx.Request.Context(), thingIdToDelete)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return
 	}
