@@ -58,7 +58,7 @@ func (handler *UserHandler) UpdateUser(ctx *gin.Context) {
 	// Don't allow users to change their role
 	updatedUser.Role = user.Role
 
-	// Guard against a user updated another user's information
+	// Guard against a user updating another user's information
 	if user.Id != updatedUser.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InternalError))
 		return
@@ -88,7 +88,7 @@ func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-lead+ requestors
+	// Guard against non-lead+ requests
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))

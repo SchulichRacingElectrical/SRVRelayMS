@@ -44,10 +44,13 @@ func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 	}
 
 	// Ensure the preset is valid
-	err = handler.service.Create(ctx.Request.Context(), &newChartPreset)
-	if err != nil {
-		// TODO: handle error codes
-		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
+	perr := handler.service.Create(ctx.Request.Context(), &newChartPreset)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotUnique))
+		} else {
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, perr.Error()))
+		}
 		return
 	}
 
@@ -66,8 +69,8 @@ func (handler *ChartPresetHandler) GetChartPresets(ctx *gin.Context) {
 
 	// Attempt to find the associated thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, thingId)
-	if err != nil {
+	thing, perr := handler.thingService.FindById(ctx, thingId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
@@ -79,9 +82,9 @@ func (handler *ChartPresetHandler) GetChartPresets(ctx *gin.Context) {
 	}
 
 	// Attempt to read the presets
-	chartPresets, err := handler.service.FindByThingId(ctx.Request.Context(), thingId)
-	if err != nil {
-		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
+	chartPresets, perr := handler.service.FindByThingId(ctx.Request.Context(), thingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, perr.Error()))
 		return
 	}
 
@@ -101,8 +104,8 @@ func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 
 	// Attempt to find the associated thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, updatedChartPreset.ThingId)
-	if err != nil {
+	thing, perr := handler.thingService.FindById(ctx, updatedChartPreset.ThingId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
@@ -114,9 +117,13 @@ func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 	}
 
 	// Attempt to update the preset
-	err = handler.service.Update(ctx, &updatedChartPreset)
-	if err != nil {
-		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
+	perr = handler.service.Update(ctx, &updatedChartPreset)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotUnique))
+		} else {
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, perr.Error()))
+		}
 	}
 
 	// Send the response
@@ -134,15 +141,15 @@ func (handler *ChartPresetHandler) DeleteChartPreset(ctx *gin.Context) {
 
 	// Attempt to find the existing chart prest
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	chartPreset, err := handler.service.FindById(ctx, chartPresetId)
-	if err != nil {
+	chartPreset, perr := handler.service.FindById(ctx, chartPresetId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotFound))
 		return
 	}
 
 	// Attempt to find the associated thing
-	thing, err := handler.thingService.FindById(ctx, chartPreset.ThingId)
-	if err != nil {
+	thing, perr := handler.thingService.FindById(ctx, chartPreset.ThingId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
@@ -154,9 +161,9 @@ func (handler *ChartPresetHandler) DeleteChartPreset(ctx *gin.Context) {
 	}
 
 	// Attempt to delete the chart preset
-	err = handler.service.Delete(ctx, chartPresetId)
-	if err != nil {
-		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
+	perr = handler.service.Delete(ctx, chartPresetId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, perr.Error()))
 		return
 	}
 

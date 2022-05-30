@@ -34,6 +34,7 @@ func (*Sensor) TableName() string {
 	return TableNameSensor
 }
 
+// Move this to the chart-sensor and rawdatapreset-sensor models
 func (s *Sensor) BeforeDelete(db *gorm.DB) error {
 	// Find the raw data ids associated with the sensor
 	var presetSensors []*RawDataPresetSensor
