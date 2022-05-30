@@ -182,8 +182,8 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 		}
 
 		// Attempt to find the user
-		user, err := handler.service.FindByUserId(ctx, userIdToDelete)
-		if err != nil {
+		user, perr := handler.service.FindByUserId(ctx, userIdToDelete)
+		if perr != nil {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 			return
 		}
@@ -206,8 +206,8 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	}
 
 	// Attempt to find the user
-	user, err = handler.service.FindByUserId(ctx, userIdToDelete)
-	if err != nil {
+	user, perr := handler.service.FindByUserId(ctx, userIdToDelete)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
@@ -224,7 +224,7 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
 		return
 	}
-	if !last {
+	if last {
 		utils.Response(ctx, http.StatusForbidden, utils.NewHTTPError(utils.UserLastAdmin))
 		return
 	}
