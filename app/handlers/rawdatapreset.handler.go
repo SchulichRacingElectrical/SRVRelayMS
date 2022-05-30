@@ -47,7 +47,7 @@ func (handler *RawDataPresetHandler) CreateRawDataPreset(ctx *gin.Context) {
 	perr = handler.service.Create(ctx.Request.Context(), &newRawDataPreset)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.RawDataPresetNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
@@ -120,7 +120,7 @@ func (handler *RawDataPresetHandler) UpdateRawDataPreset(ctx *gin.Context) {
 	perr = handler.service.Update(ctx.Request.Context(), &updatedRawDataPreset)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.RawDataPresetNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
