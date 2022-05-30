@@ -17,12 +17,15 @@ import (
 )
 
 type UserServiceInterface interface {
+	// Public
 	FindUsersByOrganizationId(context.Context, uuid.UUID) ([]*model.User, *pgconn.PgError)
-	FindByUserEmail(context.Context, string) (*model.User, *pgconn.PgError)
-	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
 	Create(context.Context, *model.User) *pgconn.PgError
 	Update(context.Context, *model.User) *pgconn.PgError
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Private
+	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
+	FindByUserEmail(context.Context, string) (*model.User, *pgconn.PgError)
 	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
 	HashPassword(string) string
@@ -38,6 +41,8 @@ func NewUserService(db *gorm.DB, c *config.Configuration) UserServiceInterface {
 	return &UserService{config: c, db: db}
 }
 
+// PUBLIC FUNCTIONS
+
 func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.User, *pgconn.PgError) {
 	var users []*model.User
 	result := service.db.Where("organization_id = ?", organizationId).Find(&users)
@@ -46,6 +51,25 @@ func (service *UserService) FindUsersByOrganizationId(ctx context.Context, organ
 	}
 	return users, nil
 }
+
+func (service *UserService) Create(ctx context.Context, user *model.User) *pgconn.PgError {
+	result := service.db.Create(&user)
+	return utils.GetPostgresError(result.Error)
+}
+
+func (service *UserService) Update(ctx context.Context, user *model.User) *pgconn.PgError {
+	result := service.db.Updates(&user)
+	return utils.GetPostgresError(result.Error)
+}
+
+func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) *pgconn.PgError {
+	user := model.User{}
+	user.Id = userId
+	result := service.db.Delete(&user)
+	return utils.GetPostgresError(result.Error)
+}
+
+// PRIVATE FUNCTIONS
 
 func (service *UserService) FindByUserEmail(ctx context.Context, email string) (*model.User, *pgconn.PgError) {
 	var user *model.User
@@ -64,23 +88,6 @@ func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) 
 		return nil, utils.GetPostgresError(result.Error)
 	}
 	return &user, nil
-}
-
-func (service *UserService) Create(ctx context.Context, user *model.User) *pgconn.PgError {
-	result := service.db.Create(&user)
-	return utils.GetPostgresError(result.Error)
-}
-
-func (service *UserService) Update(ctx context.Context, user *model.User) *pgconn.PgError {
-	result := service.db.Updates(&user)
-	return utils.GetPostgresError(result.Error)
-}
-
-func (service *UserService) Delete(ctx context.Context, userId uuid.UUID) *pgconn.PgError {
-	user := model.User{}
-	user.Id = userId
-	result := service.db.Delete(&user)
-	return utils.GetPostgresError(result.Error)
 }
 
 func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (bool, error) {

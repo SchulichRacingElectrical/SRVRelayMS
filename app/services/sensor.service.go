@@ -12,12 +12,16 @@ import (
 )
 
 type SensorServiceInterface interface {
-	Create(context.Context, *model.Sensor) *pgconn.PgError
+	// Public
 	FindByThingId(context.Context, uuid.UUID) ([]*model.Sensor, *pgconn.PgError)
-	FindBySensorId(context.Context, uuid.UUID) (*model.Sensor, *pgconn.PgError)
 	FindUpdatedSensors(context.Context, uuid.UUID, int64) ([]*model.Sensor, *pgconn.PgError)
+	Create(context.Context, *model.Sensor) *pgconn.PgError
 	Update(context.Context, *model.Sensor) *pgconn.PgError
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Private
+	FindBySensorId(context.Context, uuid.UUID) (*model.Sensor, *pgconn.PgError)
+	FindAvailableSmallId(uuid.UUID, context.Context) (int, error)
 }
 
 type SensorService struct {
@@ -27,6 +31,26 @@ type SensorService struct {
 
 func NewSensorService(db *gorm.DB, c *config.Configuration) SensorServiceInterface {
 	return &SensorService{config: c, db: db}
+}
+
+// PUBLIC FUNCTIONS
+
+func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Sensor, *pgconn.PgError) {
+	var sensors []*model.Sensor
+	result := service.db.Where("thing_id = ?", thingId).Find(&sensors)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return sensors, nil
+}
+
+func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) ([]*model.Sensor, *pgconn.PgError) {
+	var sensors []*model.Sensor
+	result := service.db.Where("thing_id = ? AND last_update > ?", thingId, lastUpdate).Find(&sensors)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return sensors, nil
 }
 
 func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) *pgconn.PgError {
@@ -41,33 +65,6 @@ func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) 
 	sensor.LastUpdate = utils.CurrentTimeInMilli()
 	result := service.db.Create(&sensor)
 	return utils.GetPostgresError(result.Error)
-}
-
-func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Sensor, *pgconn.PgError) {
-	var sensors []*model.Sensor
-	result := service.db.Where("thing_id = ?", thingId).Find(&sensors)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return sensors, nil
-}
-
-func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, *pgconn.PgError) {
-	var sensor *model.Sensor
-	result := service.db.Where("id = ?", sensorId).First(&sensor)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return sensor, nil
-}
-
-func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) ([]*model.Sensor, *pgconn.PgError) {
-	var sensors []*model.Sensor
-	result := service.db.Where("thing_id = ? AND last_update > ?", thingId, lastUpdate).Find(&sensors)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return sensors, nil
 }
 
 func (service *SensorService) Update(ctx context.Context, updatedSensor *model.Sensor) *pgconn.PgError {
@@ -87,7 +84,16 @@ func (service *SensorService) Delete(ctx context.Context, sensorId uuid.UUID) *p
 	return utils.GetPostgresError(result.Error)
 }
 
-// ============== Service Helper Method(s) ================
+// PRIVATE FUNCTIONS
+
+func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, *pgconn.PgError) {
+	var sensor *model.Sensor
+	result := service.db.Where("id = ?", sensorId).First(&sensor)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return sensor, nil
+}
 
 func (service *SensorService) FindAvailableSmallId(thingId uuid.UUID, ctx context.Context) (int, error) {
 	// opts := options.Find().SetProjection(bson.D{{"smallId", 1}, {"_id", 0}})

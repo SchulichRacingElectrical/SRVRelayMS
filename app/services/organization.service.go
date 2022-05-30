@@ -14,13 +14,16 @@ import (
 )
 
 type OrganizationServiceInterface interface {
+	// Public
 	FindByOrganizationId(context.Context, uuid.UUID) (*model.Organization, *pgconn.PgError)
-	FindByOrganizationApiKey(context.Context, string) (*model.Organization, *pgconn.PgError)
 	FindAllOrganizations(context.Context) ([]*model.Organization, *pgconn.PgError)
 	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError)
 	UpdateKey(context.Context, *model.Organization) *pgconn.PgError
 	Update(context.Context, *model.Organization) *pgconn.PgError
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Private
+	FindByOrganizationApiKey(context.Context, string) (*model.Organization, *pgconn.PgError)
 }
 
 type OrganizationService struct {
@@ -32,19 +35,11 @@ func NewOrganizationService(db *gorm.DB, c *config.Configuration) OrganizationSe
 	return &OrganizationService{config: c, db: db}
 }
 
+// PUBLIC FUNCTIONS
+
 func (service *OrganizationService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) (*model.Organization, *pgconn.PgError) {
 	organization := model.Organization{}
 	organization.Id = organizationId
-	result := service.db.First(&organization)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return &organization, nil
-}
-
-func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, APIKey string) (*model.Organization, *pgconn.PgError) {
-	organization := model.Organization{}
-	organization.APIKey = APIKey
 	result := service.db.First(&organization)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
@@ -102,4 +97,16 @@ func (service *OrganizationService) Delete(ctx context.Context, organizationId u
 		return utils.GetPostgresError(result.Error)
 	}
 	return nil
+}
+
+// PRIVATE FUNCTIONS
+
+func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, APIKey string) (*model.Organization, *pgconn.PgError) {
+	organization := model.Organization{}
+	organization.APIKey = APIKey
+	result := service.db.First(&organization)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return &organization, nil
 }

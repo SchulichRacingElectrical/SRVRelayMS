@@ -8,8 +8,8 @@ const TableNameThingOperator = "thing_operator"
 
 type ThingOperator struct {
 	Base
-	OperatorId uuid.UUID `gorm:"type:uuid;column:operator_id;not null" json:"operatorId"`
-	ThingId    uuid.UUID `gorm:"type:uuid;column:thing_id;not null" json:"thingId"`
+	OperatorId uuid.UUID `gorm:"type:uuid;column:operator_id;not null"`
+	ThingId    uuid.UUID `gorm:"type:uuid;column:thing_id;not null"`
 	Operator   Operator  `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 	Thing      Thing     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }

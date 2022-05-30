@@ -12,11 +12,14 @@ import (
 )
 
 type ThingServiceInterface interface {
-	Create(context.Context, *model.Thing) *pgconn.PgError
+	// Public
 	FindByOrganizationId(context.Context, uuid.UUID) ([]*model.Thing, *pgconn.PgError)
-	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, *pgconn.PgError)
+	Create(context.Context, *model.Thing) *pgconn.PgError
 	Update(context.Context, *model.Thing) *pgconn.PgError
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Private
+	FindById(ctx context.Context, thingID uuid.UUID) (*model.Thing, *pgconn.PgError)
 }
 
 type ThingService struct {
@@ -28,34 +31,7 @@ func NewThingService(db *gorm.DB, c *config.Configuration) ThingServiceInterface
 	return &ThingService{config: c, db: db}
 }
 
-func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pgconn.PgError {
-	err := service.db.Transaction(func(db *gorm.DB) error {
-		// Create the thing
-		result := db.Create(&thing)
-		if result.Error != nil {
-			return result.Error
-		}
-
-		// Generate the list of thing-operators
-		thingOperators := []model.ThingOperator{}
-		for _, operatorId := range thing.OperatorIds {
-			thingOperator := model.ThingOperator{}
-			thingOperator.ThingId = thing.Id
-			thingOperator.OperatorId = operatorId
-			thingOperators = append(thingOperators, thingOperator)
-		}
-
-		// Insert empty operatorIds
-		if len(thing.OperatorIds) == 0 {
-			thing.OperatorIds = []uuid.UUID{}
-		}
-
-		// Batch insert thing-operators
-		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
-		return result.Error
-	})
-	return utils.GetPostgresError(err)
-}
+// PUBLIC FUNCTIONS
 
 func (service *ThingService) FindByOrganizationId(ctx context.Context, organizationId uuid.UUID) ([]*model.Thing, *pgconn.PgError) {
 	var things []*model.Thing
@@ -86,22 +62,33 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 	return things, nil
 }
 
-// Internal function
-func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, *pgconn.PgError) {
-	var thing *model.Thing
+func (service *ThingService) Create(ctx context.Context, thing *model.Thing) *pgconn.PgError {
 	err := service.db.Transaction(func(db *gorm.DB) error {
-		// Get the thing with the given id
-		result := db.Where("id = ?", thingId).First(&thing)
+		// Create the thing
+		result := db.Create(&thing)
 		if result.Error != nil {
 			return result.Error
 		}
-		// Todo, get the operatorIds
+
+		// Generate the list of thing-operators
+		thingOperators := []model.ThingOperator{}
+		for _, operatorId := range thing.OperatorIds {
+			thingOperator := model.ThingOperator{}
+			thingOperator.ThingId = thing.Id
+			thingOperator.OperatorId = operatorId
+			thingOperators = append(thingOperators, thingOperator)
+		}
+
+		// Insert empty operatorIds
+		if len(thing.OperatorIds) == 0 {
+			thing.OperatorIds = []uuid.UUID{}
+		}
+
+		// Batch insert thing-operators
+		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
 		return result.Error
 	})
-	if err != nil {
-		return nil, utils.GetPostgresError(err)
-	}
-	return thing, nil
+	return utils.GetPostgresError(err)
 }
 
 func (service *ThingService) Update(ctx context.Context, updatedThing *model.Thing) *pgconn.PgError {
@@ -140,4 +127,23 @@ func (service *ThingService) Delete(ctx context.Context, thingId uuid.UUID) *pgc
 	thing := model.Thing{Base: model.Base{Id: thingId}}
 	result := service.db.Delete(&thing)
 	return utils.GetPostgresError(result.Error)
+}
+
+// PRIVATE FUNCTIONS
+
+func (service *ThingService) FindById(ctx context.Context, thingId uuid.UUID) (*model.Thing, *pgconn.PgError) {
+	var thing *model.Thing
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Get the thing with the given id
+		result := db.Where("id = ?", thingId).First(&thing)
+		if result.Error != nil {
+			return result.Error
+		}
+		// Todo, get the operatorIds
+		return result.Error
+	})
+	if err != nil {
+		return nil, utils.GetPostgresError(err)
+	}
+	return thing, nil
 }

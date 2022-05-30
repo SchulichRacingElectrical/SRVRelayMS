@@ -31,8 +31,8 @@ func (handler *RawDataPresetHandler) CreateRawDataPreset(ctx *gin.Context) {
 
 	// Attempt to find the associated thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, newRawDataPreset.ThingId)
-	if err != nil {
+	thing, perr := handler.thingService.FindById(ctx, newRawDataPreset.ThingId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
@@ -44,8 +44,8 @@ func (handler *RawDataPresetHandler) CreateRawDataPreset(ctx *gin.Context) {
 	}
 
 	// Attempt to create the preset
-	err = handler.service.Create(ctx.Request.Context(), &newRawDataPreset)
-	if err != nil {
+	perr = handler.service.Create(ctx.Request.Context(), &newRawDataPreset)
+	if perr != nil {
 		// handle error codes
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 		return
@@ -79,7 +79,7 @@ func (handler *RawDataPresetHandler) GetRawDataPresets(ctx *gin.Context) {
 	}
 
 	// Attempt to read the presets
-	rawDataPresets, err := handler.service.FindByThingId(ctx.Request.Context(), ctx.Param("thingId"))
+	rawDataPresets, err := handler.service.FindByThingId(ctx.Request.Context(), thingId)
 	if err != nil {
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 		return
@@ -116,6 +116,7 @@ func (handler *RawDataPresetHandler) UpdateRawDataPreset(ctx *gin.Context) {
 	// Attempt to update the preset
 	err = handler.service.Update(ctx.Request.Context(), &updatedRawDataPreset)
 	if err != nil {
+		// Check error codes
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, err.Error()))
 		return
 	}

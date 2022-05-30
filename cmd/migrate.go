@@ -54,6 +54,8 @@ func main() {
 		&model.ThingOperator{},
 		&model.Thing{},
 		&model.User{},
+		&model.RawDataPresetSensor{},
+		&model.ChartSensor{},
 	)
 
 	println("Finished migration.")

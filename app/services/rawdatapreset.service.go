@@ -4,19 +4,22 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
+	"database-ms/utils"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
 type RawDataPresetServiceInterface interface {
-	Create(context.Context, *model.RawDataPreset) error
-	FindByThingId(context.Context, string) ([]*model.RawDataPreset, error)
-	Update(context.Context, *model.RawDataPreset) error
-	Delete(context.Context, uuid.UUID) error
-	FindById(context.Context, uuid.UUID) (*model.RawDataPreset, error)
-	IsPresetUnique(context.Context, *model.RawDataPreset) bool
-	IsPresetValid(context.Context, *model.RawDataPreset) bool
+	// Public
+	FindByThingId(context.Context, uuid.UUID) ([]*model.RawDataPreset, *pgconn.PgError)
+	Create(context.Context, *model.RawDataPreset) *pgconn.PgError
+	Update(context.Context, *model.RawDataPreset) *pgconn.PgError
+	Delete(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Private
+	FindById(context.Context, uuid.UUID) (*model.RawDataPreset, *pgconn.PgError)
 }
 
 type RawDataPresetService struct {
@@ -28,25 +31,7 @@ func NewRawDataPresetService(db *gorm.DB, c *config.Configuration) RawDataPreset
 	return &RawDataPresetService{db: db, config: c}
 }
 
-func (service *RawDataPresetService) Create(ctx context.Context, rawDataPreset *model.RawDataPreset) error {
-	// Remove duplicate sensor Ids from the preset
-	// sensorIdMap := make(map[primitive.ObjectID]int)
-	// for _, sensorId := range rawDataPreset.SensorIds {
-	// 	sensorIdMap[sensorId] = 0
-	// }
-	// rawDataPreset.SensorIds = []primitive.ObjectID{}
-	// for id, _ := range sensorIdMap {
-	// 	rawDataPreset.SensorIds = append(rawDataPreset.SensorIds, id)
-	// }
-	// result, err := service.RawDataPresetCollection(ctx).InsertOne(ctx, rawDataPreset)
-	// if err == nil {
-	// 	rawDataPreset.ID = (result.InsertedID).(primitive.ObjectID)
-	// }
-	// return err
-	return nil
-}
-
-func (service *RawDataPresetService) FindByThingId(ctx context.Context, thingId string) ([]*model.RawDataPreset, error) {
+func (service *RawDataPresetService) FindByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.RawDataPreset, *pgconn.PgError) {
 	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
 	// if err != nil {
 	// 	return nil, err
@@ -63,7 +48,36 @@ func (service *RawDataPresetService) FindByThingId(ctx context.Context, thingId 
 	return nil, nil
 }
 
-func (service *RawDataPresetService) Update(ctx context.Context, updatedRawDataPreset *model.RawDataPreset) error {
+func (service *RawDataPresetService) Create(ctx context.Context, rawDataPreset *model.RawDataPreset) *pgconn.PgError {
+	err := service.db.Transaction(func(db *gorm.DB) error {
+		// Create the preset
+		result := db.Create(&rawDataPreset)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Generate the list of preset sensors
+		var rawDataPresetSensors []model.RawDataPresetSensor
+		for _, sensorId := range rawDataPreset.SensorIds {
+			rawDataPresetSensors = append(rawDataPresetSensors, model.RawDataPresetSensor{
+				RawDataPresetId: rawDataPreset.Id,
+				SensorId:        sensorId,
+			})
+		}
+
+		// Insert empty sensorIds
+		if len(rawDataPreset.SensorIds) == 0 {
+			rawDataPreset.SensorIds = []uuid.UUID{}
+		}
+
+		// Batch insert preset sensor
+		result = db.Table(model.TableNameRawdataPresetSensor).CreateInBatches(rawDataPresetSensors, 100)
+		return result.Error
+	})
+	return utils.GetPostgresError(err)
+}
+
+func (service *RawDataPresetService) Update(ctx context.Context, updatedRawDataPreset *model.RawDataPreset) *pgconn.PgError {
 	// Remove duplicate sensor Ids from the preset
 	// sensorIdMap := make(map[primitive.ObjectID]int)
 	// for _, sensorId := range updatedRawDataPreset.SensorIds {
@@ -78,7 +92,7 @@ func (service *RawDataPresetService) Update(ctx context.Context, updatedRawDataP
 	return nil
 }
 
-func (service *RawDataPresetService) Delete(ctx context.Context, rawDataPresetId uuid.UUID) error {
+func (service *RawDataPresetService) Delete(ctx context.Context, rawDataPresetId uuid.UUID) *pgconn.PgError {
 	// bsonRawDataPresetId, err := primitive.ObjectIDFromHex(rawDataPresetId)
 	// if err == nil {
 	// 	_, err := service.RawDataPresetCollection(ctx).DeleteOne(ctx, bson.M{"_id": bsonRawDataPresetId})
@@ -89,7 +103,8 @@ func (service *RawDataPresetService) Delete(ctx context.Context, rawDataPresetId
 	return nil
 }
 
-func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPresetId uuid.UUID) (*model.RawDataPreset, error) {
+// Internal function
+func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPresetId uuid.UUID) (*model.RawDataPreset, *pgconn.PgError) {
 	// bsonRawDataPresetId, err := primitive.ObjectIDFromHex(rawDataPresetId)
 	// if err != nil {
 	// 	return nil, err
@@ -100,26 +115,4 @@ func (service *RawDataPresetService) FindById(ctx context.Context, rawDataPreset
 	// }
 	// return &rawDataPreset, nil
 	return nil, nil
-}
-
-func (service *RawDataPresetService) IsPresetUnique(ctx context.Context, newRawDataPreset *model.RawDataPreset) bool {
-	// TODO: Do with FindOne query rather than fetching everything
-	// rawDataPresets, err := service.FindByThingId(ctx, newRawDataPreset.ThingId.Hex())
-	// if err == nil {
-	// 	for _, rawDataPreset := range rawDataPresets {
-	// 		if newRawDataPreset.Name == rawDataPreset.Name && newRawDataPreset.ID != rawDataPreset.ID {
-	// 			return false
-	// 		}
-	// 	}
-	// 	return true
-	// } else {
-	// 	return false
-	// }
-	return false
-}
-
-func (service *RawDataPresetService) IsPresetValid(ctx context.Context, rawDataPreset *model.RawDataPreset) bool {
-	// _, err := service.SensorCollection(ctx).Find(ctx, bson.M{"_id": bson.M{"$in": rawDataPreset.SensorIds }})
-	// return err == nil
-	return false
 }
