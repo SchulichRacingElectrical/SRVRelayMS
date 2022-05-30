@@ -17,7 +17,6 @@ type OperatorServiceInterface interface {
 	Update(context.Context, *model.Operator) error
 	Delete(context.Context, uuid.UUID) error
 	IsOperatorUnique(context.Context, *model.Operator) bool
-	AttachAssociatedThingIds(context.Context, *model.Operator)
 }
 
 type OperatorService struct {
@@ -102,7 +101,7 @@ func (service *OperatorService) Update(ctx context.Context, updatedOperator *mod
 			return result.Error
 		}
 
-		// Regenerate the list of thing operators
+		// Regenerate the list of thing-operators
 		var thingOperators []model.ThingOperator
 		for _, thingId := range updatedOperator.ThingIds {
 			thingOperators = append(thingOperators, model.ThingOperator{
@@ -111,7 +110,7 @@ func (service *OperatorService) Update(ctx context.Context, updatedOperator *mod
 			})
 		}
 
-		// Batch insert thing operators
+		// Batch insert thing-operators
 		result = db.Table(model.TableNameThingOperator).CreateInBatches(thingOperators, 100)
 		if result.Error != nil {
 			return result.Error
@@ -152,27 +151,4 @@ func (service *OperatorService) IsOperatorUnique(ctx context.Context, newOperato
 	} else {
 		return false
 	}
-}
-
-func (service *OperatorService) AttachAssociatedThingIds(ctx context.Context, operator *model.Operator) {
-	// operator.ThingIds = []primitive.ObjectID{}
-	// var thingOperators []*model.ThingOperator
-	// dbClient, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return
-	// }
-	// thingOperatorCollection := dbClient.Database(service.config.MongoDbName).Collection("ThingOperator")
-	// cursor, err := thingOperatorCollection.Find(ctx, bson.M{"operatorId": operator.ID})
-	// if err = cursor.All(ctx, &thingOperators); err != nil {
-	// 	return
-	// }
-	// var thingIds []primitive.ObjectID
-	// for _, thingOperator := range thingOperators {
-	// 	thingIds = append(thingIds, thingOperator.ThingId)
-	// }
-	// if len(thingIds) == 0 {
-	// 	operator.ThingIds = []primitive.ObjectID{}
-	// } else {
-	// 	operator.ThingIds = thingIds
-	// }
 }

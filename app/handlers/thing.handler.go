@@ -94,6 +94,7 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	}
 
 	// Attempt to update the thing
+	updatedThing.OrganizationId = organization.Id
 	err = handler.service.Update(ctx.Request.Context(), &updatedThing)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
@@ -106,10 +107,10 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 }
 
 func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
-	// Attempt to read from the params
-	thingIdToDelete, err := uuid.FromBytes([]byte(ctx.Param("thingId")))
+	// Attempt to parse the query param
+	thingIdToDelete, err := uuid.Parse(ctx.Param("thingId"))
 	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
 
@@ -123,7 +124,7 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, err := handler.service.FindById(ctx, thingIdToDelete)
 	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
 
