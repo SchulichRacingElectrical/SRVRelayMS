@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 const TableNameSensor = "sensor"
@@ -31,4 +32,9 @@ type Sensor struct {
 
 func (*Sensor) TableName() string {
 	return TableNameSensor
+}
+
+func (s *Sensor) AfterDelete(db *gorm.DB) error {
+	// TODO: Delete presets if they do not have any sensors remaining
+	return nil
 }

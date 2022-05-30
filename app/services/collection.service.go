@@ -5,15 +5,19 @@ import (
 	"database-ms/config"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"golang.org/x/net/context"
 )
 
 type CollectionServiceInterface interface {
-	CreateCollection(context.Context, *model.Collection) error
-	FindById(context.Context, uuid.UUID) (*model.Collection, error)
-	GetCollectionsByThingId(context.Context, uuid.UUID) ([]*model.Collection, error)
-	UpdateCollection(context.Context, *model.Collection) error
-	DeleteCollection(context.Context, uuid.UUID) error
+	// Public
+	GetCollectionsByThingId(context.Context, uuid.UUID) ([]*model.Collection, *pgconn.PgError)
+	CreateCollection(context.Context, *model.Collection) *pgconn.PgError
+	UpdateCollection(context.Context, *model.Collection) *pgconn.PgError
+	DeleteCollection(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Private
+	FindById(context.Context, uuid.UUID) (*model.Collection, *pgconn.PgError)
 }
 
 type CollectionService struct {
@@ -24,51 +28,10 @@ func NewCollectionService(c *config.Configuration) CollectionServiceInterface {
 	return &CollectionService{config: c}
 }
 
-func (service *CollectionService) CreateCollection(ctx context.Context, session *model.Collection) error {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
+// PUBLIC FUNCTIONS
 
-	// session.ID = primitive.NewObjectID()
-	// // Check if Thing exists
-	// res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": session.ThingID})
-	// if res.Err() == mongo.ErrNoDocuments {
-	// 	return primitive.NilObjectID, errors.New("thing does not exist")
-	// }
+func (service *CollectionService) GetCollectionsByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Collection, *pgconn.PgError) {
 
-	// result, err := database.Collection("Session").InsertOne(ctx, session)
-	// if err != nil {
-	// 	return primitive.NilObjectID, err
-	// }
-	// return result.InsertedID.(primitive.ObjectID), err
-	return nil
-}
-
-func (service *CollectionService) FindById(ctx context.Context, sessionId uuid.UUID) (*model.Collection, error) {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// var session models.Session
-	// bsonSessionId, err := primitive.ObjectIDFromHex(sessionId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// err = database.Collection("Session").FindOne(ctx, bson.M{"_id": bsonSessionId}).Decode(&session)
-	// if err == nil {
-	// 	return nil, err
-	// }
-
-	// return &session, err
-	return nil, nil
-}
-
-func (service *CollectionService) GetCollectionsByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Collection, error) {
 	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
 	// if err != nil {
 	// 	panic(err)
@@ -94,7 +57,29 @@ func (service *CollectionService) GetCollectionsByThingId(ctx context.Context, t
 	return nil, nil
 }
 
-func (service *CollectionService) UpdateCollection(ctx context.Context, updatedSession *model.Collection) error {
+func (service *CollectionService) CreateCollection(ctx context.Context, session *model.Collection) *pgconn.PgError {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
+
+	// session.ID = primitive.NewObjectID()
+	// // Check if Thing exists
+	// res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": session.ThingID})
+	// if res.Err() == mongo.ErrNoDocuments {
+	// 	return primitive.NilObjectID, errors.New("thing does not exist")
+	// }
+
+	// result, err := database.Collection("Session").InsertOne(ctx, session)
+	// if err != nil {
+	// 	return primitive.NilObjectID, err
+	// }
+	// return result.InsertedID.(primitive.ObjectID), err
+	return nil
+}
+
+func (service *CollectionService) UpdateCollection(ctx context.Context, updatedSession *model.Collection) *pgconn.PgError {
 	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
 	// if err != nil {
 	// 	panic(err)
@@ -118,7 +103,7 @@ func (service *CollectionService) UpdateCollection(ctx context.Context, updatedS
 	return nil
 }
 
-func (service *CollectionService) DeleteCollection(ctx context.Context, sessionId uuid.UUID) error {
+func (service *CollectionService) DeleteCollection(ctx context.Context, sessionId uuid.UUID) *pgconn.PgError {
 	// bsonSessionId, err := primitive.ObjectIDFromHex(sessionId)
 	// if err != nil {
 	// 	return err
@@ -154,4 +139,28 @@ func (service *CollectionService) DeleteCollection(ctx context.Context, sessionI
 	// _, err = databases.WithTransaction(client, ctx, callback)
 	// return err
 	return nil
+}
+
+// PRIVATE FUNCTIONS
+
+func (service *CollectionService) FindById(ctx context.Context, sessionId uuid.UUID) (*model.Collection, *pgconn.PgError) {
+	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer database.Client().Disconnect(ctx)
+
+	// var session models.Session
+	// bsonSessionId, err := primitive.ObjectIDFromHex(sessionId)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// err = database.Collection("Session").FindOne(ctx, bson.M{"_id": bsonSessionId}).Decode(&session)
+	// if err == nil {
+	// 	return nil, err
+	// }
+
+	// return &session, err
+	return nil, nil
 }
