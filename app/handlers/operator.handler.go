@@ -28,10 +28,6 @@ func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 		return
 	}
 
-	// Set the organization ID of the operator
-	organization, _ := middleware.GetOrganizationClaim(ctx)
-	newOperator.OrganizationId = organization.Id
-
 	// Guard against non-admin users
 	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
@@ -39,6 +35,8 @@ func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 	}
 
 	// Attempt to create the operator
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	newOperator.OrganizationId = organization.Id
 	perr := handler.service.Create(ctx.Request.Context(), &newOperator)
 	if perr != nil {
 		if perr.Code == "23505" {
@@ -57,8 +55,8 @@ func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 func (handler *OperatorHandler) GetOperators(ctx *gin.Context) {
 	// Attempt to get the operators
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	operators, err := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.Id)
-	if err != nil {
+	operators, perr := handler.service.FindByOrganizationId(ctx.Request.Context(), organization.Id)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
@@ -85,8 +83,8 @@ func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 
 	// Attempt to find the existing operator
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	operator, err := handler.service.FindById(ctx, updatedOperator.Id)
-	if err != nil {
+	operator, perr := handler.service.FindById(ctx, updatedOperator.Id)
+	if perr != nil {
 		utils.Response(ctx, http.StatusNotFound, utils.NewHTTPError(utils.OperatorNotFound))
 		return
 	}
@@ -99,7 +97,7 @@ func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 
 	// Attempt to update the operator
 	updatedOperator.OrganizationId = organization.Id
-	perr := handler.service.Update(ctx.Request.Context(), &updatedOperator)
+	perr = handler.service.Update(ctx.Request.Context(), &updatedOperator)
 	if perr != nil {
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OperatorNotUnique))
@@ -130,8 +128,8 @@ func (handler *OperatorHandler) DeleteOperator(ctx *gin.Context) {
 	}
 
 	// Attempt to find the operator to delete
-	operator, err := handler.service.FindById(ctx, operatorIdToDelete)
-	if err != nil {
+	operator, perr := handler.service.FindById(ctx, operatorIdToDelete)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
@@ -143,8 +141,8 @@ func (handler *OperatorHandler) DeleteOperator(ctx *gin.Context) {
 	}
 
 	// Attempt to delete the operator
-	err = handler.service.Delete(ctx.Request.Context(), operator.Id)
-	if err != nil {
+	perr = handler.service.Delete(ctx.Request.Context(), operator.Id)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}

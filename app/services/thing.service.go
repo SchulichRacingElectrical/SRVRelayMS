@@ -64,6 +64,7 @@ func (service *ThingService) FindByOrganizationId(ctx context.Context, organizat
 		// Get the ids of the relationship with operator
 		var thingOperators []*model.ThingOperator
 		for _, thing := range things {
+			thing.OperatorIds = []uuid.UUID{}
 			result = db.Table(model.TableNameThingOperator).Where("thing_id = ?", thing.Id).Find(&thingOperators)
 			if result.Error != nil {
 				return result.Error
