@@ -96,8 +96,8 @@ func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
 	}
 
 	// Attempt to find the existing user
-	user, err := handler.service.FindByUserId(ctx, updatedUser.Id)
-	if err != nil {
+	user, perr := handler.service.FindByUserId(ctx, updatedUser.Id)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
@@ -122,8 +122,8 @@ func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
 
 	// Attempt to update the user's role
 	user.Role = updatedUser.Role
-	err = handler.service.Update(ctx, user)
-	if err != nil {
+	perr = handler.service.Update(ctx, user)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		return
 	}
