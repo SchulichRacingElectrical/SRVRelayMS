@@ -8,7 +8,7 @@ const TableNameSensor = "sensor"
 
 type Sensor struct {
 	Base
-	SmallId              int32     `gorm:"column:small_id;not null;uniqueIndex:unique_sensor_smallid_in_thing" json:"smallId"`
+	SmallId              int       `gorm:"column:small_id;not null;uniqueIndex:unique_sensor_smallid_in_thing" json:"smallId"`
 	Type                 string    `gorm:"type:varchar(1);column:type;not null" json:"type"`
 	LastUpdate           int64     `gorm:"column:last_update;not null" json:"lastUpdate"`
 	Name                 string    `gorm:"column:name;not null;uniqueIndex:unique_sensor_name_in_thing" json:"name"`

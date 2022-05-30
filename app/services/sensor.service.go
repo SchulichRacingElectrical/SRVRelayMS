@@ -5,6 +5,8 @@ import (
 	"database-ms/app/model"
 	"database-ms/config"
 	"database-ms/utils"
+	"errors"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -61,7 +63,7 @@ func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) 
 	}
 
 	// Create the sensor
-	sensor.SmallId = int32(newSmallId)
+	sensor.SmallId = newSmallId
 	sensor.LastUpdate = utils.CurrentTimeInMilli()
 	result := service.db.Create(&sensor)
 	return utils.GetPostgresError(result.Error)
@@ -96,40 +98,30 @@ func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.
 }
 
 func (service *SensorService) FindAvailableSmallId(thingId uuid.UUID, ctx context.Context) (int, error) {
-	// opts := options.Find().SetProjection(bson.D{{"smallId", 1}, {"_id", 0}})
-	// filterCursor, err := service.SensorCollection(ctx).Find(ctx, bson.D{{"thingId", thingId}}, opts)
-	// if err != nil {
-	// 	return -1, err
-	// }
+	sensors, perr := service.FindByThingId(ctx, thingId)
+	if perr != nil {
+		return 0, errors.New("no available smallIds")
+	}
 
-	// type SmallId struct {
-	// 	SmallId int
-	// }
-	// var results []SmallId
-	// if err = filterCursor.All(ctx, &results); err != nil {
-	// 	return -1, err
-	// }
+	var smallIds []int
+	for _, sensor := range sensors {
+		smallIds = append(smallIds, sensor.SmallId)
+	}
 
-	// var smallIds []int
-	// for _, record := range results {
-	// 	smallIds = append(smallIds, record.SmallId)
-	// }
+	smallIds = utils.Unique(smallIds)
+	sort.Ints(smallIds)
 
-	// smallIds = utils.Unique(smallIds)
-	// sort.Ints(smallIds)
+	availableSmallId := 0
+	for _, smallId := range smallIds {
+		if smallId != availableSmallId {
+			break
+		}
+		availableSmallId++
+	}
 
-	// availableSmallId := 0
-	// for _, smallId := range smallIds {
-	// 	if smallId != availableSmallId {
-	// 		break
-	// 	}
-	// 	availableSmallId++
-	// }
-
-	// if availableSmallId < 256 {
-	// 	return availableSmallId, nil
-	// } else {
-	// 	return 0, errors.New("no available smallIds")
-	// }
-	return 0, nil
+	if availableSmallId < 256 {
+		return availableSmallId, nil
+	} else {
+		return 0, errors.New("no available smallIds")
+	}
 }
