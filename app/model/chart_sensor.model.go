@@ -1,6 +1,9 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
 
 const TableNameChartSensor = "chart_sensor"
 
@@ -14,4 +17,23 @@ type ChartSensor struct {
 
 func (*ChartSensor) TableName() string {
 	return TableNameChartSensor
+}
+
+func (cs *ChartSensor) BeforeDelete(db *gorm.DB) (err error) {
+	// Find all the other sensors attached to the chart
+	var chartSensors []*ChartSensor
+	result := db.Table(TableNameChartSensor).Where("chart_id = ?", cs.ChartId).Find(&chartSensors)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Delete the chart if this is the last sensor attached to it
+	if len(chartSensors) == 1 {
+		chart := Chart{Base: Base{Id: cs.ChartId}}
+		result := db.Delete(&chart)
+		if result.Error != nil {
+			return result.Error
+		}
+	}
+	return nil
 }

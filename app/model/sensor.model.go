@@ -2,7 +2,6 @@ package model
 
 import (
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 const TableNameSensor = "sensor"
@@ -32,63 +31,4 @@ type Sensor struct {
 
 func (*Sensor) TableName() string {
 	return TableNameSensor
-}
-
-// Move this to the chart-sensor and rawdatapreset-sensor models
-func (s *Sensor) BeforeDelete(db *gorm.DB) error {
-	// Find the raw data ids associated with the sensor
-	var presetSensors []*RawDataPresetSensor
-	result := db.Table(TableNameRawdataPresetSensor).Where("sensor_id = ?", s.Id).Find(&presetSensors)
-	if result.Error != nil {
-		return result.Error
-	}
-
-	// For each raw data preset, delete it if there are no sensors remaining
-	for _, presetSensor := range presetSensors {
-		var allPresetSensors []*RawDataPresetSensor
-		result := db.Table(TableNameRawdataPresetSensor).Where("rawdatapreset_id", presetSensor.RawDataPresetId).Find(&allPresetSensors)
-		if result.Error != nil {
-			return result.Error
-		}
-
-		// Delete the preset if the sensor about to be deleted is the last one in the preset
-		if len(allPresetSensors) == 1 {
-			if allPresetSensors[1].SensorId == s.Id {
-				preset := &RawDataPreset{Base: Base{Id: presetSensor.RawDataPresetId}}
-				result := db.Delete(&preset)
-				if result.Error != nil {
-					return result.Error
-				}
-			}
-		}
-	}
-
-	// Find the chart ids associated with the sensor
-	var chartSensors []*ChartSensor
-	result = db.Table(TableNameChartSensor).Where("sensor_id = ?", s.Id).Find(&chartSensors)
-	if result.Error != nil {
-		return result.Error
-	}
-
-	// For each chart, delete it if there are no sensors remaining
-	for _, chartSensor := range chartSensors {
-		var allChartSensors []*ChartSensor
-		result := db.Table(TableNameChartSensor).Where("chart_id", chartSensor.ChartId).Find(&allChartSensors)
-		if result.Error != nil {
-			return result.Error
-		}
-
-		// Delete the chart if the sensor about to be deleted is the last one in the chart
-		if len(allChartSensors) == 1 {
-			if allChartSensors[1].SensorId == s.Id {
-				chart := &Chart{Base: Base{Id: chartSensor.ChartId}}
-				result = db.Delete(&chart)
-				if result.Error != nil {
-					return result.Error
-				}
-			}
-		}
-	}
-
-	return nil
 }
