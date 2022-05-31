@@ -20,6 +20,7 @@ func (*ChartSensor) TableName() string {
 }
 
 func (cs *ChartSensor) BeforeDelete(db *gorm.DB) (err error) {
+	println("here")
 	// Find all the other sensors attached to the chart
 	var chartSensors []*ChartSensor
 	result := db.Table(TableNameChartSensor).Where("chart_id = ?", cs.ChartId).Find(&chartSensors)
