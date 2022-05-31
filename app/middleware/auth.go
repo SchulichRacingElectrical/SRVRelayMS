@@ -91,22 +91,6 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 
 		// Decode the payload
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			// // Extarct the expiration date
-			// var exp time.Time
-			// switch expTok := claims["exp"].(type) {
-			// case float64:
-			// 	exp = time.Unix(int64(expTok), 0)
-			// }
-
-			// // Verify that the token has not expired
-			// if time.Now().After(exp) {
-			// 	utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
-			// 	ctx.Abort()
-			// 	return
-			// } else {
-			// 	fmt.Println("Time left: ", time.Until(exp))
-			// }
-
 			// Extract the user id
 			userId, err := uuid.Parse(fmt.Sprintf("%s", claims["userId"]))
 			if err != nil {
