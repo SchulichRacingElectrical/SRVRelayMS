@@ -31,8 +31,8 @@ func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 
 	// Attempt to find the associated thing
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, err := handler.thingService.FindById(ctx, newChartPreset.ThingId)
-	if err != nil {
+	thing, perr := handler.thingService.FindById(ctx, newChartPreset.ThingId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
@@ -44,8 +44,9 @@ func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 	}
 
 	// Ensure the preset is valid
-	perr := handler.service.Create(ctx.Request.Context(), &newChartPreset)
+	perr = handler.service.Create(ctx.Request.Context(), &newChartPreset)
 	if perr != nil {
+		println(perr.Error())
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotUnique))
 		} else {

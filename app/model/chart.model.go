@@ -11,7 +11,7 @@ type Chart struct {
 	Base
 	Name          string      `gorm:"column:name;not null;uniqueIndex:unique_chart_name_in_preset" json:"name"`
 	Type          string      `gorm:"column:type;not null" json:"type"`
-	ChartPresetId uuid.UUID   `gorm:"type:uuid;column:chart_preset_id;uniqueIndex:unique_chart_name_in_preset" json:"chartPresetId"`
+	ChartPresetId uuid.UUID   `gorm:"type:uuid;column:chart_preset_id;uniqueIndex:unique_chart_name_in_preset" json:"chartPresetId,omitempty"`
 	ChartPreset   ChartPreset `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	SensorIds     []uuid.UUID `gorm:"-" json:"sensorIds"`
 }
@@ -51,7 +51,7 @@ func (c *Chart) AfterFind(db *gorm.DB) (err error) {
 func (c *Chart) BeforeDelete(db *gorm.DB) (err error) {
 	// Find all of the associated charts to the preset
 	var allCharts []*Chart
-	result := db.Table(TableNameChart).Where("chartpreset_id = ?", c.ChartPresetId).Find(&allCharts)
+	result := db.Table(TableNameChart).Where("chart_preset_id = ?", c.ChartPresetId).Find(&allCharts)
 	if result.Error != nil {
 		return result.Error
 	}
