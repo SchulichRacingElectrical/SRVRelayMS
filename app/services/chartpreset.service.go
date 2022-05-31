@@ -43,6 +43,9 @@ func (service *ChartPresetService) FindByThingId(ctx context.Context, thingId uu
 }
 
 func (service *ChartPresetService) Create(ctx context.Context, chartPreset *model.ChartPreset) *pgconn.PgError {
+	for _, chart := range chartPreset.Charts {
+		chart.ChartPresetId = chartPreset.Id
+	}
 	result := service.db.Create(&chartPreset)
 	return utils.GetPostgresError(result.Error)
 }
