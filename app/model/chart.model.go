@@ -49,7 +49,6 @@ func (c *Chart) AfterFind(db *gorm.DB) (err error) {
 }
 
 func (c *Chart) BeforeDelete(db *gorm.DB) (err error) {
-	println("hi")
 	// Find all of the associated charts to the preset
 	var allCharts []*Chart
 	result := db.Table(TableNameChart).Where("chart_preset_id = ?", c.ChartPresetId).Find(&allCharts)
@@ -60,7 +59,7 @@ func (c *Chart) BeforeDelete(db *gorm.DB) (err error) {
 	// Delete the preset if the only chart remaining is c
 	if len(allCharts) == 1 {
 		chartPreset := ChartPreset{Base: Base{Id: c.ChartPresetId}}
-		result := db.Delete(&chartPreset)
+		result := db.Table(TableNameChartpreset).Delete(&chartPreset)
 		if result.Error != nil {
 			return result.Error
 		}

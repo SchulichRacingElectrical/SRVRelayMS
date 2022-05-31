@@ -2,6 +2,7 @@ package model
 
 import (
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 const TableNameSensor = "sensor"
@@ -31,4 +32,36 @@ type Sensor struct {
 
 func (*Sensor) TableName() string {
 	return TableNameSensor
+}
+
+func (s *Sensor) BeforeDelete(db *gorm.DB) (err error) {
+	err = db.Transaction(func(db *gorm.DB) error {
+		// Delete the raw data preset entries
+		var rawPresetSensors []*RawDataPresetSensor
+		result := db.Table(TableNameRawdataPresetSensor).Where("sensor_id = ?", s.Id).Find(&rawPresetSensors)
+		if result.Error != nil {
+			return result.Error
+		}
+		for _, preset := range rawPresetSensors {
+			err := preset.BeforeDelete(db)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Delete the chart sensor entries
+		var chartSensors []*ChartSensor
+		result = db.Table(TableNameChartSensor).Where("sensor_id = ?", s.Id).Find(&chartSensors)
+		if result.Error != nil {
+			return result.Error
+		}
+		for _, preset := range chartSensors {
+			err := preset.BeforeDelete(db)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
 }
