@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
@@ -103,15 +103,16 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 }
 
 func (service *UserService) CreateToken(c *gin.Context, user *model.User) (string, error) {
+	var expirationDate int = int(time.Now().Add(5 * time.Second).Unix())
 	atClaims := jwt.MapClaims{}
 	atClaims["userId"] = user.Id
 	atClaims["organizationId"] = user.OrganizationId
+	atClaims["exp"] = expirationDate
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	token, err := at.SignedString([]byte(service.config.AccessSecret))
 	if err != nil {
 		return "", err
 	}
-	var expirationDate int = int(time.Now().Add(5 * time.Hour).Unix())
 	c.SetCookie("Authorization", token, expirationDate, "/", "", false, true)
 	return token, nil
 }

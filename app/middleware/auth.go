@@ -6,11 +6,12 @@ import (
 	services "database-ms/app/services"
 	"database-ms/config"
 	"database-ms/utils"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -70,17 +71,43 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 		var hmacSampleSecret = []byte(conf.AccessSecret)
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("Unexpected signing method: %v", t.Header["alg"])
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
 			return hmacSampleSecret, nil
 		})
-		if err != nil {
-			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
+
+		// Handle invalid token
+		if !token.Valid {
+			if errors.Is(err, jwt.ErrTokenMalformed) {
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.MalformedJwt))
+			} else if errors.Is(err, jwt.ErrTokenExpired) {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ExpiredJwt))
+			} else {
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InvalidJwt))
+			}
 			ctx.Abort()
 			return
 		}
 
+		// Decode the payload
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			// // Extarct the expiration date
+			// var exp time.Time
+			// switch expTok := claims["exp"].(type) {
+			// case float64:
+			// 	exp = time.Unix(int64(expTok), 0)
+			// }
+
+			// // Verify that the token has not expired
+			// if time.Now().After(exp) {
+			// 	utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			// 	ctx.Abort()
+			// 	return
+			// } else {
+			// 	fmt.Println("Time left: ", time.Until(exp))
+			// }
+
+			// Extract the user id
 			userId, err := uuid.Parse(fmt.Sprintf("%s", claims["userId"]))
 			if err != nil {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
@@ -88,6 +115,7 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 				return
 			}
 
+			// Load the user data
 			user, perr := userService.FindByUserId(context.TODO(), userId)
 			if perr != nil {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
@@ -95,6 +123,7 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 				return
 			}
 
+			// Load the users organization data
 			organization, perr := organizationService.FindByOrganizationId(context.TODO(), user.OrganizationId)
 			if perr != nil {
 				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))

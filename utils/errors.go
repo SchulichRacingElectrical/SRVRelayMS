@@ -80,6 +80,11 @@ const (
 
 	// Datum Error
 	DatumNotFound = "datumNotFound"
+
+	// Authorization Error
+	MalformedJwt = "malformedJwt"
+	ExpiredJwt   = "expiredJwt"
+	InvalidJwt   = "invalidJwt"
 )
 
 // Error code with description
@@ -150,4 +155,9 @@ var errorMessage = map[string]string{
 
 	// Datum
 	"datumNotFound": "Datum could not be found.",
+
+	// Authorization
+	"malformedJwt": "JWT is malformed.",
+	"expiredJwt":   "JWT is expired.",
+	"invalidJwt":   "Could not handle JWT.",
 }
