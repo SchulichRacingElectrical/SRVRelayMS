@@ -103,7 +103,7 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 }
 
 func (service *UserService) CreateToken(c *gin.Context, user *model.User) (string, error) {
-	var expirationDate int = int(time.Now().Add(5 * time.Second).Unix())
+	var expirationDate int = int(time.Now().Add(5 * time.Hour).Unix())
 	atClaims := jwt.MapClaims{}
 	atClaims["userId"] = user.Id
 	atClaims["organizationId"] = user.OrganizationId
