@@ -44,7 +44,7 @@ func awaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config
 	subscriber := redisClient.Subscribe(ctx, "THING_CONNECTION")
 	defer subscriber.Close()
 	connectionChannel := subscriber.Channel()
-	sessionService := services.NewSessionService(conf)
+	sessionService := services.NewSessionService(db, conf)
 
 	for msg := range connectionChannel {
 		message := Message{}
@@ -82,7 +82,7 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 	thingDataChannel := subscriber.Channel()
 
 	datumService := services.NewDatumService(db, conf)
-	sessionService := services.NewSessionService(conf)
+	sessionService := services.NewSessionService(db, conf)
 
 	for msg := range thingDataChannel {
 		message := Message{}

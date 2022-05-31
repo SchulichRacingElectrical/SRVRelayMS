@@ -1,9 +1,14 @@
 package handlers
 
 import (
+	"database-ms/app/middleware"
+	"database-ms/app/model"
 	services "database-ms/app/services"
+	utils "database-ms/utils"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type SessionHandler struct {
@@ -24,72 +29,162 @@ func NewSessionAPI(
 	}
 }
 
-func (handler *SessionHandler) CreateSession(c *gin.Context) {
-	// var newRun models.Run
-	// c.BindJSON(&newRun)
+func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
+	var newSession model.Session
+	err := ctx.BindJSON(&newSession)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
 
-	// err := handler.run.CreateRun(c.Request.Context(), &newRun)
-	// if err == nil {
-	// 	res := &createEntityRes{
-	// 		ID: newRun.ID,
-	// 	}
-	// 	result := utils.SuccessPayload(res, "Successfully created run")
-	// 	utils.Response(c, http.StatusOK, result)
-	// } else {
-	// 	fmt.Println(err)
-	// 	result := utils.NewHTTPError(utils.EntityCreationError)
-	// 	utils.Response(c, http.StatusBadRequest, result)
-	// }
+	// Guard against non-admin requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Guard against cross-tenant writes
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, perr := handler.thing.FindById(ctx, newSession.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingsNotFound))
+		return
+	}
+	if organization.Id != thing.OrganizationId {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to create the session
+	err = handler.session.CreateSession(ctx.Request.Context(), &newSession)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(newSession, "Successfully created collection.")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *SessionHandler) GetSessions(c *gin.Context) {
-	// 	var run interface{}
-	// 	run, err := handler.run.GetRunsByThingId(c.Request.Context(), c.Param("thingId"))
+func (handler *SessionHandler) GetSessions(ctx *gin.Context) {
+	// Attempt to read from the params
+	thingId, err := uuid.Parse(ctx.Param("thingId"))
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
 
-	// 	if err == nil {
-	// 		result := utils.SuccessPayload(run, "Successfully retrieved run")
-	// 		utils.Response(c, http.StatusOK, result)
-	// 	} else {
-	// 		result := utils.NewHTTPError(utils.RunsNotFound)
-	// 		utils.Response(c, http.StatusBadRequest, result)
-	// 	}
-	// }
+	// Attempt to find the thing
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, perr := handler.thing.FindById(ctx.Request.Context(), thingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
 
-	// func (handler *RunHandler) UpdateRun(c *gin.Context) {
-	// 	var updatedRun models.RunUpdate
-	// 	c.BindJSON(&updatedRun)
+	// Guard against cross-tenant reading
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
 
-	// 	_, err := handler.run.FindById(c.Request.Context(), updatedRun.ID.Hex())
-	// 	if err == nil {
-	// 		err := handler.run.UpdateRun(c.Request.Context(), &updatedRun)
-	// 		if err == nil {
-	// 			result := utils.SuccessPayload(nil, "Successfully updated run.")
-	// 			utils.Response(c, http.StatusOK, result)
-	// 		} else {
-	// 			utils.Response(c, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-	// 		}
-	// 	} else {
-	// 		utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunNotFound))
-	// 	}
+	// Attempt to read the sessions
+	sessions, perr := handler.session.GetSessionsByThingId(ctx.Request.Context(), thingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionsNotFound))
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(sessions, "Successfully retrieved collections")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *SessionHandler) UpdateSession(c *gin.Context) {
-	// TODO
+func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
+	// Attempt to extract the body
+	var updatedSession model.Session
+	err := ctx.BindJSON(&updatedSession)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
+
+	// Guard against non-admin lead or admin
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to get the thing
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, perr := handler.thing.FindById(ctx, updatedSession.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Guard against cross-tenant updates
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to update the collection
+	perr = handler.session.UpdateSession(ctx.Request.Context(), &updatedSession)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(perr.Error()))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(nil, "Successfully updated")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *SessionHandler) DeleteSession(c *gin.Context) {
-	// _, err := handler.run.FindById(c.Request.Context(), c.Param("runId"))
-	// if err == nil {
-	// 	err := handler.run.DeleteRun(c.Request.Context(), c.Param("runId"))
-	// 	if err == nil {
-	// 		result := utils.SuccessPayload(nil, "Successfully deleted run.")
-	// 		utils.Response(c, http.StatusOK, result)
-	// 	} else {
-	// 		utils.Response(c, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-	// 	}
-	// } else {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunNotFound))
-	// }
+func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
+	// Attempt to read from the params
+	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
+
+	// Attempt to find the session
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	collection, perr := handler.session.FindById(ctx.Request.Context(), sessionId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
+		return
+	}
+
+	// Attempt to find the thing
+	thing, perr := handler.thing.FindById(ctx, collection.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Guard against cross-tenant deletion
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to delete the collection
+	perr = handler.session.DeleteSession(ctx.Request.Context(), sessionId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(nil, "Successfully deleted")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
 func (handler *SessionHandler) AddComment(c *gin.Context) {

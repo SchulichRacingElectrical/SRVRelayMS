@@ -84,6 +84,10 @@ const (
 	// Collection Error
 	CollectionsNotFound = "collectionsNotFound"
 	CollectionNotFound  = "collectionNotFound"
+
+	// Session Error
+	SessionsNotFound = "sessionsNotFound"
+	SessionNotFound  = "sessionNotFound"
 )
 
 // Error code with description
@@ -126,11 +130,6 @@ var errorMessage = map[string]string{
 	"organizationNotFound":  "Organization could not be found.",
 	"organizationsNotFound": "Organizations could not be found.",
 
-	// Run errors
-	"runsNotFound": "Runs could not be found",
-	"runNotFound":  "Run could not be found",
-	"runDNE":       "Run does not exist",
-
 	// File
 	"noFileReceived":         "No file is received",
 	"notCsv":                 "Not a csv",
@@ -138,9 +137,13 @@ var errorMessage = map[string]string{
 	"runHasNoAssociatedFile": "Run does exist or not have associated file",
 	"cannotRetrieveFile":     "Cannot retrieve file",
 
-	// Session errors
+	// Collection errors
 	"collectionsNotFound": "Collections could not be found",
 	"collectionNotFound":  "Collection could not be found",
+
+	// Sessiom errors
+	"sessionsNotFound": "Sessions could not be found",
+	"sessionNotFound":  "Session could not be found",
 
 	// Raw Data Preset
 	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",
