@@ -100,9 +100,9 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 			sessionEndpoints.DELETE("/:sessionId", sessionAPI.DeleteSession)
 			sessionEndpoints.POST("/:sessionId/file", sessionAPI.UploadFile)
 			sessionEndpoints.GET("/:sessionId/file", sessionAPI.DownloadFile)
-			sessionEndpoints.POST("/:sessionId/comment", sessionAPI.AddComment)
+			sessionEndpoints.POST("/comment", sessionAPI.AddComment)
 			sessionEndpoints.GET("/:sessionId/comments", sessionAPI.GetComments)
-			sessionEndpoints.PUT("/comment/:commentId", sessionAPI.UpdateCommentContent)
+			sessionEndpoints.PUT("/comment", sessionAPI.UpdateCommentContent)
 			sessionEndpoints.DELETE("/comment/:commentId", sessionAPI.DeleteComment)
 		}
 
@@ -112,10 +112,10 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 			collectionEndpoints.GET("/thing/:thingId", collectionAPI.GetCollections)
 			collectionEndpoints.PUT("", collectionAPI.UpdateCollections)
 			collectionEndpoints.DELETE("/:collectionId", collectionAPI.DeleteCollection)
-			collectionEndpoints.POST("/:collectionId/comment", sessionAPI.AddComment)
-			collectionEndpoints.GET("/:collectionId/comments", sessionAPI.GetComments)
-			collectionEndpoints.PUT("/comment/:commentId", sessionAPI.UpdateCommentContent)
-			collectionEndpoints.DELETE("/comment/:commentId", sessionAPI.DeleteComment)
+			collectionEndpoints.POST("/comment", collectionAPI.AddComment)
+			collectionEndpoints.GET("/:collectionId/comments", collectionAPI.GetComments)
+			collectionEndpoints.PUT("/comment", collectionAPI.UpdateCommentContent)
+			collectionEndpoints.DELETE("/comment/:commentId", collectionAPI.DeleteComment)
 		}
 
 		rawDataPresetEndpoints := privateEndpoints.Group("/rawDataPreset")

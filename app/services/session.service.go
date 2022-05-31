@@ -21,6 +21,13 @@ type SessionServiceInterface interface {
 	GetSessionFileMetaData(context.Context, uuid.UUID) (*model.Session, *pgconn.PgError)
 	UploadFile(context.Context, *model.Session, *multipart.FileHeader) error
 	DownloadFile(context.Context, uuid.UUID) ([]byte, error)
+
+	// Comments
+	GetComments(context.Context, uuid.UUID) ([]*model.SessionComment, error)
+	GetComment(context.Context, uuid.UUID) (*model.SessionComment, error)
+	AddComment(context.Context, *model.SessionComment) error
+	UpdateCommentContent(context.Context, *model.SessionComment) error
+	DeleteComment(context.Context, uuid.UUID) error
 }
 
 type SessionService struct {
@@ -185,4 +192,43 @@ func (service *SessionService) DownloadFile(ctx context.Context, sessionId uuid.
 
 	// return buf.Bytes(), nil
 	return nil, nil
+}
+
+func (service *SessionService) GetComments(ctx context.Context, collectionId uuid.UUID) ([]*model.SessionComment, error) {
+	var comments []*model.SessionComment
+	result := service.db.Where("session_id = ?", collectionId).Find(&comments)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return comments, nil
+}
+
+func (service *SessionService) GetComment(ctx context.Context, commentId uuid.UUID) (*model.SessionComment, error) {
+	var comment *model.SessionComment
+	result := service.db.Where("id = ?", commentId).First(&comment)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return comment, nil
+}
+
+func (service *SessionService) AddComment(ctx context.Context, comment *model.SessionComment) error {
+	result := service.db.Create(&comment)
+	return result.Error
+}
+
+func (service *SessionService) UpdateCommentContent(ctx context.Context, updatedComment *model.SessionComment) error {
+	var comment model.SessionComment
+	if err := service.db.Where("id = ?", updatedComment.Id).First(&comment).Error; err != nil {
+		return err
+	}
+
+	result := service.db.Model(&comment).Updates(&updatedComment)
+	return result.Error
+}
+
+func (service *SessionService) DeleteComment(ctx context.Context, commentId uuid.UUID) error {
+	comment := model.SessionComment{Base: model.Base{Id: commentId}}
+	result := service.db.Delete(&comment)
+	return result.Error
 }

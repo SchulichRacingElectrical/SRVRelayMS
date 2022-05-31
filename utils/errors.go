@@ -88,6 +88,10 @@ const (
 	// Session Error
 	SessionsNotFound = "sessionsNotFound"
 	SessionNotFound  = "sessionNotFound"
+
+	// Comments Error
+	CommentsNotFound = "commentsNotFound"
+	CommentNotFound  = "commentNotFound"
 )
 
 // Error code with description
@@ -141,9 +145,13 @@ var errorMessage = map[string]string{
 	"collectionsNotFound": "Collections could not be found",
 	"collectionNotFound":  "Collection could not be found",
 
-	// Sessiom errors
+	// Session errors
 	"sessionsNotFound": "Sessions could not be found",
 	"sessionNotFound":  "Session could not be found",
+
+	// Comment errors
+	"commentsNotFound": "Comments could not be found",
+	"commentNotFound":  "Comment could not be found",
 
 	// Raw Data Preset
 	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",

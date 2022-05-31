@@ -18,6 +18,13 @@ type CollectionServiceInterface interface {
 	GetCollectionsByThingId(context.Context, uuid.UUID) ([]*model.Collection, *pgconn.PgError)
 	UpdateCollection(context.Context, *model.Collection) *pgconn.PgError
 	DeleteCollection(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Comments
+	GetComments(context.Context, uuid.UUID) ([]*model.CollectionComment, error)
+	GetComment(context.Context, uuid.UUID) (*model.CollectionComment, error)
+	AddComment(context.Context, *model.CollectionComment) error
+	UpdateCommentContent(context.Context, *model.CollectionComment) error
+	DeleteComment(context.Context, uuid.UUID) error
 }
 
 type CollectionService struct {
@@ -74,4 +81,43 @@ func (service *CollectionService) DeleteCollection(ctx context.Context, collecti
 	collection := model.Collection{Base: model.Base{Id: collectionId}}
 	result := service.db.Delete(&collection)
 	return utils.GetPostgresError(result.Error)
+}
+
+func (service *CollectionService) GetComments(ctx context.Context, collectionId uuid.UUID) ([]*model.CollectionComment, error) {
+	var comments []*model.CollectionComment
+	result := service.db.Where("collection_id = ?", collectionId).Find(&comments)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return comments, nil
+}
+
+func (service *CollectionService) GetComment(ctx context.Context, commentId uuid.UUID) (*model.CollectionComment, error) {
+	var comment *model.CollectionComment
+	result := service.db.Where("id = ?", commentId).First(&comment)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return comment, nil
+}
+
+func (service *CollectionService) AddComment(ctx context.Context, comment *model.CollectionComment) error {
+	result := service.db.Create(&comment)
+	return result.Error
+}
+
+func (service *CollectionService) UpdateCommentContent(ctx context.Context, updatedComment *model.CollectionComment) error {
+	var comment model.CollectionComment
+	if err := service.db.Where("id = ?", updatedComment.Id).First(&comment).Error; err != nil {
+		return err
+	}
+
+	result := service.db.Model(&comment).Updates(&updatedComment)
+	return result.Error
+}
+
+func (service *CollectionService) DeleteComment(ctx context.Context, commentId uuid.UUID) error {
+	comment := model.CollectionComment{Base: model.Base{Id: commentId}}
+	result := service.db.Delete(&comment)
+	return result.Error
 }
