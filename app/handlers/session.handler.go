@@ -1,11 +1,15 @@
 package handlers
 
 import (
+	"bytes"
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
 	utils "database-ms/utils"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -13,19 +17,19 @@ import (
 
 type SessionHandler struct {
 	session  services.SessionServiceInterface
-	operator services.OperatorServiceInterface
 	thing    services.ThingServiceInterface
+	filepath string
 }
 
 func NewSessionAPI(
 	sessionService services.SessionServiceInterface,
-	operatorService services.OperatorServiceInterface,
 	thingService services.ThingServiceInterface,
+	filepath string,
 ) *SessionHandler {
 	return &SessionHandler{
 		session:  sessionService,
-		operator: operatorService,
 		thing:    thingService,
+		filepath: filepath,
 	}
 }
 
@@ -197,12 +201,12 @@ func (handler *SessionHandler) AddComment(ctx *gin.Context) {
 
 	// Guard against cross-tenant write
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	collection, perr := handler.session.FindById(ctx, newComment.SessionId)
+	session, perr := handler.session.FindById(ctx, newComment.SessionId)
 	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CollectionNotFound))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
-	thing, perr := handler.thing.FindById(ctx, collection.ThingId)
+	thing, perr := handler.thing.FindById(ctx, session.ThingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
@@ -214,7 +218,7 @@ func (handler *SessionHandler) AddComment(ctx *gin.Context) {
 
 	newComment.LastUpdate = utils.CurrentTimeInMilli()
 
-	// Attempt to create the collection
+	// Attempt to create the session
 	err = handler.session.AddComment(ctx.Request.Context(), &newComment)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
@@ -238,7 +242,7 @@ func (handler *SessionHandler) GetComments(ctx *gin.Context) {
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	session, perr := handler.session.FindById(ctx, sessionId)
 	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CollectionNotFound))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
 	thing, perr := handler.thing.FindById(ctx, session.ThingId)
@@ -290,7 +294,7 @@ func (handler *SessionHandler) UpdateCommentContent(ctx *gin.Context) {
 
 	updatedComment.LastUpdate = utils.CurrentTimeInMilli()
 
-	// Attempt to create the collection
+	// Attempt to create the session
 	err = handler.session.UpdateCommentContent(ctx.Request.Context(), &updatedComment)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
@@ -338,81 +342,103 @@ func (handler *SessionHandler) DeleteComment(ctx *gin.Context) {
 	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *SessionHandler) UploadFile(c *gin.Context) {
-	// // Check if run exist
-	// run, err := handler.run.FindById(c.Request.Context(), c.PostForm("runId"))
-	// if err != nil {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunNotFound))
-	// 	return
-	// }
+func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
+	// Guard against non-admin lead or admin
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
 
-	// // Check if operator exist
-	// operator, err := handler.operator.FindById(c.Request.Context(), c.PostForm("operatorId"))
-	// if err != nil {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.OperatorNotFound))
-	// 	return
-	// }
+	// Attempt to read from the params
+	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
 
-	// // Check if thing exist
-	// thing, err := handler.thing.FindById(c.Request.Context(), c.PostForm("thingId"))
-	// if err != nil {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.ThingNotFound))
-	// 	return
-	// }
+	// Check if session exists
+	session, perr := handler.session.FindById(ctx, sessionId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.SessionNotFound))
+		return
+	}
 
-	// // Check if run alread has a file
-	// if runMetadata, _ := handler.run.GetRunFileMetaData(c.Request.Context(), c.PostForm("runId")); runMetadata != nil {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunHasAssociatedFile))
-	// 	return
-	// }
-
-	// runFileMetadata := models.RunFileUpload{
-	// 	OperatorId:      operator.ID,
-	// 	RunId:           run.ID,
-	// 	ThingID:         thing.ID,
-	// 	UploadDateEpoch: utils.CurrentTimeInMilli(),
-	// }
-
-	// file, err := c.FormFile("file")
-	// if err != nil {
-	// 	result := utils.NewHTTPError(utils.NoFileReceived)
-	// 	utils.Response(c, http.StatusBadRequest, result)
-	// 	return
-	// }
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		result := utils.NewHTTPError(utils.NoFileRcvd)
+		utils.Response(ctx, http.StatusBadRequest, result)
+		return
+	}
 
 	// // Verify file extension
-	// if extension := filepath.Ext(file.Filename); extension != ".csv" {
-	// 	fmt.Println(extension)
-	// 	result := utils.NewHTTPError(utils.NotCsv)
-	// 	utils.Response(c, http.StatusBadRequest, result)
-	// 	return
-	// }
+	if extension := filepath.Ext(file.Filename); extension != ".csv" {
+		result := utils.NewHTTPError(utils.NotCsv)
+		utils.Response(ctx, http.StatusBadRequest, result)
+		return
+	}
 
-	// // Save file
-	// err = handler.run.UploadFile(c.Request.Context(), &runFileMetadata, file)
-	// if err != nil {
-	// 	utils.Response(c, http.StatusInternalServerError, utils.NewHTTPError(utils.FileNotUploaded))
-	// }
+	// Update session filename column
+	session.FileName = file.Filename
+	perr = handler.session.UpdateSession(ctx.Request.Context(), session)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
 
-	// result := utils.SuccessPayload(nil, "Successfully uploaded file")
-	// utils.Response(c, http.StatusOK, result)
+	if err = ctx.SaveUploadedFile(file, handler.filepath+file.Filename); err != nil {
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.CouldNotUploadFile))
+		return
+	}
+
+	result := utils.SuccessPayload(nil, "Successfully uploaded file")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *SessionHandler) DownloadFile(c *gin.Context) {
-	// Check if run alread has a file
-	// runMetadata, err := handler.run.GetRunFileMetaData(c.Request.Context(), c.PostForm("runId"))
-	// if err != nil {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.RunHasNoAssociatedFile))
-	// 	return
-	// }
+func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
+	// Attempt to read from the params
+	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
 
-	// byteFile, err := handler.run.DownloadFile(c.Request.Context(), c.PostForm("runId"))
-	// if err != nil {
-	// 	utils.Response(c, http.StatusInternalServerError, utils.NewHTTPError(utils.CannotRetrieveFile))
-	// 	return
-	// }
-	// c.Header("Content-Disposition", "attachment; filename="+runMetadata.FileName)
-	// c.Data(http.StatusOK, "application/octet-stream", byteFile)
+	// Guard against cross-tenant download
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	session, perr := handler.session.FindById(ctx, sessionId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
+		return
+	}
+	thing, perr := handler.thing.FindById(ctx, session.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	file, err := os.Open(handler.filepath + session.FileName)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.FileNotFound))
+		return
+	}
+	defer file.Close()
+
+	buf := &bytes.Buffer{}
+	nRead, err := io.Copy(buf, file)
+	if err != nil {
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(err.Error()))
+		return
+	}
+
+	ctx.DataFromReader(http.StatusOK, nRead, "text/csv", buf, nil)
+
+	// tempBuffer := make([]byte, 512)
+	// ctx.Header("Content-Disposition", "attachment; filename="+session.FileName)
+	// ctx.Data(http.StatusOK, "application/octet-stream", tempBuffer)
+
 }
 
 func (handler *SessionHandler) GetDatumBySessionIdAndSensorId(c *gin.Context) {

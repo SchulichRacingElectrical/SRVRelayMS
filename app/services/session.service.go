@@ -5,7 +5,6 @@ import (
 	"database-ms/app/model"
 	"database-ms/config"
 	"database-ms/utils"
-	"mime/multipart"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -18,9 +17,6 @@ type SessionServiceInterface interface {
 	GetSessionsByThingId(context.Context, uuid.UUID) ([]*model.Session, *pgconn.PgError)
 	UpdateSession(context.Context, *model.Session) *pgconn.PgError
 	DeleteSession(context.Context, uuid.UUID) *pgconn.PgError
-	GetSessionFileMetaData(context.Context, uuid.UUID) (*model.Session, *pgconn.PgError)
-	UploadFile(context.Context, *model.Session, *multipart.FileHeader) error
-	DownloadFile(context.Context, uuid.UUID) ([]byte, error)
 
 	// Comments
 	GetComments(context.Context, uuid.UUID) ([]*model.SessionComment, error)
@@ -41,13 +37,7 @@ func NewSessionService(db *gorm.DB, c *config.Configuration) SessionServiceInter
 
 func (service *SessionService) CreateSession(ctx context.Context, session *model.Session) error {
 	result := service.db.Create(&session)
-	if result.Error != nil {
-		return result.Error
-		// var perr *pgconn.PgError
-		// errors.As(result.Error, &perr)
-		// return utils.GetPostgresError(result.Error)
-	}
-	return nil
+	return result.Error
 }
 
 func (service *SessionService) FindById(ctx context.Context, sessionId uuid.UUID) (*model.Session, *pgconn.PgError) {
@@ -116,81 +106,6 @@ func (service *SessionService) GetSessionFileMetaData(ctx context.Context, sessi
 	// }
 
 	// return &runFileMetaData, nil
-	return nil, nil
-}
-
-func (service *SessionService) UploadFile(ctx context.Context, metadata *model.Session, file *multipart.FileHeader) error {
-	// fileContent, err := file.Open()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// byteContainer, err := ioutil.ReadAll(fileContent)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// bucket, err := gridfs.NewBucket(
-	// 	database,
-	// )
-	// if err != nil {
-	// 	return err
-	// }
-
-	// opts := options.GridFSUpload()
-	// opts.SetMetadata(metadata)
-	// uploadStream, err := bucket.OpenUploadStreamWithID(
-	// 	metadata.RunId,
-	// 	file.Filename,
-	// 	opts,
-	// )
-	// if err != nil {
-	// 	return err
-	// }
-	// defer uploadStream.Close()
-
-	// fileSize, err := uploadStream.Write(byteContainer)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// fmt.Printf("Write file to DB was successful. File size: %d M\n", fileSize)
-	return nil
-}
-
-func (service *SessionService) DownloadFile(ctx context.Context, sessionId uuid.UUID) ([]byte, error) {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// var result bson.M
-	// err = database.Collection("fs.files").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&result)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// bucket, _ := gridfs.NewBucket(database)
-
-	// var buf bytes.Buffer
-	// _, err = bucket.DownloadToStream(bsonRunId, &buf)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return buf.Bytes(), nil
 	return nil, nil
 }
 

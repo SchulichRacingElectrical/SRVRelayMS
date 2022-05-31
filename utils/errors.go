@@ -92,6 +92,12 @@ const (
 	// Comments Error
 	CommentsNotFound = "commentsNotFound"
 	CommentNotFound  = "commentNotFound"
+
+	//File Error
+	NotCsv             = "notCSV"
+	NoFileRcvd         = "noFileRcvd"
+	CouldNotUploadFile = "couldNotUploadFile"
+	FileNotFound       = "fileNotFound"
 )
 
 // Error code with description
@@ -165,4 +171,10 @@ var errorMessage = map[string]string{
 
 	// Datum
 	"datumNotFound": "Datum could not be found.",
+
+	// File error
+	"notCSV":             "Not a CSV file",
+	"noFileRcvd":         "No file received",
+	"couldNotUploadFile": "Could not upload file",
+	"fileNotFound":       "File not found",
 }
