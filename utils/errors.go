@@ -80,6 +80,10 @@ const (
 
 	// Datum Error
 	DatumNotFound = "datumNotFound"
+
+	// Collection Error
+	CollectionsNotFound = "collectionsNotFound"
+	CollectionNotFound  = "collectionNotFound"
 )
 
 // Error code with description
@@ -135,8 +139,8 @@ var errorMessage = map[string]string{
 	"cannotRetrieveFile":     "Cannot retrieve file",
 
 	// Session errors
-	"sessionssNotFound": "Sesssions could not be found",
-	"sessionNotFound":   "Session could not be found",
+	"collectionsNotFound": "Collections could not be found",
+	"collectionNotFound":  "Collection could not be found",
 
 	// Raw Data Preset
 	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",

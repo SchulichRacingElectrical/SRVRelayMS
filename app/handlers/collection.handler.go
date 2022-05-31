@@ -1,83 +1,189 @@
 package handlers
 
 import (
+	"database-ms/app/middleware"
+	"database-ms/app/model"
 	"database-ms/app/services"
+	utils "database-ms/utils"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type CollectionHandler struct {
-	collection services.CollectionServiceInterface
+	collectionService services.CollectionServiceInterface
+	thingService      services.ThingServiceInterface
 }
 
-func NewCollectionAPI(collectionService services.CollectionServiceInterface) *CollectionHandler {
+func NewCollectionAPI(collectionService services.CollectionServiceInterface,
+	thingService services.ThingServiceInterface) *CollectionHandler {
 	return &CollectionHandler{
-		collection: collectionService,
+		collectionService: collectionService,
+		thingService:      thingService,
 	}
 }
 
-func (handler *CollectionHandler) CreateSession(c *gin.Context) {
-	// var newSession model.Session
-	// c.BindJSON(&newSession)
+func (handler *CollectionHandler) CreateCollection(ctx *gin.Context) {
+	var newCollection model.Collection
+	err := ctx.BindJSON(&newCollection)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
 
-	// _, err := handler.session.CreateSession(c.Request.Context(), &newSession)
-	// if err == nil {
-	// 	res := &createEntityRes{
-	// 		ID: newSession.ID,
-	// 	}
-	// 	result := utils.SuccessPayload(res, "Successfully created run")
-	// 	utils.Response(c, http.StatusOK, result)
-	// } else {
-	// 	fmt.Println(err)
-	// 	result := utils.NewHTTPError(utils.EntityCreationError)
-	// 	utils.Response(c, http.StatusBadRequest, result)
-	// }
+	// Guard against non-admin requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Guard against cross-tenant writes
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, perr := handler.thingService.FindById(ctx, newCollection.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingsNotFound))
+		return
+	}
+	if organization.Id != thing.OrganizationId {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to create the collection
+	perr = handler.collectionService.CreateCollection(ctx.Request.Context(), &newCollection)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(newCollection, "Successfully created collection.")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *CollectionHandler) GetSessions(c *gin.Context) {
-	// var sessions interface{}
-	// sessions, err := handler.session.GetSessionsByThingId(c.Request.Context(), c.Param("thingId"))
+func (handler *CollectionHandler) GetCollections(ctx *gin.Context) {
+	// Attempt to read from the params
+	thingId, err := uuid.Parse(ctx.Param("thingId"))
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
 
-	// if err == nil {
-	// 	result := utils.SuccessPayload(sessions, "Successfully retrieved session")
-	// 	utils.Response(c, http.StatusOK, result)
-	// } else {
-	// 	result := utils.NewHTTPError(utils.SessionsNotFound)
-	// 	utils.Response(c, http.StatusBadRequest, result)
-	// }
+	// Attempt to find the thing
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, perr := handler.thingService.FindById(ctx.Request.Context(), thingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Guard against cross-tenant reading
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to read the collections
+	collections, perr := handler.collectionService.GetCollectionsByThingId(ctx.Request.Context(), thingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CollectionsNotFound))
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(collections, "Successfully retrieved collections")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *CollectionHandler) UpdateSession(c *gin.Context) {
-	// var updatedSession model.Session
-	// c.BindJSON(&updatedSession)
+func (handler *CollectionHandler) UpdateCollections(ctx *gin.Context) {
+	// Attempt to extract the body
+	var updatedCollection model.Collection
+	err := ctx.BindJSON(&updatedCollection)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
 
-	// _, err := handler.session.FindById(c.Request.Context(), updatedSession.ID.Hex())
-	// if err == nil {
-	// 	err := handler.session.UpdateSession(c.Request.Context(), &updatedSession)
-	// 	if err == nil {
-	// 		result := utils.SuccessPayload(nil, "Successfully updated session.")
-	// 		utils.Response(c, http.StatusOK, result)
-	// 	} else {
-	// 		utils.Response(c, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-	// 	}
-	// } else {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.SessionNotFound))
-	// }
+	// Guard against non-admin lead or admin
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to get the thing
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	thing, perr := handler.thingService.FindById(ctx, updatedCollection.ThingId) // Note: FindById does not work when Thing DNE
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Guard against cross-tenant updates
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to update the collection
+	perr = handler.collectionService.UpdateCollection(ctx.Request.Context(), &updatedCollection)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(perr.Error()))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(nil, "Successfully updated")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
-func (handler *CollectionHandler) DeleteSession(c *gin.Context) {
-	// _, err := handler.session.FindById(c.Request.Context(), c.Param("sessionId"))
-	// if err == nil {
-	// 	err := handler.session.DeleteSession(c.Request.Context(), c.Param("sessionId"))
-	// 	if err == nil {
-	// 		result := utils.SuccessPayload(nil, "Successfully deleted session.")
-	// 		utils.Response(c, http.StatusOK, result)
-	// 	} else {
-	// 		utils.Response(c, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-	// 	}
-	// } else {
-	// 	utils.Response(c, http.StatusNotFound, utils.NewHTTPError(utils.SessionNotFound))
-	// }
+func (handler *CollectionHandler) DeleteCollection(ctx *gin.Context) {
+	// Attempt to read from the params
+	collectionId, err := uuid.Parse(ctx.Param("collectionId"))
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
+
+	// Attempt to find the collection
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	collection, perr := handler.collectionService.FindById(ctx.Request.Context(), collectionId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
+		return
+	}
+
+	// Attempt to find the thing
+	thing, perr := handler.thingService.FindById(ctx, collection.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Guard against cross-tenant deletion
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to delete the collection
+	perr = handler.collectionService.DeleteCollection(ctx.Request.Context(), collectionId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
+
+	// Send the response
+	result := utils.SuccessPayload(nil, "Successfully deleted")
+	utils.Response(ctx, http.StatusOK, result)
 }
 
 func (handler *CollectionHandler) AddComment(c *gin.Context) {

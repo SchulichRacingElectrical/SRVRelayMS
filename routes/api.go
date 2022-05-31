@@ -22,7 +22,7 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	operatorService := services.NewOperatorService(db, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
 	sessionAPI := handlers.NewSessionAPI(services.NewSessionService(conf), operatorService, thingService)
-	collectionAPI := handlers.NewCollectionAPI(services.NewCollectionService(conf))
+	collectionAPI := handlers.NewCollectionAPI(services.NewCollectionService(db, conf), thingService)
 	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(db, conf), thingService)
 	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(db, conf), thingService)
 
@@ -108,10 +108,10 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 
 		collectionEndpoints := privateEndpoints.Group("/collections")
 		{
-			collectionEndpoints.POST("", collectionAPI.CreateSession)
-			collectionEndpoints.GET("/thing/:thingId", collectionAPI.GetSessions)
-			collectionEndpoints.PUT("", collectionAPI.UpdateSession)
-			collectionEndpoints.DELETE("/:collectionId", collectionAPI.DeleteSession)
+			collectionEndpoints.POST("", collectionAPI.CreateCollection)
+			collectionEndpoints.GET("/thing/:thingId", collectionAPI.GetCollections)
+			collectionEndpoints.PUT("", collectionAPI.UpdateCollections)
+			collectionEndpoints.DELETE("/:collectionId", collectionAPI.DeleteCollection)
 			collectionEndpoints.POST("/:collectionId/comment", sessionAPI.AddComment)
 			collectionEndpoints.GET("/:collectionId/comments", sessionAPI.GetComments)
 			collectionEndpoints.PUT("/comment/:commentId", sessionAPI.UpdateCommentContent)
