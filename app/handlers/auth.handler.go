@@ -124,7 +124,18 @@ func (handler *AuthHandler) Validate(ctx *gin.Context) {
 }
 
 func (handler *AuthHandler) SignOut(ctx *gin.Context) {
-	// TODO: Blacklist tokens
-	// TODO: Delete blacklisted tokens in the database after they expire
-	// TODO: In auth middleware, check if the token is blacklisted
+	// Extract token from request
+	token, err := middleware.GetToken(ctx)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
+
+	// Blacklist token
+	err = handler.service.BlacklistToken(token)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
+	utils.Response(ctx, http.StatusOK, utils.SuccessPayload("", "Successfully signed user out."))
 }

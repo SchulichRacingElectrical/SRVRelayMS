@@ -68,6 +68,7 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 			return
 		}
 
+		// Parse the token
 		var hmacSampleSecret = []byte(conf.AccessSecret)
 		token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -76,14 +77,21 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 			return hmacSampleSecret, nil
 		})
 
+		// Check if token is blacklisted
+		if userService.IsBlacklisted(token.Raw) {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InvalidatedToken))
+			ctx.Abort()
+			return
+		}
+
 		// Handle invalid token
 		if !token.Valid {
 			if errors.Is(err, jwt.ErrTokenMalformed) {
-				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.MalformedJwt))
+				utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.MalformedToken))
 			} else if errors.Is(err, jwt.ErrTokenExpired) {
-				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ExpiredJwt))
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ExpiredToken))
 			} else {
-				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InvalidJwt))
+				utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InvalidToken))
 			}
 			ctx.Abort()
 			return
@@ -116,6 +124,7 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 			}
 			ctx.Set("user", user)
 			ctx.Set("organization", organization)
+			ctx.Set("token", token.Raw)
 		} else {
 			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
 			ctx.Abort()
@@ -138,6 +147,15 @@ func GetUserClaim(ctx *gin.Context) (*model.User, error) {
 		return userInterface.(*model.User), nil
 	} else {
 		return nil, gin.Error{}
+	}
+}
+
+func GetToken(ctx *gin.Context) (string, error) {
+	token, tokenExists := ctx.Get("token")
+	if tokenExists {
+		return fmt.Sprintf("%v", token), nil
+	} else {
+		return "", gin.Error{}
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"database-ms/app/model"
 	"database-ms/config"
 	"database-ms/utils"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,8 +29,10 @@ type UserServiceInterface interface {
 	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
 	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
+	BlacklistToken(string) error
 	HashPassword(string) string
 	CheckPasswordHash(string, string) bool
+	IsBlacklisted(string) bool
 }
 
 type UserService struct {
@@ -115,6 +118,24 @@ func (service *UserService) CreateToken(c *gin.Context, user *model.User) (strin
 	}
 	c.SetCookie("Authorization", token, expirationDate, "/", "", false, true)
 	return token, nil
+}
+
+func (service *UserService) BlacklistToken(token string) error {
+	// Add token to blacklist table
+	blacklist := model.Blacklist{
+		Token:      token,
+		Expiration: 0,
+	}
+	result := service.db.Table(model.TableNameBlacklist).Create(&blacklist)
+	return result.Error
+}
+
+func (service *UserService) IsBlacklisted(token string) bool {
+	// Check if token exists in blacklist table
+	count := int64(0)
+	service.db.Table(model.TableNameBlacklist).Where("token = ?", token).Count(&count)
+	fmt.Println("Rows affected: ", count)
+	return count > 0
 }
 
 func (service *UserService) HashPassword(password string) string {

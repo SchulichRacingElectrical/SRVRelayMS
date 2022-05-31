@@ -39,15 +39,19 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	// Declare auth endpoints
 	authEndpoints := c.Group("/auth")
 	{
-		authEndpoints.GET("/validate", authAPI.Validate)
 		authEndpoints.POST("/login", authAPI.Login)
 		authEndpoints.POST("/signup", authAPI.SignUp)
-		authEndpoints.POST("/signout", authAPI.SignOut)
 	}
 
 	// Declare private (auth required) endpoints
 	privateEndpoints := c.Group("", middleware.AuthorizationMiddleware(conf, db))
 	{
+		authEndpoints := privateEndpoints.Group("/auth")
+		{
+			authEndpoints.GET("/validate", authAPI.Validate)
+			authEndpoints.POST("/signout", authAPI.SignOut)
+		}
+
 		organizationEndpoints := privateEndpoints.Group("/organization")
 		{
 			organizationEndpoints.GET("", organizationAPI.GetOrganization)
