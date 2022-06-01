@@ -4,262 +4,110 @@ import (
 	"context"
 	"database-ms/app/model"
 	"database-ms/config"
-	"mime/multipart"
+	"database-ms/utils"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
+	"gorm.io/gorm"
 )
 
 type SessionServiceInterface interface {
-	CreateSession(context.Context, *model.Session) error
-	FindById(context.Context, uuid.UUID) (*model.Session, error)
-	GetSessionsByThingId(context.Context, uuid.UUID) ([]*model.Session, error)
-	UpdateSession(context.Context, *model.Session) error
-	DeleteSession(context.Context, uuid.UUID) error
-	GetSessionFileMetaData(context.Context, uuid.UUID) (*model.Session, error)
-	UploadFile(context.Context, *model.Session, *multipart.FileHeader) error
-	DownloadFile(context.Context, uuid.UUID) ([]byte, error)
+	// Public - Session
+	FindSessionsByThingId(context.Context, uuid.UUID) ([]*model.Session, *pgconn.PgError)
+	CreateSession(context.Context, *model.Session) *pgconn.PgError
+	UpdateSession(context.Context, *model.Session) *pgconn.PgError
+	DeleteSession(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Public - Comments
+	FindCommentsBySessionId(context.Context, uuid.UUID) ([]*model.SessionComment, *pgconn.PgError)
+	CreateComment(context.Context, *model.SessionComment) *pgconn.PgError
+	UpdateComment(context.Context, *model.SessionComment) *pgconn.PgError
+	DeleteComment(context.Context, uuid.UUID) *pgconn.PgError
+
+	// Private
+	FindById(context.Context, uuid.UUID) (*model.Session, *pgconn.PgError)
+	FindCommentById(context.Context, uuid.UUID) (*model.SessionComment, *pgconn.PgError)
 }
 
 type SessionService struct {
+	db     *gorm.DB
 	config *config.Configuration
 }
 
-func NewSessionService(c *config.Configuration) SessionServiceInterface {
-	return &SessionService{config: c}
+func NewSessionService(db *gorm.DB, c *config.Configuration) SessionServiceInterface {
+	return &SessionService{config: c, db: db}
 }
 
-func (service *SessionService) CreateSession(ctx context.Context, session *model.Session) error {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
+// PUBLIC SESSION FUNCTIONS
 
-	// run.ID = primitive.NewObjectID()
-	// // Check if Thing exists
-	// res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": run.ThingID})
-	// if res.Err() == mongo.ErrNoDocuments {
-	// 	return errors.New("thing does not exist")
-	// }
-
-	// // Check of Session exists
-	// res = database.Collection("Session").FindOne(ctx, bson.M{"_id": run.SessionId})
-	// if res.Err() == mongo.ErrNoDocuments {
-	// 	return errors.New("session does not exist")
-	// }
-
-	// _, err = database.Collection("Run").InsertOne(ctx, run)
-	// return err
-	return nil
+func (service *SessionService) FindSessionsByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Session, *pgconn.PgError) {
+	var sessions []*model.Session
+	result := service.db.Where("thing_id = ?", thingId).Find(&sessions)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return sessions, nil
 }
 
-func (service *SessionService) FindById(ctx context.Context, sessionId uuid.UUID) (*model.Session, error) {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// var run models.Run
-	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// err = database.Collection("Run").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&run)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return &run, err
-	return nil, nil
+func (service *SessionService) CreateSession(ctx context.Context, session *model.Session) *pgconn.PgError {
+	result := service.db.Create(&session)
+	return utils.GetPostgresError(result.Error)
 }
 
-func (service *SessionService) GetSessionsByThingId(ctx context.Context, thingId uuid.UUID) ([]*model.Session, error) {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// bsonThingId, err := primitive.ObjectIDFromHex(thingId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// var runs []*models.Run
-	// cursor, err := database.Collection("Run").Find(ctx, bson.M{"thingId": bsonThingId})
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// if err = cursor.All(ctx, &runs); err != nil {
-	// 	return nil, err
-	// }
-
-	// return runs, nil
-	return nil, nil
+func (service *SessionService) UpdateSession(ctx context.Context, updatedSession *model.Session) *pgconn.PgError {
+	result := service.db.Updates(&updatedSession)
+	return utils.GetPostgresError(result.Error)
 }
 
-func (service *SessionService) UpdateSession(ctx context.Context, updatedSession *model.Session) error {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// // Check if Thing exists
-	// res := database.Collection("Thing").FindOne(ctx, bson.M{"_id": updatedRun.ThingID})
-	// if res.Err() == mongo.ErrNoDocuments {
-	// 	return errors.New("thing does not exist")
-	// }
-
-	// // Check of Session exists
-	// res = database.Collection("Session").FindOne(ctx, bson.M{"_id": updatedRun.SessionId})
-	// if res.Err() == mongo.ErrNoDocuments {
-	// 	return errors.New("session does not exist")
-	// }
-
-	// _, err = database.Collection("Run").UpdateOne(ctx, bson.M{"_id": updatedRun.ID}, bson.M{"$set": updatedRun})
-
-	// return err
-	return nil
+func (service *SessionService) DeleteSession(ctx context.Context, sessionId uuid.UUID) *pgconn.PgError {
+	session := model.Session{Base: model.Base{Id: sessionId}}
+	result := service.db.Delete(&session)
+	return utils.GetPostgresError(result.Error)
 }
 
-func (service *SessionService) DeleteSession(ctx context.Context, sessionId uuid.UUID) error {
-	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
-	// if err != nil {
-	// 	return err
-	// }
+// COMMENTS
 
-	// client, err := databases.GetDBClient(service.config.AtlasUri, ctx)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer client.Disconnect(ctx)
-
-	// callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-	// 	db := client.Database(service.config.MongoDbName)
-
-	// 	// Delete related comments
-	// 	commentFilter := bson.M{"associatedId": bsonRunId, "type": utils.Run}
-	// 	if _, err := db.Collection("Comment").DeleteMany(ctx, commentFilter); err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	// Delete run
-	// 	_, err := db.Collection("Run").DeleteOne(ctx, bson.M{"_id": bsonRunId})
-	// 	return nil, err
-	// }
-
-	// _, err = databases.WithTransaction(client, ctx, callback)
-	// return err
-	return nil
+func (service *SessionService) FindCommentsBySessionId(ctx context.Context, sessionId uuid.UUID) ([]*model.SessionComment, *pgconn.PgError) {
+	var comments []*model.SessionComment
+	result := service.db.Where("session_id = ?", sessionId).Find(&comments)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return comments, nil
 }
 
-func (service *SessionService) GetSessionFileMetaData(ctx context.Context, sessionId uuid.UUID) (*model.Session, error) {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// var runFileMetaData models.RunFileMetaData
-	// err = database.Collection("fs.files").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&runFileMetaData)
-
-	// // TODO for now the id of the file is the same as the run id
-	// // err = database.Collection("fs.files").FindOne(
-	// // 	ctx,
-	// // 	bson.D{
-	// // 		{"metadata", bson.D{
-	// // 			{"runId", bsonRunId},
-	// // 		}},
-	// // 	}).Decode(&runFileMetaData)
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// 	return nil, err
-	// }
-
-	// return &runFileMetaData, nil
-	return nil, nil
+func (service *SessionService) CreateComment(ctx context.Context, comment *model.SessionComment) *pgconn.PgError {
+	result := service.db.Create(&comment)
+	return utils.GetPostgresError(result.Error)
 }
 
-func (service *SessionService) UploadFile(ctx context.Context, metadata *model.Session, file *multipart.FileHeader) error {
-	// fileContent, err := file.Open()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// byteContainer, err := ioutil.ReadAll(fileContent)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
-
-	// bucket, err := gridfs.NewBucket(
-	// 	database,
-	// )
-	// if err != nil {
-	// 	return err
-	// }
-
-	// opts := options.GridFSUpload()
-	// opts.SetMetadata(metadata)
-	// uploadStream, err := bucket.OpenUploadStreamWithID(
-	// 	metadata.RunId,
-	// 	file.Filename,
-	// 	opts,
-	// )
-	// if err != nil {
-	// 	return err
-	// }
-	// defer uploadStream.Close()
-
-	// fileSize, err := uploadStream.Write(byteContainer)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// fmt.Printf("Write file to DB was successful. File size: %d M\n", fileSize)
-	return nil
+func (service *SessionService) UpdateComment(ctx context.Context, updatedComment *model.SessionComment) *pgconn.PgError {
+	result := service.db.Updates(&updatedComment)
+	return utils.GetPostgresError(result.Error)
 }
 
-func (service *SessionService) DownloadFile(ctx context.Context, sessionId uuid.UUID) ([]byte, error) {
-	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer database.Client().Disconnect(ctx)
+func (service *SessionService) DeleteComment(ctx context.Context, commentId uuid.UUID) *pgconn.PgError {
+	comment := model.SessionComment{Base: model.Base{Id: commentId}}
+	result := service.db.Delete(&comment)
+	return utils.GetPostgresError(result.Error)
+}
 
-	// bsonRunId, err := primitive.ObjectIDFromHex(runId)
-	// if err != nil {
-	// 	return nil, err
-	// }
+// PRIVATE FUNCTIONS
 
-	// var result bson.M
-	// err = database.Collection("fs.files").FindOne(ctx, bson.M{"_id": bsonRunId}).Decode(&result)
-	// if err != nil {
-	// 	return nil, err
-	// }
+func (service *SessionService) FindById(ctx context.Context, sessionId uuid.UUID) (*model.Session, *pgconn.PgError) {
+	var session *model.Session
+	result := service.db.Where("id = ?", sessionId).First(&session)
+	if result.Error != nil {
+		return nil, &pgconn.PgError{}
+	}
+	return session, nil
+}
 
-	// bucket, _ := gridfs.NewBucket(database)
-
-	// var buf bytes.Buffer
-	// _, err = bucket.DownloadToStream(bsonRunId, &buf)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// return buf.Bytes(), nil
-	return nil, nil
+func (service *SessionService) FindCommentById(ctx context.Context, commentId uuid.UUID) (*model.SessionComment, *pgconn.PgError) {
+	var comment *model.SessionComment
+	result := service.db.Where("id = ?", commentId).First(&comment)
+	if result.Error != nil {
+		return nil, utils.GetPostgresError(result.Error)
+	}
+	return comment, nil
 }

@@ -13,7 +13,6 @@ type Thing struct {
 	OrganizationId uuid.UUID    `gorm:"type:uuid;column:organization_id;not null;uniqueIndex:unique_thing_name_in_org" json:"organizationId"`
 	Organization   Organization `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	OperatorIds    []uuid.UUID  `gorm:"-" json:"operatorIds"`
-	// Should we just send all the operators back?
 }
 
 func (*Thing) TableName() string {

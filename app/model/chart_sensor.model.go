@@ -29,10 +29,14 @@ func (cs *ChartSensor) BeforeDelete(db *gorm.DB) (err error) {
 
 	// Delete the chart if this is the last sensor attached to it
 	if len(chartSensors) == 1 {
-		chart := Chart{Base: Base{Id: cs.ChartId}}
-		result := db.Delete(&chart)
+		var chart Chart
+		result := db.Table(TableNameChart).Where("id = ?", chartSensors[0].ChartId).First(&chart)
 		if result.Error != nil {
 			return result.Error
+		}
+		err := chart.BeforeDelete(db)
+		if err != nil {
+			return err
 		}
 	}
 	return nil

@@ -30,7 +30,7 @@ func (rs *RawDataPresetSensor) BeforeDelete(db *gorm.DB) (err error) {
 	// Delete the preset if this is the last sensor attached to it
 	if len(presetSensors) == 1 {
 		preset := RawDataPreset{Base: Base{Id: rs.RawDataPresetId}}
-		result := db.Delete(&preset)
+		result := db.Table(TableNameRawdatapreset).Delete(&preset)
 		if result.Error != nil {
 			return result.Error
 		}

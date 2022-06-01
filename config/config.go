@@ -24,6 +24,7 @@ type Configuration struct {
 	RedisPort     string `env:"REDIS_PORT,required"`
 	RedisUsername string `env:"REDIS_USERNAME"`
 	RedisPassword string `env:"REDIS_PASSWORD,required"`
+	FilePath      string `env:"FILE_PATH,required"`
 }
 
 // NewConfig will read the config data from given .env file

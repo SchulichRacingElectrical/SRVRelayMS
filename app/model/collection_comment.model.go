@@ -12,8 +12,8 @@ type CollectionComment struct {
 	UserId       uuid.UUID  `gorm:"type:uuid;column:user_id;not null" json:"userId"`
 	LastUpdate   int64      `gorm:"column:last_update;not null" json:"lastUpdate"`
 	Content      string     `gorm:"column:content;not null" json:"content"`
-	Collection   Collection `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
-	User         User       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
+	Collection   Collection `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	User         User       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 }
 
 func (*CollectionComment) TableName() string {
