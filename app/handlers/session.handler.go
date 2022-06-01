@@ -108,7 +108,7 @@ func (handler *SessionHandler) GetSessions(ctx *gin.Context) {
 	}
 
 	// Send the response
-	result := utils.SuccessPayload(sessions, "Successfully retrieved collections")
+	result := utils.SuccessPayload(sessions, "Successfully retrieved sessions.")
 	utils.Response(ctx, http.StatusOK, result)
 }
 
@@ -161,7 +161,7 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 	}
 
 	// Send the response
-	result := utils.SuccessPayload(nil, "Successfully updated")
+	result := utils.SuccessPayload(nil, "Successfully updated.")
 	utils.Response(ctx, http.StatusOK, result)
 }
 
