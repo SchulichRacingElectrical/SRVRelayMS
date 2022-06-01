@@ -4,8 +4,8 @@ const TableNameBlacklist = "blacklist"
 
 type Blacklist struct {
 	Base
-	token      string `gorm:"column;not null;unique"`
-	expiration int64  `gorm:"expiration;not null"`
+	Token      string `gorm:"column;column:token;not null;unique"`
+	Expiration int64  `gorm:"expiration;column:expiration;not null"`
 }
 
 func (*Blacklist) TableName() string {

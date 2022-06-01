@@ -81,6 +81,13 @@ const (
 	// Datum Error
 	DatumNotFound = "datumNotFound"
 
+	// Authorization Error
+	MalformedToken   = "malformedToken"
+	ExpiredToken     = "expiredToken"
+	InvalidatedToken = "invalidatedToken"
+	InvalidToken     = "invalidToken"
+	EmptyToken       = "emptyToken"
+
 	// Collection Error
 	CollectionsNotFound = "collectionsNotFound"
 	CollectionNotFound  = "collectionNotFound"
@@ -171,6 +178,13 @@ var errorMessage = map[string]string{
 
 	// Datum
 	"datumNotFound": "Datum could not be found.",
+
+	// Authorization
+	"malformedToken":   "Token is malformed.",
+	"expiredToken":     "Token is expired.",
+	"invalidatedToken": "Token has been invalidated.",
+	"invalidToken":     "Could not handle token.",
+	"emptyToken":       "Token was an empty string.",
 
 	// File error
 	"notCSV":             "Not a CSV file",

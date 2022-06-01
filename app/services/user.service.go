@@ -5,10 +5,11 @@ import (
 	"database-ms/app/model"
 	"database-ms/config"
 	"database-ms/utils"
+	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
@@ -28,6 +29,8 @@ type UserServiceInterface interface {
 	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
 	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
+	BlacklistToken(*jwt.Token) error
+	IsBlacklisted(*jwt.Token) bool
 	HashPassword(string) string
 	CheckPasswordHash(string, string) bool
 }
@@ -103,17 +106,43 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 }
 
 func (service *UserService) CreateToken(c *gin.Context, user *model.User) (string, error) {
+	var expirationDate int = int(time.Now().Add(5 * time.Hour).Unix())
 	atClaims := jwt.MapClaims{}
 	atClaims["userId"] = user.Id
 	atClaims["organizationId"] = user.OrganizationId
+	atClaims["exp"] = expirationDate
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	token, err := at.SignedString([]byte(service.config.AccessSecret))
 	if err != nil {
 		return "", err
 	}
-	var expirationDate int = int(time.Now().Add(5 * time.Hour).Unix())
 	c.SetCookie("Authorization", token, expirationDate, "/", "", false, true)
 	return token, nil
+}
+
+func (service *UserService) BlacklistToken(token *jwt.Token) error {
+	// Extract expiration
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok != true {
+		return errors.New("error parsing claims")
+	}
+	var exp time.Time
+	exp = time.Unix(int64(claims["exp"].(float64)), 0)
+
+	// Add token to blacklist table
+	blacklist := model.Blacklist{
+		Token:      token.Raw,
+		Expiration: exp.Unix(),
+	}
+	result := service.db.Table(model.TableNameBlacklist).Create(&blacklist)
+	return result.Error
+}
+
+func (service *UserService) IsBlacklisted(token *jwt.Token) bool {
+	// Check if token exists in blacklist table
+	count := int64(0)
+	service.db.Table(model.TableNameBlacklist).Where("token = ?", token.Raw).Count(&count)
+	return count > 0
 }
 
 func (service *UserService) HashPassword(password string) string {
