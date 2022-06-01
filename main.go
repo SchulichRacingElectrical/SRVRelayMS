@@ -1,9 +1,9 @@
 package main
 
 import (
+	"database-ms/app/subscriber"
 	"database-ms/config"
 	"database-ms/databases"
-	"database-ms/redisHandler"
 	"database-ms/routes"
 	"log"
 	"net/http"
@@ -27,7 +27,7 @@ func main() {
 	router.Use(cors.Default())
 
 	// Redis IoT Sub
-	redisHandler.Initialize(conf, db)
+	subscriber.Initialize(conf, db)
 
 	// Server config
 	srv := &http.Server{

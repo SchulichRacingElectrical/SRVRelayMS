@@ -1,4 +1,4 @@
-package redisHandler
+package subscriber
 
 import (
 	"context"
