@@ -26,7 +26,6 @@ type Sensor struct {
 	LowerDanger          float64   `gorm:"column:lower_danger" json:"lowerDanger,omitempty"`
 	UpperBound           float64   `gorm:"column:upper_bound;not null" json:"upperBound"`
 	LowerBound           float64   `gorm:"column:lower_bound;not null" json:"lowerBound"`
-	Significance         float64   `gorm:"column:significance" json:"significance,omitempty"`
 	Thing                Thing     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 }
 

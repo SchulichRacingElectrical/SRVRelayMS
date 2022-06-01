@@ -34,6 +34,7 @@ func NewSessionAPI(
 }
 
 func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
+	// Attempt to parse the body
 	var newSession model.Session
 	err := ctx.BindJSON(&newSession)
 	if err != nil {
@@ -41,28 +42,34 @@ func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-admin requests
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to find the thing
+	thing, perr := handler.thing.FindById(ctx, newSession.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
 
 	// Guard against cross-tenant writes
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	thing, perr := handler.thing.FindById(ctx, newSession.ThingId)
-	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingsNotFound))
-		return
-	}
 	if organization.Id != thing.OrganizationId {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
 	// Attempt to create the session
-	err = handler.session.CreateSession(ctx.Request.Context(), &newSession)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+	perr = handler.session.CreateSession(ctx.Request.Context(), &newSession)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError("")) // TODO: Add session not unique error
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
+		}
 		return
 	}
 
@@ -80,7 +87,6 @@ func (handler *SessionHandler) GetSessions(ctx *gin.Context) {
 	}
 
 	// Attempt to find the thing
-	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, perr := handler.thing.FindById(ctx.Request.Context(), thingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
@@ -88,13 +94,14 @@ func (handler *SessionHandler) GetSessions(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant reading
+	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
 	// Attempt to read the sessions
-	sessions, perr := handler.session.GetSessionsByThingId(ctx.Request.Context(), thingId)
+	sessions, perr := handler.session.FindSessionsByThingId(ctx.Request.Context(), thingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionsNotFound))
 		return
@@ -114,14 +121,13 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-admin lead or admin
+	// Guard against non-lead+ requests
 	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
 	// Attempt to get the thing
-	organization, _ := middleware.GetOrganizationClaim(ctx)
 	thing, perr := handler.thing.FindById(ctx, updatedSession.ThingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
@@ -129,10 +135,19 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 	}
 
 	// Guard against cross-tenant updates
+	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
+
+	// Read the current session and don't allow updates to the thingId
+	session, perr := handler.session.FindById(ctx.Request.Context(), updatedSession.Id)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
+		return
+	}
+	updatedSession.ThingId = session.ThingId
 
 	// Attempt to update the collection
 	perr = handler.session.UpdateSession(ctx.Request.Context(), &updatedSession)
@@ -159,21 +174,21 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 	}
 
 	// Attempt to find the session
-	organization, _ := middleware.GetOrganizationClaim(ctx)
-	collection, perr := handler.session.FindById(ctx.Request.Context(), sessionId)
+	session, perr := handler.session.FindById(ctx.Request.Context(), sessionId)
 	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
 
 	// Attempt to find the thing
-	thing, perr := handler.thing.FindById(ctx, collection.ThingId)
+	thing, perr := handler.thing.FindById(ctx, session.ThingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
 
 	// Guard against cross-tenant deletion
+	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
@@ -182,7 +197,7 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 	// Attempt to delete the session
 	perr = handler.session.DeleteSession(ctx.Request.Context(), sessionId)
 	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
 	}
 
@@ -192,6 +207,7 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) AddComment(ctx *gin.Context) {
+	// Attempt to parse the body
 	var newComment model.SessionComment
 	err := ctx.BindJSON(&newComment)
 	if err != nil {
@@ -199,29 +215,34 @@ func (handler *SessionHandler) AddComment(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against cross-tenant write
-	organization, _ := middleware.GetOrganizationClaim(ctx)
+	// Attempt to find the session
 	session, perr := handler.session.FindById(ctx, newComment.SessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
+
+	// Attempt to find the thing
 	thing, perr := handler.thing.FindById(ctx, session.ThingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
+
+	// Guard against cross-tenant writes
+	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
+	// Update the last update time
 	newComment.LastUpdate = utils.CurrentTimeInMilli()
 
-	// Attempt to create the session
-	err = handler.session.AddComment(ctx.Request.Context(), &newComment)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+	// Attempt to create the comment
+	perr = handler.session.CreateComment(ctx.Request.Context(), &newComment)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
 	}
 
@@ -238,26 +259,30 @@ func (handler *SessionHandler) GetComments(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against cross-tenant read
-	organization, _ := middleware.GetOrganizationClaim(ctx)
+	// Attempt to find the session
 	session, perr := handler.session.FindById(ctx, sessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
+
+	// Attempt to find the thing
 	thing, perr := handler.thing.FindById(ctx, session.ThingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
+
+	// Guard against cross-tenant reads
+	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
 	// Attempt to read the comments
-	comments, err := handler.session.GetComments(ctx.Request.Context(), sessionId)
-	if err != nil {
+	comments, perr := handler.session.FindCommentsBySessionId(ctx.Request.Context(), sessionId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentsNotFound))
 		return
 	}
@@ -268,6 +293,7 @@ func (handler *SessionHandler) GetComments(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) UpdateCommentContent(ctx *gin.Context) {
+	// Attempt to parse the body
 	var updatedComment model.SessionComment
 	err := ctx.BindJSON(&updatedComment)
 	if err != nil {
@@ -275,29 +301,34 @@ func (handler *SessionHandler) UpdateCommentContent(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against cross-user update
+	// Attempt to get the user
 	user, err := middleware.GetUserClaim(ctx)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
+
+	// Attempt to get the comment
 	updatedComment.UserId = user.Id
-	comment, err := handler.session.GetComment(ctx, updatedComment.Id)
-	if err != nil {
+	comment, perr := handler.session.FindCommentById(ctx, updatedComment.Id)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentNotFound))
 		return
 	}
+
+	// Guard against cross-user updates
 	if comment.UserId != user.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
+	// Set the update time of the comment
 	updatedComment.LastUpdate = utils.CurrentTimeInMilli()
 
 	// Attempt to create the session
-	err = handler.session.UpdateCommentContent(ctx.Request.Context(), &updatedComment)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+	perr = handler.session.UpdateComment(ctx.Request.Context(), &updatedComment)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
 	}
 
@@ -314,26 +345,30 @@ func (handler *SessionHandler) DeleteComment(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against cross-user update
+	// Attempt to get the user
 	user, err := middleware.GetUserClaim(ctx)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
-	comment, err := handler.session.GetComment(ctx, commentId)
-	if err != nil {
+
+	// Attempt to get the comment
+	comment, perr := handler.session.FindCommentById(ctx, commentId)
+	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentNotFound))
 		return
 	}
+
+	// Guard against cross-tenant deletions
 	if comment.UserId != user.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
 	// Attempt to delete the comment
-	err = handler.session.DeleteComment(ctx.Request.Context(), commentId)
-	if err != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+	perr = handler.session.DeleteComment(ctx.Request.Context(), commentId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
 	}
 
@@ -343,12 +378,6 @@ func (handler *SessionHandler) DeleteComment(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
-	// Guard against non-admin lead or admin
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
-		return
-	}
-
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
 	if err != nil {
@@ -356,13 +385,20 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	// Check if session exists
+	// Guard against non-lead+ uploads
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
+	// Attempt to get the session
 	session, perr := handler.session.FindById(ctx, sessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
 
+	// Attempt to read the file
 	file, err := ctx.FormFile("file")
 	if err != nil {
 		result := utils.NewHTTPError(utils.NoFileRcvd)
@@ -370,7 +406,7 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	// // Verify file extension
+	// Verify file extension (.csv)
 	if extension := filepath.Ext(file.Filename); extension != ".csv" {
 		result := utils.NewHTTPError(utils.NotCsv)
 		utils.Response(ctx, http.StatusBadRequest, result)
@@ -381,15 +417,17 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 	session.FileName = file.Filename
 	perr = handler.session.UpdateSession(ctx.Request.Context(), session)
 	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
 	}
 
+	// Attempt to save the file
 	if err = ctx.SaveUploadedFile(file, handler.filepath+file.Filename); err != nil {
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.CouldNotUploadFile))
 		return
 	}
 
+	// Send the response
 	result := utils.SuccessPayload(nil, "Successfully uploaded file")
 	utils.Response(ctx, http.StatusOK, result)
 }
@@ -402,23 +440,28 @@ func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against cross-tenant download
-	organization, _ := middleware.GetOrganizationClaim(ctx)
+	// Attempt to read the session
 	session, perr := handler.session.FindById(ctx, sessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
+
+	// Attempt to read the thing
 	thing, perr := handler.thing.FindById(ctx, session.ThingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
+
+	// Guard against cross-tenant reads
+	organization, _ := middleware.GetOrganizationClaim(ctx)
 	if thing.OrganizationId != organization.Id {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
+	// Attempt to read the file
 	file, err := os.Open(handler.filepath + session.FileName)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.FileNotFound))
@@ -426,6 +469,7 @@ func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
 	}
 	defer file.Close()
 
+	// Attempt to place the data into a buffer
 	buf := &bytes.Buffer{}
 	nRead, err := io.Copy(buf, file)
 	if err != nil {
@@ -433,15 +477,12 @@ func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
 		return
 	}
 
+	// Send the response
 	ctx.DataFromReader(http.StatusOK, nRead, "text/csv", buf, nil)
-
-	// tempBuffer := make([]byte, 512)
-	// ctx.Header("Content-Disposition", "attachment; filename="+session.FileName)
-	// ctx.Data(http.StatusOK, "application/octet-stream", tempBuffer)
-
 }
 
 func (handler *SessionHandler) GetDatumBySessionIdAndSensorId(c *gin.Context) {
+	// TODO
 	// datumArray, err := handler.datum.FindBySessionIdAndSensorId(c.Request.Context(), c.Param("sessionId"), c.Param("sensorId"))
 	// if err != nil {
 	// 	utils.Response(c, http.StatusBadRequest, utils.NewHTTPError(utils.DatumNotFound))
