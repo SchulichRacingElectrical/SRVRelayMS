@@ -80,6 +80,24 @@ const (
 
 	// Datum Error
 	DatumNotFound = "datumNotFound"
+
+	// Collection Error
+	CollectionsNotFound = "collectionsNotFound"
+	CollectionNotFound  = "collectionNotFound"
+
+	// Session Error
+	SessionsNotFound = "sessionsNotFound"
+	SessionNotFound  = "sessionNotFound"
+
+	// Comments Error
+	CommentsNotFound = "commentsNotFound"
+	CommentNotFound  = "commentNotFound"
+
+	//File Error
+	NotCsv             = "notCSV"
+	NoFileRcvd         = "noFileRcvd"
+	CouldNotUploadFile = "couldNotUploadFile"
+	FileNotFound       = "fileNotFound"
 )
 
 // Error code with description
@@ -122,11 +140,6 @@ var errorMessage = map[string]string{
 	"organizationNotFound":  "Organization could not be found.",
 	"organizationsNotFound": "Organizations could not be found.",
 
-	// Run errors
-	"runsNotFound": "Runs could not be found",
-	"runNotFound":  "Run could not be found",
-	"runDNE":       "Run does not exist",
-
 	// File
 	"noFileReceived":         "No file is received",
 	"notCsv":                 "Not a csv",
@@ -134,9 +147,17 @@ var errorMessage = map[string]string{
 	"runHasNoAssociatedFile": "Run does exist or not have associated file",
 	"cannotRetrieveFile":     "Cannot retrieve file",
 
+	// Collection errors
+	"collectionsNotFound": "Collections could not be found",
+	"collectionNotFound":  "Collection could not be found",
+
 	// Session errors
-	"sessionssNotFound": "Sesssions could not be found",
-	"sessionNotFound":   "Session could not be found",
+	"sessionsNotFound": "Sessions could not be found",
+	"sessionNotFound":  "Session could not be found",
+
+	// Comment errors
+	"commentsNotFound": "Comments could not be found",
+	"commentNotFound":  "Comment could not be found",
 
 	// Raw Data Preset
 	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",
@@ -150,4 +171,10 @@ var errorMessage = map[string]string{
 
 	// Datum
 	"datumNotFound": "Datum could not be found.",
+
+	// File error
+	"notCSV":             "Not a CSV file",
+	"noFileRcvd":         "No file received",
+	"couldNotUploadFile": "Could not upload file",
+	"fileNotFound":       "File not found",
 }

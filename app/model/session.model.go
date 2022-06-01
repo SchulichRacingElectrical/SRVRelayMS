@@ -14,8 +14,10 @@ type Session struct {
 	FileName     string     `gorm:"column:file_name;unique" json:"fileName,omitempty"`
 	CollectionId uuid.UUID  `gorm:"type:uuid;column:collection_id" json:"collectionId,omitempty"`
 	ThingId      uuid.UUID  `gorm:"type:uuid;column:thing_id;not null;uniqueIndex:unique_session_name_in_thing" json:"thingId"`
+	OperatorId   uuid.UUID  `gorm:"type:uuid;column:operator_id" json:"operatorId,omitempty"`
 	Collection   Collection `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
 	Thing        Thing      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Operator     Operator   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
 }
 
 func (*Session) TableName() string {
