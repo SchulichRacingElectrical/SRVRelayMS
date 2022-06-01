@@ -292,7 +292,6 @@ func (handler *CollectionHandler) UpdateCommentContent(ctx *gin.Context) {
 	}
 
 	// Attempt to find the comment
-	updatedComment.UserId = user.Id
 	comment, perr := handler.collectionService.FindCommentById(ctx, updatedComment.Id)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentNotFound))
@@ -306,10 +305,11 @@ func (handler *CollectionHandler) UpdateCommentContent(ctx *gin.Context) {
 	}
 
 	// Update the last update of the comment
-	updatedComment.LastUpdate = utils.CurrentTimeInMilli()
+	comment.LastUpdate = utils.CurrentTimeInMilli()
+	comment.Content = updatedComment.Content
 
 	// Attempt to update the comment
-	perr = handler.collectionService.UpdateCommentContent(ctx.Request.Context(), &updatedComment)
+	perr = handler.collectionService.UpdateCommentContent(ctx.Request.Context(), comment)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return

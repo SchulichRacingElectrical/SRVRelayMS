@@ -309,7 +309,6 @@ func (handler *SessionHandler) UpdateCommentContent(ctx *gin.Context) {
 	}
 
 	// Attempt to get the comment
-	updatedComment.UserId = user.Id
 	comment, perr := handler.session.FindCommentById(ctx, updatedComment.Id)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentNotFound))
@@ -322,11 +321,12 @@ func (handler *SessionHandler) UpdateCommentContent(ctx *gin.Context) {
 		return
 	}
 
-	// Set the update time of the comment
-	updatedComment.LastUpdate = utils.CurrentTimeInMilli()
+	// Set the update time of the comment and only update the content
+	comment.LastUpdate = utils.CurrentTimeInMilli()
+	comment.Content = updatedComment.Content
 
 	// Attempt to create the session
-	perr = handler.session.UpdateComment(ctx.Request.Context(), &updatedComment)
+	perr = handler.session.UpdateComment(ctx.Request.Context(), comment)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
