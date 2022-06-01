@@ -5,7 +5,7 @@ import (
 	"database-ms/app/model"
 	"database-ms/config"
 	"database-ms/utils"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,10 +29,10 @@ type UserServiceInterface interface {
 	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
 	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
-	BlacklistToken(string) error
+	BlacklistToken(*jwt.Token) error
+	IsBlacklisted(*jwt.Token) bool
 	HashPassword(string) string
 	CheckPasswordHash(string, string) bool
-	IsBlacklisted(string) bool
 }
 
 type UserService struct {
@@ -120,21 +120,28 @@ func (service *UserService) CreateToken(c *gin.Context, user *model.User) (strin
 	return token, nil
 }
 
-func (service *UserService) BlacklistToken(token string) error {
+func (service *UserService) BlacklistToken(token *jwt.Token) error {
+	// Extract expiration
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if ok != true {
+		return errors.New("error parsing claims")
+	}
+	var exp time.Time
+	exp = time.Unix(int64(claims["exp"].(float64)), 0)
+
 	// Add token to blacklist table
 	blacklist := model.Blacklist{
-		Token:      token,
-		Expiration: 0,
+		Token:      token.Raw,
+		Expiration: exp.Unix(),
 	}
 	result := service.db.Table(model.TableNameBlacklist).Create(&blacklist)
 	return result.Error
 }
 
-func (service *UserService) IsBlacklisted(token string) bool {
+func (service *UserService) IsBlacklisted(token *jwt.Token) bool {
 	// Check if token exists in blacklist table
 	count := int64(0)
-	service.db.Table(model.TableNameBlacklist).Where("token = ?", token).Count(&count)
-	fmt.Println("Rows affected: ", count)
+	service.db.Table(model.TableNameBlacklist).Where("token = ?", token.Raw).Count(&count)
 	return count > 0
 }
 

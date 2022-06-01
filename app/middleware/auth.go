@@ -78,7 +78,7 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 		})
 
 		// Check if token is blacklisted
-		if userService.IsBlacklisted(token.Raw) {
+		if userService.IsBlacklisted(token) {
 			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.InvalidatedToken))
 			ctx.Abort()
 			return
@@ -124,7 +124,7 @@ func AuthorizationMiddleware(conf *config.Configuration, db *gorm.DB) gin.Handle
 			}
 			ctx.Set("user", user)
 			ctx.Set("organization", organization)
-			ctx.Set("token", token.Raw)
+			ctx.Set("token", token)
 		} else {
 			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.InternalError))
 			ctx.Abort()
@@ -150,13 +150,12 @@ func GetUserClaim(ctx *gin.Context) (*model.User, error) {
 	}
 }
 
-func GetToken(ctx *gin.Context) (string, error) {
+func GetToken(ctx *gin.Context) (*jwt.Token, error) {
 	token, tokenExists := ctx.Get("token")
-	if tokenExists {
-		return fmt.Sprintf("%v", token), nil
-	} else {
-		return "", gin.Error{}
+	if !tokenExists {
+		return &jwt.Token{}, gin.Error{}
 	}
+	return token.(*jwt.Token), nil
 }
 
 func IsAuthorizationAtLeast(ctx *gin.Context, role string) bool {
