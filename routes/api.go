@@ -50,6 +50,7 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 		{
 			authEndpoints.GET("/validate", authAPI.Validate)
 			authEndpoints.POST("/signout", authAPI.SignOut)
+			authEndpoints.POST("/renew", authAPI.Renew)
 		}
 
 		organizationEndpoints := privateEndpoints.Group("/organization")

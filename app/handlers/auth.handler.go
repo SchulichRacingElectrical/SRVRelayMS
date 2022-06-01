@@ -112,6 +112,37 @@ func (handler *AuthHandler) Login(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
+func (handler *AuthHandler) Renew(ctx *gin.Context) {
+	// Extract token from request
+	token, err := middleware.GetToken(ctx)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
+
+	// Blacklist old token
+	err = handler.service.BlacklistToken(token)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
+
+	// Extract token from request
+	user, err := middleware.GetUserClaim(ctx)
+	if err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
+
+	// Attempt to create the token
+	_, err = handler.service.CreateToken(ctx, user)
+	if err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+	utils.Response(ctx, http.StatusOK, utils.SuccessPayload("", "Successfully renewed token."))
+}
+
 func (handler *AuthHandler) Validate(ctx *gin.Context) {
 	response := make(map[string]interface{})
 	user, _ := middleware.GetUserClaim(ctx)
