@@ -49,6 +49,12 @@ func (o *Operator) AfterFind(db *gorm.DB) (err error) {
 }
 
 func InsertOperatorThings(o *Operator, db *gorm.DB) (err error) {
+	// Insert empty thingIds
+	if len(o.ThingIds) == 0 {
+		o.ThingIds = []uuid.UUID{}
+		return
+	}
+
 	// Regenerate the list of thing-operators
 	var thingOperators []ThingOperator
 	for _, thingId := range o.ThingIds {
@@ -56,11 +62,6 @@ func InsertOperatorThings(o *Operator, db *gorm.DB) (err error) {
 			OperatorId: o.Id,
 			ThingId:    thingId,
 		})
-	}
-
-	// Insert empty thingIds
-	if len(o.ThingIds) == 0 {
-		o.ThingIds = []uuid.UUID{}
 	}
 
 	// Batch insert thing-operators

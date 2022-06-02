@@ -18,15 +18,8 @@ type SessionServiceInterface interface {
 	UpdateSession(context.Context, *model.Session) *pgconn.PgError
 	DeleteSession(context.Context, uuid.UUID) *pgconn.PgError
 
-	// Public - Comments
-	FindCommentsBySessionId(context.Context, uuid.UUID) ([]*model.SessionComment, *pgconn.PgError)
-	CreateComment(context.Context, *model.SessionComment) *pgconn.PgError
-	UpdateComment(context.Context, *model.SessionComment) *pgconn.PgError
-	DeleteComment(context.Context, uuid.UUID) *pgconn.PgError
-
 	// Private
 	FindById(context.Context, uuid.UUID) (*model.Session, *pgconn.PgError)
-	FindCommentById(context.Context, uuid.UUID) (*model.SessionComment, *pgconn.PgError)
 }
 
 type SessionService struct {
@@ -65,33 +58,6 @@ func (service *SessionService) DeleteSession(ctx context.Context, sessionId uuid
 	return utils.GetPostgresError(result.Error)
 }
 
-// COMMENTS
-
-func (service *SessionService) FindCommentsBySessionId(ctx context.Context, sessionId uuid.UUID) ([]*model.SessionComment, *pgconn.PgError) {
-	var comments []*model.SessionComment
-	result := service.db.Where("session_id = ?", sessionId).Find(&comments)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return comments, nil
-}
-
-func (service *SessionService) CreateComment(ctx context.Context, comment *model.SessionComment) *pgconn.PgError {
-	result := service.db.Create(&comment)
-	return utils.GetPostgresError(result.Error)
-}
-
-func (service *SessionService) UpdateComment(ctx context.Context, updatedComment *model.SessionComment) *pgconn.PgError {
-	result := service.db.Updates(&updatedComment)
-	return utils.GetPostgresError(result.Error)
-}
-
-func (service *SessionService) DeleteComment(ctx context.Context, commentId uuid.UUID) *pgconn.PgError {
-	comment := model.SessionComment{Base: model.Base{Id: commentId}}
-	result := service.db.Delete(&comment)
-	return utils.GetPostgresError(result.Error)
-}
-
 // PRIVATE FUNCTIONS
 
 func (service *SessionService) FindById(ctx context.Context, sessionId uuid.UUID) (*model.Session, *pgconn.PgError) {
@@ -101,13 +67,4 @@ func (service *SessionService) FindById(ctx context.Context, sessionId uuid.UUID
 		return nil, &pgconn.PgError{}
 	}
 	return session, nil
-}
-
-func (service *SessionService) FindCommentById(ctx context.Context, commentId uuid.UUID) (*model.SessionComment, *pgconn.PgError) {
-	var comment *model.SessionComment
-	result := service.db.Where("id = ?", commentId).First(&comment)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return comment, nil
 }
