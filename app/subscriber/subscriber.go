@@ -7,9 +7,11 @@ import (
 	"database-ms/config"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"encoding/csv"
@@ -102,24 +104,12 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			}
 
 			// Parse thing data from JSON
-			var thingDataArray []map[string]int
+			var thingDataArray []map[string]float64
 			for _, thingDataItem := range thingData {
-				var thingDataItemMap map[string]int
+				var thingDataItemMap map[string]float64
 				json.Unmarshal([]byte(thingDataItem), &thingDataItemMap)
 				thingDataArray = append(thingDataArray, thingDataItemMap)
 			}
-
-			// Process thing data to fill missing sensor values
-			thingDataArray = fillMissingValues(thingDataArray)
-
-			// Fill missing timestamps
-			timeLinearThingData := fillMissingTimestamps(thingDataArray)
-
-			// Get sorted small ids
-			smallIds := getSortedSmallIds(thingDataArray[0])
-
-			// Convert to 2D arrays
-			timeLinearThingData2DArray := mapArrayTo2DArray(timeLinearThingData, smallIds)
 
 			// Get sensor list
 			sensorService := services.NewSensorService(db, conf)
@@ -127,6 +117,26 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			if perr != nil {
 				panic(err)
 			}
+
+			// Get sorted small ids
+			var smallIds []int
+			highestFrequency := 0.0
+			for _, sensor := range sensors {
+				smallIds = append(smallIds, sensor.SmallId)
+				if sensor.Frequency > int32(highestFrequency) {
+					highestFrequency = float64(sensor.Frequency)
+				}
+			}
+			sort.Ints(smallIds)
+
+			// Get the timestamp interval
+			timestampInterval := math.Round(1000 / highestFrequency)
+
+			// Process thing data to fill missing sensor values
+			thingDataArray = fillMissingValues(thingDataArray, smallIds, int(timestampInterval))
+
+			// Convert to 2D arrays
+			timeLinearThingData2DArray := mapArrayTo2DArray(thingDataArray, smallIds)
 
 			// Create map of SmallId to ID and Name
 			smallIdToInfoMap := make(map[string]SensorInfo)
@@ -151,7 +161,7 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 				}
 			}
 
-			// Save thing data to mongo
+			// Save thing data in the database
 			datumService.CreateMany(ctx, datumArray)
 
 			// Re-fetch the session in case a user has modified it
@@ -183,15 +193,20 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 	}
 }
 
-func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
-	// use first map from thingDataArray to initialize currentDataMap,
-	// then iterate through thingDataArray and fill missing values in each map,
-	// updating currentDataMap as we go
-
-	// creates a copy of the first map
+func fillMissingValues(
+	thingDataArray []map[string]float64,
+	smallIds []int,
+	interval int,
+) []map[string]float64 {
+	// Get the default values of all the sensors
 	currentDataMap := copyMap(thingDataArray[0])
+	for _, smallId := range smallIds {
+		if _, ok := currentDataMap[strconv.Itoa(smallId)]; !ok {
+			currentDataMap[strconv.Itoa(smallId)] = 0
+		}
+	}
 
-	// iterate through the rest of the maps
+	// Iterate through the rest of the maps
 	for _, thingDataItem := range thingDataArray {
 		for key := range currentDataMap {
 			// if key doesn't exist on the current map, add it from currentDataMap
@@ -207,78 +222,18 @@ func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
 	return thingDataArray
 }
 
-func fillMissingTimestamps(thingDataArray []map[string]int) []map[string]int {
-	lastTimestamp := thingDataArray[len(thingDataArray)-1]["ts"]
-	output := make([]map[string]int, lastTimestamp+1)
-
-	// Copy first map with 0 values
-	currentDataMap := copyMapWithDefaultValues(thingDataArray[0])
-	currentTimestamp := 0
-
-	for _, thingDataItem := range thingDataArray {
-		// if thingDataItem has a higher timestamp than currentTimestamp,
-		// add currentDataMap to output and increment currentTimestamp
-		// until thingDataItem has a timestamp equal to currentTimestamp,
-		// then add thingDataItem to output
-		if thingDataItem["ts"] > currentTimestamp {
-			for i := currentTimestamp; i < thingDataItem["ts"]; i++ {
-				currentDataMap["ts"] = i
-				output[i] = copyMap(currentDataMap)
-			}
-			currentTimestamp = thingDataItem["ts"]
-		}
-		output[thingDataItem["ts"]] = copyMap(thingDataItem)
-
-		// Update currentDataMap
-		for key := range currentDataMap {
-			// if key doesn't exist on the current map, add it from currentDataMap
-			// if the key does exist, add the value from the current map to currentDataMap
-			if _, ok := thingDataItem[key]; !ok {
-				thingDataItem[key] = currentDataMap[key]
-			} else {
-				currentDataMap[key] = thingDataItem[key]
-			}
-		}
-	}
-
-	return output
-}
-
-func copyMap(source map[string]int) map[string]int {
-	dest := make(map[string]int)
+func copyMap(source map[string]float64) map[string]float64 {
+	dest := make(map[string]float64)
 	for key, value := range source {
 		dest[key] = value
 	}
 	return dest
 }
 
-func copyMapWithDefaultValues(source map[string]int) map[string]int {
-	dest := make(map[string]int)
-	for key := range source {
-		dest[key] = 0
-	}
-	return dest
-}
-
-func getSortedSmallIds(thingDataSample map[string]int) []int {
-	// Create sorted array of smallIds to keep them ordered
-	var smallIds []int
-	for k := range thingDataSample {
-		if k == "ts" {
-			continue
-		}
-		smallId, _ := strconv.Atoi(k)
-		smallIds = append(smallIds, smallId)
-	}
-	sort.Ints(smallIds)
-	return smallIds
-}
-
-func mapArrayTo2DArray(mapArray []map[string]int, smallIds []int) [][]int {
-	// Create 2D array
-	output := make([][]int, len(mapArray))
+func mapArrayTo2DArray(mapArray []map[string]float64, smallIds []int) [][]float64 {
+	output := make([][]float64, len(mapArray))
 	for i := range mapArray {
-		output[i] = make([]int, len(mapArray[i]))
+		output[i] = make([]float64, len(mapArray[i]))
 		output[i][0] = mapArray[i]["ts"]
 		for j, smallId := range smallIds {
 			output[i][j+1] = mapArray[i][strconv.Itoa(smallId)]
@@ -287,7 +242,7 @@ func mapArrayTo2DArray(mapArray []map[string]int, smallIds []int) [][]int {
 	return output
 }
 
-func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, filePath string, fileName string) {
+func exportToCsv(thingData2DArray [][]float64, smallIds []int, smallIdToInfoMap map[string]SensorInfo, filePath string, fileName string) {
 	err := os.MkdirAll(filePath, 0777)
 	if err != nil {
 		panic(err)
@@ -318,7 +273,9 @@ func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[
 	for _, thingDataRecord := range thingData2DArray {
 		strArray := make([]string, len(thingDataRecord))
 		for i, value := range thingDataRecord {
-			strArray[i] = strconv.Itoa(value)
+			s := fmt.Sprintf("%.15f", value)
+			s = strings.TrimRight(strings.TrimRight(s, "0"), ".")
+			strArray[i] = s
 		}
 		err = csvWriter.Write(strArray)
 		if err != nil {
@@ -327,7 +284,7 @@ func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[
 	}
 }
 
-func replaceSmallIdsWithIds(thingDataArray []map[string]int, smallIdToInfoMap map[string]SensorInfo) []map[string]int {
+func replaceSmallIdsWithIds(thingDataArray []map[string]float64, smallIdToInfoMap map[string]SensorInfo) []map[string]float64 {
 	for _, thingDataItem := range thingDataArray {
 		for smallId, sensorInfo := range smallIdToInfoMap {
 			thingDataItem[sensorInfo.Id.String()] = thingDataItem[smallId]
