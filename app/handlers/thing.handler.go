@@ -6,17 +6,19 @@ import (
 	services "database-ms/app/services"
 	utils "database-ms/utils"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 type ThingHandler struct {
-	service services.ThingServiceInterface
+	service  services.ThingServiceInterface
+	filepath string
 }
 
-func NewThingAPI(thingService services.ThingServiceInterface) *ThingHandler {
-	return &ThingHandler{service: thingService}
+func NewThingAPI(thingService services.ThingServiceInterface, filepath string) *ThingHandler {
+	return &ThingHandler{service: thingService, filepath: filepath}
 }
 
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
@@ -145,6 +147,12 @@ func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
 	perr = handler.service.Delete(ctx.Request.Context(), thingIdToDelete)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		return
+	}
+
+	// Attempt to delete session files related to the thing
+	if err = os.RemoveAll(handler.filepath + thingIdToDelete.String()); err != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.FailedToDeleteFiles))
 		return
 	}
 

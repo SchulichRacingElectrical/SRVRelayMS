@@ -6,6 +6,7 @@ import (
 	"database-ms/app/model"
 	services "database-ms/app/services"
 	utils "database-ms/utils"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -201,6 +202,12 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt to delete session file
+	if err = os.Remove(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv"); err != nil {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.FailedToDeleteFile))
+		return
+	}
+
 	// Send the response
 	result := utils.SuccessPayload(nil, "Successfully deleted")
 	utils.Response(ctx, http.StatusOK, result)
@@ -252,8 +259,15 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
+	err = os.Mkdir(handler.filepath+session.ThingId.String(), 0777)
+	if err != nil && !os.IsExist(err) {
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(err.Error()))
+		return
+	}
+
 	// Attempt to save the file
-	if err = ctx.SaveUploadedFile(file, handler.filepath+file.Filename); err != nil {
+	if err = ctx.SaveUploadedFile(file, handler.filepath+session.ThingId.String()+"/"+session.Name+".csv"); err != nil {
+		fmt.Println(err.Error())
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.CouldNotUploadFile))
 		return
 	}

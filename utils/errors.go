@@ -101,10 +101,13 @@ const (
 	CommentNotFound  = "commentNotFound"
 
 	//File Error
-	NotCsv             = "notCSV"
-	NoFileRcvd         = "noFileRcvd"
-	CouldNotUploadFile = "couldNotUploadFile"
-	FileNotFound       = "fileNotFound"
+	NotCsv                 = "notCSV"
+	NoFileRcvd             = "noFileRcvd"
+	CouldNotUploadFile     = "couldNotUploadFile"
+	FileNotFound           = "fileNotFound"
+	SubFolderCreationError = "subFolderCreationError"
+	FailedToDeleteFile     = "failedToDeleteFile"
+	FailedToDeleteFiles    = "failedToDeleteFiles"
 )
 
 // Error code with description
@@ -187,8 +190,11 @@ var errorMessage = map[string]string{
 	"emptyToken":       "Token was an empty string.",
 
 	// File error
-	"notCSV":             "Not a CSV file",
-	"noFileRcvd":         "No file received",
-	"couldNotUploadFile": "Could not upload file",
-	"fileNotFound":       "File not found",
+	"notCSV":                 "Not a CSV file",
+	"noFileRcvd":             "No file received",
+	"couldNotUploadFile":     "Could not upload file",
+	"fileNotFound":           "File not found",
+	"subfolderCreationError": "Could not create subfolder",
+	"failedToDeleteFile":     "Failed to delete file associated with session",
+	"failedToDeleteFiles":    "Failed to delete files associated with thing",
 }
