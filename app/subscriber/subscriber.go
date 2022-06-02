@@ -210,7 +210,6 @@ func fillMissingValues(thingDataArray []map[string]int) []map[string]int {
 func fillMissingTimestamps(thingDataArray []map[string]int) []map[string]int {
 	lastTimestamp := thingDataArray[len(thingDataArray)-1]["ts"]
 	output := make([]map[string]int, lastTimestamp+1)
-	log.Println("lastTimestamp: ", lastTimestamp, " len(output): ", len(output))
 
 	// Copy first map with 0 values
 	currentDataMap := copyMapWithDefaultValues(thingDataArray[0])
