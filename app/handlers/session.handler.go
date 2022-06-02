@@ -161,14 +161,16 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 		return
 	}
 
-	// Attempt to rename the file on the file system
-	err = os.Rename(
-		handler.filepath+session.ThingId.String()+"/"+session.Name+".csv",
-		handler.filepath+session.ThingId.String()+"/"+updatedSession.Name+".csv",
-	)
-	if err != nil {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError("")) // TODO: Error message for failed to rename
-		return
+	// Attempt to rename the file on the file system if the session name changed
+	if session.Name != updatedSession.Name {
+		err = os.Rename(
+			handler.filepath+session.ThingId.String()+"/"+session.Name+".csv",
+			handler.filepath+session.ThingId.String()+"/"+updatedSession.Name+".csv",
+		)
+		if err != nil {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError("")) // TODO: Error message for failed to rename
+			return
+		}
 	}
 
 	// Send the response
