@@ -17,7 +17,7 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	userAPI := handlers.NewUserAPI(services.NewUserService(db, conf))
 	authAPI := handlers.NewAuthAPI(services.NewUserService(db, conf), organizationService)
 	thingService := services.NewThingService(db, conf)
-	thingAPI := handlers.NewThingAPI(thingService)
+	thingAPI := handlers.NewThingAPI(thingService, conf.FilePath)
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(db, conf), thingService)
 	operatorService := services.NewOperatorService(db, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
