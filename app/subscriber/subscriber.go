@@ -56,11 +56,12 @@ func awaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config
 			}
 			session := &model.Session{
 				StartTime: time.Now().UnixMilli(),
+				EndTime:   nil,
 				ThingId:   thingObjId,
 				Name:      uuid.NewString(),
 			}
-			err = sessionService.CreateSession(ctx, session)
-			if err != nil {
+			perr := sessionService.CreateSession(ctx, session)
+			if perr != nil {
 				panic(err)
 			}
 			log.Println("Session created with ID: " + session.Id.String())
@@ -122,8 +123,8 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 
 			// Get sensor list
 			sensorService := services.NewSensorService(db, conf)
-			sensors, err := sensorService.FindByThingId(ctx, thingId)
-			if err != nil {
+			sensors, perr := sensorService.FindByThingId(ctx, thingId)
+			if perr != nil {
 				panic(err)
 			}
 
@@ -154,15 +155,16 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			datumService.CreateMany(ctx, datumArray)
 
 			// Re-fetch the session in case a user has modified it
-			session, err = sessionService.FindById(ctx, session.Id)
-			if err != nil {
+			session, perr = sessionService.FindById(ctx, session.Id)
+			if perr != nil {
 				panic(err)
 			}
 
 			// Update the session
-			session.EndTime = session.StartTime + int64(thingDataArray[len(thingDataArray)-1]["ts"])
-			err = sessionService.UpdateSession(ctx, session)
-			if err != nil {
+			endTime := session.StartTime + int64(thingDataArray[len(thingDataArray)-1]["ts"])
+			session.EndTime = &endTime
+			perr = sessionService.UpdateSession(ctx, session)
+			if perr != nil {
 				panic(err)
 			}
 
