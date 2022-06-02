@@ -172,21 +172,21 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 				conf.FilePath+thingId.String()+"/"+session.Name+".csv",
 			)
 
-			// // Process non-linear thing data
-			// thingDataArray = replaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
-			// datumArray := make([]*model.Datum, len(thingDataArray)*len(smallIds))
-			// for i, thingDataItem := range thingDataArray {
-			// 	for j, smallId := range smallIds {
-			// 		strSmallId := strconv.Itoa(smallId)
-			// 		sensorId := smallIdToInfoMap[strSmallId].Id
-			// 		datumArray[i*len(smallIds)+j] = &model.Datum{
-			// 			SessionId: session.Id,
-			// 			SensorId:  sensorId,
-			// 			Value:     float64(thingDataItem[sensorId.String()]),
-			// 			Timestamp: int64(thingDataItem["ts"]),
-			// 		}
-			// 	}
-			// }
+			// Process non-linear thing data
+			thingDataArray = ReplaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
+			datumArray := make([]*model.Datum, len(thingDataArray)*len(smallIds))
+			for i, thingDataItem := range thingDataArray {
+				for j, smallId := range smallIds {
+					strSmallId := strconv.Itoa(smallId)
+					sensorId := smallIdToInfoMap[strSmallId].Id
+					datumArray[i*len(smallIds)+j] = &model.Datum{
+						SessionId: session.Id,
+						SensorId:  sensorId,
+						Value:     float64(thingDataItem[sensorId.String()]),
+						Timestamp: int64(thingDataItem["ts"]),
+					}
+				}
+			}
 
 			// // Save thing data in the database
 			// datumService.CreateMany(ctx, datumArray)
@@ -202,7 +202,7 @@ func FillMissingValues(
 	smallIds []int,
 	interval int,
 ) []map[string]float64 {
-	if len(thingDataArray) == 0 {
+	if len(thingDataArray) == 0 { // HACK, check at the start.
 		return thingDataArray
 	}
 	// Get the default values of all the sensors

@@ -324,7 +324,7 @@ func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
 	}
 
 	// Attempt to read the file
-	file, err := os.Open(handler.filepath + session.ThingId.String() + "/" + session.Name)
+	file, err := os.Open(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv")
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.FileNotFound))
 		return
