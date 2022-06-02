@@ -7,7 +7,6 @@ import (
 	"database-ms/config"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -117,8 +116,11 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			if perr != nil {
 				panic(err)
 			}
+			sort.Slice(sensors, func(i, j int) bool {
+				return sensors[i].Name < sensors[j].Name
+			})
 
-			// Get sorted small ids
+			// Get small ids in the respective order of the sensors
 			var smallIds []int
 			highestFrequency := 0.0
 			for _, sensor := range sensors {
@@ -127,13 +129,12 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 					highestFrequency = float64(sensor.Frequency)
 				}
 			}
-			sort.Ints(smallIds)
-
-			// Get the timestamp interval
-			timestampInterval := math.Round(1000 / highestFrequency)
 
 			// Process thing data to fill missing sensor values
-			thingDataArray = fillMissingValues(thingDataArray, smallIds, int(timestampInterval))
+			thingDataArray = fillMissingValues(thingDataArray, smallIds)
+
+			// Get the timestamp interval
+			// timestampInterval := math.Round(1000 / highestFrequency)
 
 			// Convert to 2D arrays
 			timeLinearThingData2DArray := mapArrayTo2DArray(thingDataArray, smallIds)
@@ -196,7 +197,6 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 func fillMissingValues(
 	thingDataArray []map[string]float64,
 	smallIds []int,
-	interval int,
 ) []map[string]float64 {
 	// Get the default values of all the sensors
 	currentDataMap := copyMap(thingDataArray[0])
@@ -206,11 +206,9 @@ func fillMissingValues(
 		}
 	}
 
-	// Iterate through the rest of the maps
+	// Populate each smallId with its current or previous value
 	for _, thingDataItem := range thingDataArray {
 		for key := range currentDataMap {
-			// if key doesn't exist on the current map, add it from currentDataMap
-			// if the key does exist, add the value from the current map to currentDataMap
 			if _, ok := thingDataItem[key]; !ok {
 				thingDataItem[key] = currentDataMap[key]
 			} else {
@@ -230,6 +228,7 @@ func copyMap(source map[string]float64) map[string]float64 {
 	return dest
 }
 
+// TODO: SmallIds are not guaranteed to not have gaps!
 func mapArrayTo2DArray(mapArray []map[string]float64, smallIds []int) [][]float64 {
 	output := make([][]float64, len(mapArray))
 	for i := range mapArray {
