@@ -35,7 +35,7 @@ func NewCommentService(db *gorm.DB, c *config.Configuration) CommentServiceInter
 
 func (service *CommentService) FindCommentsByContextId(ctx context.Context, contextId uuid.UUID) ([]*model.Comment, *pgconn.PgError) {
 	var comments []*model.Comment
-	result := service.db.Where("collection_id = ? OR session_id = ?", contextId).Find(&comments)
+	result := service.db.Where("collection_id = ?", contextId).Or(model.Session{Base: model.Base{Id: contextId}}).Find(&comments)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}

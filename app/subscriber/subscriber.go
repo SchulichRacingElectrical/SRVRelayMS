@@ -37,11 +37,10 @@ func Initialize(conf *config.Configuration, db *gorm.DB) {
 		Addr:     conf.RedisUrl + ":" + conf.RedisPort,
 		Password: conf.RedisPassword,
 	})
-
-	go awaitThingDataSessions(redisClient, db, conf)
+	go AwaitThingDataSessions(redisClient, db, conf)
 }
 
-func awaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config.Configuration) {
+func AwaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_CONNECTION")
 	defer subscriber.Close()
@@ -71,12 +70,12 @@ func awaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config
 			if err != nil {
 				// Failed - Do something
 			}
-			go thingDataSession(thingId, session, redisClient, db, conf)
+			go ThingDataSession(thingId, session, redisClient, db, conf)
 		}
 	}
 }
 
-func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *redis.Client, db *gorm.DB, conf *config.Configuration) {
+func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *redis.Client, db *gorm.DB, conf *config.Configuration) {
 	ctx := context.Background()
 	subscriber := redisClient.Subscribe(ctx, "THING_"+thingId.String())
 	defer subscriber.Close()
@@ -140,7 +139,7 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			timestampInterval := math.Round(1000 / highestFrequency)
 
 			// Process thing data to fill missing sensor values and missing timestamps
-			thingDataArray = fillMissingValues(thingDataArray, smallIds, int(timestampInterval))
+			thingDataArray = FillMissingValues(thingDataArray, smallIds, int(timestampInterval))
 
 			// Create map of SmallId to ID and Name
 			smallIdToInfoMap := make(map[string]SensorInfo)
@@ -163,11 +162,12 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 				panic(err)
 			}
 
-			// Save thing data to csv
-			exportToCsv(
+			// Save thing data to a .csv file
+			ExportToCsv(
 				thingDataArray,
 				smallIds,
 				smallIdToInfoMap,
+				int(timestampInterval),
 				conf.FilePath+thingId.String(),
 				conf.FilePath+thingId.String()+"/"+session.Name+".csv",
 			)
@@ -197,55 +197,24 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 	}
 }
 
-func fillMissingValues(
+func FillMissingValues(
 	thingDataArray []map[string]float64,
 	smallIds []int,
 	interval int,
 ) []map[string]float64 {
+	if len(thingDataArray) == 0 {
+		return thingDataArray
+	}
 	// Get the default values of all the sensors
-	currentDataMap := copyMap(thingDataArray[0])
+	currentDataMap := CopyMap(thingDataArray[0])
 	for _, smallId := range smallIds {
 		if _, ok := currentDataMap[strconv.Itoa(smallId)]; !ok {
 			currentDataMap[strconv.Itoa(smallId)] = 0
 		}
 	}
 
-	// Fill from timestamp 0 to the first timestamp
-	firstTimeStamp := int(currentDataMap["ts"])
-	if firstTimeStamp != 0 {
-		currentTimeStamp := 0
-		for currentTimeStamp != firstTimeStamp {
-			newMap := copyMap(currentDataMap)
-			newMap["ts"] = float64(currentTimeStamp)
-			thingDataArray = append([]map[string]float64{newMap}, thingDataArray...)
-			currentTimeStamp += interval
-		}
-	}
-
-	// Fill timestamp gaps
-	println(len(thingDataArray))
-	var filledDataArray []map[string]float64
-	prevTimestamp := float64(0)
-	prevMap := thingDataArray[0]
-	for _, datum := range thingDataArray {
-		currentTimestamp := datum["ts"]
-		if prevTimestamp != 0 && int(currentTimestamp-prevTimestamp) != interval {
-			for currentTimestamp-prevTimestamp != 0 {
-				fillItem := copyMap(datum)
-				fillItem["ts"] = currentTimestamp
-				filledDataArray = append(filledDataArray, fillItem)
-			}
-		} else {
-			filledDataArray = append(filledDataArray, datum)
-		}
-		prevMap = datum
-		prevTimestamp = currentTimestamp
-	}
-	_ = prevMap
-	println(len(filledDataArray))
-
 	// Populate each smallId with its current or previous value
-	for _, thingDataItem := range filledDataArray {
+	for _, thingDataItem := range thingDataArray {
 		for key := range currentDataMap {
 			if _, ok := thingDataItem[key]; !ok {
 				thingDataItem[key] = currentDataMap[key]
@@ -255,21 +224,14 @@ func fillMissingValues(
 		}
 	}
 
-	return filledDataArray
+	return thingDataArray
 }
 
-func copyMap(source map[string]float64) map[string]float64 {
-	dest := make(map[string]float64)
-	for key, value := range source {
-		dest[key] = value
-	}
-	return dest
-}
-
-func exportToCsv(
+func ExportToCsv(
 	thingDataArray []map[string]float64,
 	smallIds []int,
 	smallIdToInfoMap map[string]SensorInfo,
+	interval int,
 	filePath string,
 	fileName string,
 ) {
@@ -304,30 +266,64 @@ func exportToCsv(
 	}
 
 	// Write data
+	prevTimestamp := 0
+	var prevRow []string
 	for _, datum := range thingDataArray {
-		var strArray []string
-		timestamp := fmt.Sprintf("%.15f", datum["ts"])
-		timestamp = strings.TrimRight(strings.TrimRight(timestamp, "0"), ".")
-		strArray = append(strArray, timestamp)
-		for _, smallId := range smallIds {
-			stringValue := fmt.Sprintf("%.15f", datum[strconv.Itoa(smallId)])
-			stringValue = strings.TrimRight(strings.TrimRight(stringValue, "0"), ".")
-			strArray = append(strArray, stringValue)
+		// Fill gaps after 0
+		if prevTimestamp != 0 {
+			for int(datum["ts"])-prevTimestamp > interval {
+				println("Filling gap")
+				err = csvWriter.Write(prevRow)
+				if err != nil {
+					panic(err)
+				}
+				prevTimestamp += interval
+			}
 		}
-		err = csvWriter.Write(strArray)
+
+		// Create the csv row and write to the file
+		row := CreateCsvRow(datum, smallIds)
+		err = csvWriter.Write(row)
 		if err != nil {
 			panic(err)
 		}
+
+		// Set previous values for gap filling
+		prevTimestamp = int(datum["ts"])
+		prevRow = row
 	}
 }
 
-func replaceSmallIdsWithIds(thingDataArray []map[string]float64, smallIdToInfoMap map[string]SensorInfo) []map[string]float64 {
+func CreateCsvRow(datum map[string]float64, smallIds []int) []string {
+	var strArray []string
+	timestamp := fmt.Sprintf("%.15f", datum["ts"])
+	timestamp = strings.TrimRight(strings.TrimRight(timestamp, "0"), ".")
+	strArray = append(strArray, timestamp)
+	for _, smallId := range smallIds {
+		stringValue := fmt.Sprintf("%.15f", datum[strconv.Itoa(smallId)])
+		stringValue = strings.TrimRight(strings.TrimRight(stringValue, "0"), ".")
+		strArray = append(strArray, stringValue)
+	}
+	return strArray
+}
+
+func ReplaceSmallIdsWithIds(
+	thingDataArray []map[string]float64,
+	smallIdToInfoMap map[string]SensorInfo,
+) []map[string]float64 {
 	for _, thingDataItem := range thingDataArray {
 		for smallId, sensorInfo := range smallIdToInfoMap {
 			thingDataItem[sensorInfo.Id.String()] = thingDataItem[smallId]
 			delete(thingDataItem, smallId)
 		}
 	}
-
 	return thingDataArray
+}
+
+func CopyMap(source map[string]float64) map[string]float64 {
+	dest := make(map[string]float64)
+	for key, value := range source {
+		dest[key] = value
+	}
+	return dest
 }

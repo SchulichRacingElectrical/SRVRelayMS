@@ -150,17 +150,6 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 	}
 	updatedSession.ThingId = session.ThingId
 
-	// Attempt to update the collection
-	perr = handler.session.UpdateSession(ctx.Request.Context(), &updatedSession)
-	if perr != nil {
-		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(perr.Error()))
-		} else {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-		}
-		return
-	}
-
 	// Attempt to rename the file on the file system if the session name changed
 	if session.Name != updatedSession.Name {
 		err = os.Rename(
@@ -171,6 +160,17 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError("")) // TODO: Error message for failed to rename
 			return
 		}
+	}
+
+	// Attempt to update the collection
+	perr = handler.session.UpdateSession(ctx.Request.Context(), &updatedSession)
+	if perr != nil {
+		if perr.Code == "23505" {
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(perr.Error()))
+		} else {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
+		}
+		return
 	}
 
 	// Send the response
@@ -207,16 +207,16 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt to delete session file
+	if err = os.Remove(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv"); err != nil {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.FailedToDeleteFile))
+		return
+	}
+
 	// Attempt to delete the session
 	perr = handler.session.DeleteSession(ctx.Request.Context(), sessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
-		return
-	}
-
-	// Attempt to delete session file
-	if err = os.Remove(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv"); err != nil {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.FailedToDeleteFile))
 		return
 	}
 
@@ -225,7 +225,6 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 	utils.Response(ctx, http.StatusOK, result)
 }
 
-// TODO: Do tenancy check here
 func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
@@ -276,6 +275,7 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt to make the directory
 	err = os.Mkdir(handler.filepath+session.ThingId.String(), 0777)
 	if err != nil && !os.IsExist(err) {
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(err.Error()))
