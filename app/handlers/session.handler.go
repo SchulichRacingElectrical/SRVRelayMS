@@ -206,6 +206,7 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 	utils.Response(ctx, http.StatusOK, result)
 }
 
+// TODO: Do tenancy check here
 func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))

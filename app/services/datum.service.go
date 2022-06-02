@@ -6,13 +6,14 @@ import (
 	"database-ms/config"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 )
 
 type DatumServiceInterface interface {
 	// Public
-	FindBySessionIdAndSensorId(context.Context, uuid.UUID, uuid.UUID) ([]model.Datum, error)
-	CreateMany(context.Context, []*model.Datum) error
+	FindBySessionIdAndSensorId(context.Context, uuid.UUID, uuid.UUID) ([]model.Datum, *pgconn.PgError)
+	CreateMany(context.Context, []*model.Datum) *pgconn.PgError
 }
 
 type DatumService struct {
@@ -24,17 +25,7 @@ func NewDatumService(db *gorm.DB, c *config.Configuration) DatumServiceInterface
 	return &DatumService{config: c, db: db}
 }
 
-func (service *DatumService) CreateMany(ctx context.Context, datumArray []*model.Datum) error {
-	// docs := make([]interface{}, len(datumArray))
-	// for i, datum := range datumArray {
-	// 	docs[i] = datum
-	// }
-	// _, err := service.DatumCollection(ctx).InsertMany(ctx, docs)
-	// return err
-	return nil
-}
-
-func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId uuid.UUID, sensorId uuid.UUID) ([]model.Datum, error) {
+func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId uuid.UUID, sensorId uuid.UUID) ([]model.Datum, *pgconn.PgError) {
 	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
 	// if err != nil {
 	// 	panic(err)
@@ -70,4 +61,14 @@ func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, ses
 
 	// return formattedDatumArray, nil
 	return nil, nil
+}
+
+func (service *DatumService) CreateMany(ctx context.Context, datumArray []*model.Datum) *pgconn.PgError {
+	// docs := make([]interface{}, len(datumArray))
+	// for i, datum := range datumArray {
+	// 	docs[i] = datum
+	// }
+	// _, err := service.DatumCollection(ctx).InsertMany(ctx, docs)
+	// return err
+	return nil
 }
