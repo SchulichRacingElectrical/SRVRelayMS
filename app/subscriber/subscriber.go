@@ -153,7 +153,13 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			// Save thing data to mongo
 			datumService.CreateMany(ctx, datumArray)
 
-			// Update session
+			// Re-fetch the session in case a user has modified it
+			session, err = sessionService.FindById(ctx, session.Id)
+			if err != nil {
+				panic(err)
+			}
+
+			// Update the session
 			session.EndTime = session.StartTime + int64(thingDataArray[len(thingDataArray)-1]["ts"])
 			err = sessionService.UpdateSession(ctx, session)
 			if err != nil {

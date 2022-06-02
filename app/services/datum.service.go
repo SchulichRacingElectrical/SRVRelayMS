@@ -5,13 +5,14 @@ import (
 	"database-ms/app/model"
 	"database-ms/config"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type DatumServiceInterface interface {
-	Create(context.Context, *model.Datum) error
+	// Public
+	FindBySessionIdAndSensorId(context.Context, uuid.UUID, uuid.UUID) ([]model.Datum, error)
 	CreateMany(context.Context, []*model.Datum) error
-	FindBySessionIdAndSensorId(context.Context, string, string) ([]model.Datum, error)
 }
 
 type DatumService struct {
@@ -21,15 +22,6 @@ type DatumService struct {
 
 func NewDatumService(db *gorm.DB, c *config.Configuration) DatumServiceInterface {
 	return &DatumService{config: c, db: db}
-}
-
-func (service *DatumService) Create(ctx context.Context, datum *model.Datum) error {
-	// result, err := service.DatumCollection(ctx).InsertOne(ctx, datum)
-	// if err == nil {
-	// 	datum.ID = (result.InsertedID).(primitive.ObjectID)
-	// }
-	// return err
-	return nil
 }
 
 func (service *DatumService) CreateMany(ctx context.Context, datumArray []*model.Datum) error {
@@ -42,7 +34,7 @@ func (service *DatumService) CreateMany(ctx context.Context, datumArray []*model
 	return nil
 }
 
-func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId string, sensorId string) ([]model.Datum, error) {
+func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId uuid.UUID, sensorId uuid.UUID) ([]model.Datum, error) {
 	// database, err := databases.GetDatabase(service.config.AtlasUri, service.config.MongoDbName, ctx)
 	// if err != nil {
 	// 	panic(err)

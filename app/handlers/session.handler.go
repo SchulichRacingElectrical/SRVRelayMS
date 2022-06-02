@@ -242,8 +242,10 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
+	// Set the file name to the current session name
+	file.Filename = session.Name
+
 	// Update session filename column
-	session.FileName = file.Filename
 	perr = handler.session.UpdateSession(ctx.Request.Context(), session)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
@@ -291,7 +293,7 @@ func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
 	}
 
 	// Attempt to read the file
-	file, err := os.Open(handler.filepath + session.FileName)
+	file, err := os.Open(handler.filepath + session.ThingId.String() + "/" + session.Name)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.FileNotFound))
 		return
