@@ -18,15 +18,8 @@ type CollectionServiceInterface interface {
 	UpdateCollection(context.Context, *model.Collection) *pgconn.PgError
 	DeleteCollection(context.Context, uuid.UUID) *pgconn.PgError
 
-	// Comments
-	FindCommentsByCollectionId(context.Context, uuid.UUID) ([]*model.CollectionComment, *pgconn.PgError)
-	CreateComment(context.Context, *model.CollectionComment) *pgconn.PgError
-	UpdateCommentContent(context.Context, *model.CollectionComment) *pgconn.PgError
-	DeleteComment(context.Context, uuid.UUID) *pgconn.PgError
-
 	// Private
 	FindById(context.Context, uuid.UUID) (*model.Collection, *pgconn.PgError)
-	FindCommentById(context.Context, uuid.UUID) (*model.CollectionComment, *pgconn.PgError)
 }
 
 type CollectionService struct {
@@ -65,33 +58,6 @@ func (service *CollectionService) DeleteCollection(ctx context.Context, collecti
 	return utils.GetPostgresError(result.Error)
 }
 
-// PUBLIC COMMENT FUNCTIONS
-
-func (service *CollectionService) FindCommentsByCollectionId(ctx context.Context, collectionId uuid.UUID) ([]*model.CollectionComment, *pgconn.PgError) {
-	var comments []*model.CollectionComment
-	result := service.db.Where("collection_id = ?", collectionId).Find(&comments)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return comments, nil
-}
-
-func (service *CollectionService) CreateComment(ctx context.Context, comment *model.CollectionComment) *pgconn.PgError {
-	result := service.db.Create(&comment)
-	return utils.GetPostgresError(result.Error)
-}
-
-func (service *CollectionService) UpdateCommentContent(ctx context.Context, updatedComment *model.CollectionComment) *pgconn.PgError {
-	result := service.db.Updates(&updatedComment)
-	return utils.GetPostgresError(result.Error)
-}
-
-func (service *CollectionService) DeleteComment(ctx context.Context, commentId uuid.UUID) *pgconn.PgError {
-	comment := model.CollectionComment{Base: model.Base{Id: commentId}}
-	result := service.db.Delete(&comment)
-	return utils.GetPostgresError(result.Error)
-}
-
 // PRIVATE FUNCTIONS
 
 func (service *CollectionService) FindById(ctx context.Context, collectionId uuid.UUID) (*model.Collection, *pgconn.PgError) {
@@ -101,13 +67,4 @@ func (service *CollectionService) FindById(ctx context.Context, collectionId uui
 		return nil, &pgconn.PgError{}
 	}
 	return collection, nil
-}
-
-func (service *CollectionService) FindCommentById(ctx context.Context, commentId uuid.UUID) (*model.CollectionComment, *pgconn.PgError) {
-	var comment *model.CollectionComment
-	result := service.db.Where("id = ?", commentId).First(&comment)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return comment, nil
 }

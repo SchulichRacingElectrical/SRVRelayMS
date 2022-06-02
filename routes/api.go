@@ -21,8 +21,11 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(db, conf), thingService)
 	operatorService := services.NewOperatorService(db, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
-	sessionAPI := handlers.NewSessionAPI(services.NewSessionService(db, conf), thingService, conf.FilePath)
-	collectionAPI := handlers.NewCollectionAPI(services.NewCollectionService(db, conf), thingService)
+	sessionService := services.NewSessionService(db, conf)
+	sessionAPI := handlers.NewSessionAPI(sessionService, thingService, conf.FilePath)
+	collectionService := services.NewCollectionService(db, conf)
+	collectionAPI := handlers.NewCollectionAPI(collectionService, thingService)
+	commentAPI := handlers.NewCommentAPI(services.NewCommentService(db, conf), thingService, sessionService, collectionService)
 	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(db, conf), thingService)
 	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(db, conf), thingService)
 
@@ -105,10 +108,6 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 			sessionEndpoints.DELETE("/:sessionId", sessionAPI.DeleteSession)
 			sessionEndpoints.POST("/:sessionId/file", sessionAPI.UploadFile)
 			sessionEndpoints.GET("/:sessionId/file", sessionAPI.DownloadFile)
-			sessionEndpoints.POST("/comment", sessionAPI.AddComment)
-			sessionEndpoints.GET("/:sessionId/comments", sessionAPI.GetComments)
-			sessionEndpoints.PUT("/comment", sessionAPI.UpdateCommentContent)
-			sessionEndpoints.DELETE("/comment/:commentId", sessionAPI.DeleteComment)
 		}
 
 		collectionEndpoints := privateEndpoints.Group("/collections")
@@ -117,10 +116,14 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 			collectionEndpoints.GET("/thing/:thingId", collectionAPI.GetCollections)
 			collectionEndpoints.PUT("", collectionAPI.UpdateCollections)
 			collectionEndpoints.DELETE("/:collectionId", collectionAPI.DeleteCollection)
-			collectionEndpoints.POST("/comment", collectionAPI.AddComment)
-			collectionEndpoints.GET("/:collectionId/comments", collectionAPI.GetComments)
-			collectionEndpoints.PUT("/comment", collectionAPI.UpdateCommentContent)
-			collectionEndpoints.DELETE("/comment/:commentId", collectionAPI.DeleteComment)
+		}
+
+		commentEndpoints := privateEndpoints.Group("/comments")
+		{
+			commentEndpoints.POST("", commentAPI.CreateComment)
+			commentEndpoints.GET("/:contextId", commentAPI.GetComments)
+			commentEndpoints.PUT("", commentAPI.UpdateComment)
+			commentEndpoints.DELETE("/:commentId", commentAPI.DeleteComment)
 		}
 
 		rawDataPresetEndpoints := privateEndpoints.Group("/rawDataPreset")
