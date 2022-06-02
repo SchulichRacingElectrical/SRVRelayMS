@@ -53,6 +53,7 @@ func main() {
 		&model.Thing{},
 		&model.User{},
 		&model.Comment{},
+		&model.SessionCollection{},
 		&model.RawDataPresetSensor{},
 		&model.ChartSensor{},
 	)

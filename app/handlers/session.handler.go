@@ -309,14 +309,3 @@ func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
 	// Send the response
 	ctx.DataFromReader(http.StatusOK, nRead, "text/csv", buf, nil)
 }
-
-func (handler *SessionHandler) GetDatumBySessionIdAndSensorId(c *gin.Context) {
-	// TODO
-	// datumArray, err := handler.datum.FindBySessionIdAndSensorId(c.Request.Context(), c.Param("sessionId"), c.Param("sensorId"))
-	// if err != nil {
-	// 	utils.Response(c, http.StatusBadRequest, utils.NewHTTPError(utils.DatumNotFound))
-	// } else {
-	// 	result := utils.SuccessPayload(datumArray, "Successfully retrieved datum")
-	// 	utils.Response(c, http.StatusOK, result)
-	// }
-}

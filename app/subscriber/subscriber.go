@@ -56,9 +56,8 @@ func awaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config
 			}
 			session := &model.Session{
 				StartTime: time.Now().UnixMilli(),
-				EndTime:   0, // EndDate will be updated after session is closed
 				ThingId:   thingObjId,
-				Name:      "Test", // TODO: Allow naming sessions - Generate a name including the start date
+				Name:      uuid.NewString(),
 			}
 			err = sessionService.CreateSession(ctx, session)
 			if err != nil {
@@ -135,7 +134,7 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 				smallIdToInfoMap[smallId] = SensorInfo{Id: sensor.Id, Name: sensor.Name}
 			}
 
-			// Process non-linear thing data for mongo
+			// Process non-linear thing data
 			thingDataArray = replaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
 			datumArray := make([]*model.Datum, len(thingDataArray)*len(smallIds))
 			for i, thingDataItem := range thingDataArray {
@@ -156,14 +155,19 @@ func thingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 
 			// Update session
 			session.EndTime = session.StartTime + int64(thingDataArray[len(thingDataArray)-1]["ts"])
-			session.FileName = "srv_files/" + thingId.String() + "/" + session.Id.String() + ".csv"
 			err = sessionService.UpdateSession(ctx, session)
 			if err != nil {
 				panic(err)
 			}
 
 			// Save thing data to csv
-			exportToCsv(timeLinearThingData2DArray, smallIds, smallIdToInfoMap, thingId.String(), session.FileName)
+			exportToCsv(
+				timeLinearThingData2DArray,
+				smallIds,
+				smallIdToInfoMap,
+				conf.FilePath+thingId.String(),
+				conf.FilePath+thingId.String()+"/"+session.Name+".csv",
+			)
 
 			log.Println("Thing Data Session Ended for " + thingId.String())
 			return
@@ -276,8 +280,8 @@ func mapArrayTo2DArray(mapArray []map[string]int, smallIds []int) [][]int {
 	return output
 }
 
-func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, thingId string, fileName string) {
-	err := os.MkdirAll("srv_files/"+thingId, 0777)
+func exportToCsv(thingData2DArray [][]int, smallIds []int, smallIdToInfoMap map[string]SensorInfo, filePath string, fileName string) {
+	err := os.MkdirAll(filePath, 0777)
 	if err != nil {
 		panic(err)
 	}
