@@ -28,6 +28,7 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	commentAPI := handlers.NewCommentAPI(services.NewCommentService(db, conf), thingService, sessionService, collectionService)
 	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(db, conf), thingService)
 	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(db, conf), thingService)
+	datumAPI := handlers.NewDatumAPI(services.NewDatumService(db, conf), thingService, sessionService)
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("")
@@ -142,9 +143,9 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 			chartPresetEndpoints.DELETE("/:chartPresetId", chartPresetAPI.DeleteChartPreset)
 		}
 
-		// dataEndpoints := privateEndpoints.Group("/data")
-		// {
-		// 	dataEndpoints.GET("/:sessionId/:sensorId", sessionAPI.GetDatumBySessionIdAndSensorId)
-		// }
+		dataEndpoints := privateEndpoints.Group("/data")
+		{
+			dataEndpoints.GET("/session/:sessionId/sensor/:sensorId", datumAPI.GetSensorData)
+		}
 	}
 }
