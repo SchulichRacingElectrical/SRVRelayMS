@@ -161,6 +161,16 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt to rename the file on the file system
+	err = os.Rename(
+		handler.filepath+session.ThingId.String()+"/"+session.Name+".csv",
+		handler.filepath+session.ThingId.String()+"/"+updatedSession.Name+".csv",
+	)
+	if err != nil {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError("")) // TODO: Error message for failed to rename
+		return
+	}
+
 	// Send the response
 	result := utils.SuccessPayload(nil, "Successfully updated.")
 	utils.Response(ctx, http.StatusOK, result)
@@ -235,6 +245,20 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt to get the associated thing
+	thing, perr := handler.thing.FindById(ctx, session.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Guard against cross-tenant uploads
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read the file
 	file, err := ctx.FormFile("file")
 	if err != nil {
@@ -247,16 +271,6 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 	if extension := filepath.Ext(file.Filename); extension != ".csv" {
 		result := utils.NewHTTPError(utils.NotCsv)
 		utils.Response(ctx, http.StatusBadRequest, result)
-		return
-	}
-
-	// Set the file name to the current session name
-	file.Filename = session.Name
-
-	// Update session filename column
-	perr = handler.session.UpdateSession(ctx.Request.Context(), session)
-	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
 	}
 
