@@ -26,4 +26,5 @@ jobs:
       - name: Deploy
         run: |
           sudo docker kill srv-database-ms || true
+          ls
           docker-compose up
