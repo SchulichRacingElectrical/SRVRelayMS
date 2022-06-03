@@ -18,10 +18,10 @@ jobs:
         env:
           KEYS: ${{ secrets.DATABASE_ENVIRONMENT }}
         run: |
-          touch "$GITHUB_WORKSPACE"/srv-database-ms/.env
+          touch "$GITHUB_WORKSPACE"/.env
           echo "$KEYS"
           echo "$GITHUB_WORKSPACE"
-          echo "$KEYS" >> "$GITHUB_WORKSPACE"/srv-database-ms/.env
+          echo "$KEYS" >> "$GITHUB_WORKSPACE"/.env
           
     deploy:
       needs: environment
