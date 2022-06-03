@@ -25,5 +25,4 @@ jobs:
       steps:
       - name: Deploy
         run: |
-          sudo docker kill srv-database-ms || true
           ls
