@@ -1,0 +1,30 @@
+name: Deployment on Publication
+
+on:
+  release:
+    types: [published]
+
+jobs:
+    environment:
+      name: Environment Config
+      runs-on: self-hosted
+      
+      steps:      
+      # .env file Setup
+      - name: Create .env file
+        env:
+          KEYS: ${{ secrets.DATABASE_ENVIRONMENT }}
+        run: |
+          touch ./.env
+          echo "$KEYS" >> ./.env
+          
+    deploy:
+      needs: environment
+      name: Docker Container deployment
+      runs-on: self-hosted
+      
+      steps:
+      - name: Deploy
+        run: |
+          docker kill srv-database-ms
+          docker-compose up
