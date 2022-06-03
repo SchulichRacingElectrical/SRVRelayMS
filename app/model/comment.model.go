@@ -14,7 +14,7 @@ type Comment struct {
 	UserId       uuid.UUID  `gorm:"type:uuid;column:user_id" json:"userId"`
 	CommentId    *uuid.UUID `gorm:"type:uuid;column:comment_id" json:"commentId,omitempty"`
 	Username     string     `gorm:"column:username" json:"username"`
-	LastUpdate   int64      `gorm:"column:last_update;not null" json:"lastUpdate"`
+	Time         int64      `gorm:"column:time;not null" json:"time"`
 	Content      string     `gorm:"column:content; not null" json:"content"`
 	Collection   Collection `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	Session      Session    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
@@ -27,15 +27,11 @@ func (*Comment) TableName() string {
 }
 
 func (c *Comment) AfterFind(db *gorm.DB) (err error) {
-	if c.CommentId == nil {
-		c.Comments = []Comment{}
-	} else {
-		var replies []Comment
-		result := db.Order("last_update desc").Find(&replies, "comment_id = ?", c.Id)
-		if result.Error != nil {
-			return result.Error
-		}
-		c.Comments = replies
+	var replies []Comment
+	result := db.Order("time asc").Find(&replies, "comment_id = ?", c.Id)
+	if result.Error != nil {
+		return result.Error
 	}
+	c.Comments = replies
 	return nil
 }

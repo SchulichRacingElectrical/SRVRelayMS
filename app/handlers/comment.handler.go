@@ -73,8 +73,8 @@ func (handler *CommentHandler) CreateComment(ctx *gin.Context) {
 		return
 	}
 
-	// Update the comment's update time
-	newComment.LastUpdate = utils.CurrentTimeInMilli()
+	// Update the comment's time
+	newComment.Time = utils.CurrentTimeInMilli()
 
 	// Attempt to create the comment
 	perr = handler.commentService.CreateComment(ctx.Request.Context(), &newComment)
@@ -165,9 +165,9 @@ func (handler *CommentHandler) UpdateComment(ctx *gin.Context) {
 		return
 	}
 
-	// Update the last update of the comment
-	comment.LastUpdate = utils.CurrentTimeInMilli()
+	// Update only the comments and remove the sub comments
 	comment.Content = updatedComment.Content
+	comment.Comments = []model.Comment{}
 
 	// Attempt to update the comment
 	perr = handler.commentService.UpdateComment(ctx.Request.Context(), comment)
