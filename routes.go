@@ -1,4 +1,4 @@
-package routes
+package main
 
 import (
 	handlers "database-ms/app/handlers"
