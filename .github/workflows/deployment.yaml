@@ -17,8 +17,9 @@ jobs:
         env:
           KEYS: ${{ secrets.DATABASE_ENVIRONMENT }}
         run: |
-          touch $GITHUB_WORKSPACE/.env
-          echo "$KEYS" >> $GITHUB_WORKSPACE/.env
+          touch .env
+          echo $KEYS
+          echo "$KEYS" >> .env
           
     deploy:
       needs: environment
