@@ -62,10 +62,10 @@ func InsertSessionCollections(s *Session, db *gorm.DB) (err error) {
 
 	// Generate the list of collection-sessions
 	sessionCollections := []SessionCollection{}
-	for _, sessionId := range s.CollectionIds {
+	for _, collectionId := range s.CollectionIds {
 		sessionCollection := SessionCollection{}
-		sessionCollection.CollectionId = s.Id
-		sessionCollection.SessionId = sessionId
+		sessionCollection.SessionId = s.Id
+		sessionCollection.CollectionId = collectionId
 		sessionCollections = append(sessionCollections, sessionCollection)
 	}
 
