@@ -57,7 +57,7 @@ func (handler *CollectionHandler) CreateCollection(ctx *gin.Context) {
 	perr = handler.collectionService.CreateCollection(ctx.Request.Context(), &newCollection)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError("")) // TODO: Add conflict error
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CollectionNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		}
@@ -136,7 +136,7 @@ func (handler *CollectionHandler) UpdateCollections(ctx *gin.Context) {
 	perr = handler.collectionService.UpdateCollection(ctx.Request.Context(), &updatedCollection)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError("")) // TODO: Not unique error
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.CollectionNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		}

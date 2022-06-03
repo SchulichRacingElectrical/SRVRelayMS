@@ -60,9 +60,6 @@ const (
 	OperatorNotFound  = "operatorNotFound"
 	OperatorNotUnique = "operatorNotUnique"
 
-	// ThingOperator error
-	ThingOperatorNotUnique = "thingOperatorNotUnique"
-
 	// Organization error
 	OrganizationDuplicate = "organizationDuplicate"
 	OrganizationNotFound  = "organizationNotFound"
@@ -91,16 +88,19 @@ const (
 	// Collection Error
 	CollectionsNotFound = "collectionsNotFound"
 	CollectionNotFound  = "collectionNotFound"
+	CollectionNotUnique = "collectionNotUnique"
 
 	// Session Error
 	SessionsNotFound = "sessionsNotFound"
 	SessionNotFound  = "sessionNotFound"
+	SessionNotUnique = "sessionNotUnique"
 
 	// Comments Error
-	CommentsNotFound = "commentsNotFound"
-	CommentNotFound  = "commentNotFound"
+	CommentsNotFound       = "commentsNotFound"
+	CommentNotFound        = "commentNotFound"
+	CommentContextNotFound = "commentContextNotFound"
 
-	//File Error
+	// File Error
 	NotCsv                 = "notCSV"
 	NoFileRcvd             = "noFileRcvd"
 	CouldNotUploadFile     = "couldNotUploadFile"
@@ -108,6 +108,7 @@ const (
 	SubFolderCreationError = "subFolderCreationError"
 	FailedToDeleteFile     = "failedToDeleteFile"
 	FailedToDeleteFiles    = "failedToDeleteFiles"
+	FailedToRenameFile		 = "failedToRenameFile"
 )
 
 // Error code with description
@@ -142,32 +143,32 @@ var errorMessage = map[string]string{
 	"operatorNotFound":  "Operator could not be found.",
 	"operatorNotUnique": "Operator name must be unique.",
 
-	// ThingOperator
-	"thingOperatorNotUnique": "Thing Operator association already exists.",
-
 	// Organization
 	"organizationDuplicate": "Organization name is taken.",
 	"organizationNotFound":  "Organization could not be found.",
 	"organizationsNotFound": "Organizations could not be found.",
 
 	// File
-	"noFileReceived":         "No file is received",
-	"notCsv":                 "Not a csv",
-	"runHasAssociatedFile":   "Run already has associated file",
-	"runHasNoAssociatedFile": "Run does exist or not have associated file",
-	"cannotRetrieveFile":     "Cannot retrieve file",
+	"noFileReceived":         "No file is received.",
+	"notCsv":                 "Not a csv.",
+	"runHasAssociatedFile":   "Run already has associated file.",
+	"runHasNoAssociatedFile": "Run does exist or not have associated file.",
+	"cannotRetrieveFile":     "Cannot retrieve file.",
 
 	// Collection errors
-	"collectionsNotFound": "Collections could not be found",
-	"collectionNotFound":  "Collection could not be found",
+	"collectionsNotFound": "Collections could not be found.",
+	"collectionNotFound":  "Collection could not be found.",
+	"collectionNotUnique": "Collection name must be unique.",
 
 	// Session errors
-	"sessionsNotFound": "Sessions could not be found",
-	"sessionNotFound":  "Session could not be found",
+	"sessionsNotFound": "Sessions could not be found.",
+	"sessionNotFound":  "Session could not be found.",
+	"sessionNotUnique": "Session name must be unique.",
 
 	// Comment errors
-	"commentsNotFound": "Comments could not be found",
-	"commentNotFound":  "Comment could not be found",
+	"commentsNotFound":       "Comments could not be found.",
+	"commentNotFound":        "Comment could not be found.",
+	"commentContextNotFound": "The comment's contextId could not be found.",
 
 	// Raw Data Preset
 	"rawDataPresetNotUnique": "Raw Data Preset name must be unique.",
@@ -190,11 +191,12 @@ var errorMessage = map[string]string{
 	"emptyToken":       "Token was an empty string.",
 
 	// File error
-	"notCSV":                 "Not a CSV file",
-	"noFileRcvd":             "No file received",
-	"couldNotUploadFile":     "Could not upload file",
-	"fileNotFound":           "File not found",
-	"subfolderCreationError": "Could not create subfolder",
-	"failedToDeleteFile":     "Failed to delete file associated with session",
-	"failedToDeleteFiles":    "Failed to delete files associated with thing",
+	"notCSV":                 "Not a CSV file.",
+	"noFileRcvd":             "No file received.",
+	"couldNotUploadFile":     "Could not upload file.",
+	"fileNotFound":           "File not found.",
+	"subfolderCreationError": "Could not create subfolder.",
+	"failedToDeleteFile":     "Failed to delete file associated with session.",
+	"failedToDeleteFiles":    "Failed to delete files associated with thing.",
+	"failedToRenameFile": "Failed to rename the session's file."
 }

@@ -69,7 +69,7 @@ func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
 	perr = handler.session.CreateSession(ctx.Request.Context(), &newSession)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError("")) // TODO: Add session not unique error
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
@@ -169,7 +169,7 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 			handler.filepath+session.ThingId.String()+"/"+updatedSession.Name+".csv",
 		)
 		if err != nil {
-			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError("")) // TODO: Error message for failed to rename
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToRenameFile))
 			return
 		}
 	}
@@ -237,6 +237,7 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 	utils.Response(ctx, http.StatusOK, result)
 }
 
+// TODO: Attempt to insert data
 func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))

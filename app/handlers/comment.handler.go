@@ -102,7 +102,7 @@ func (handler *CommentHandler) GetComments(ctx *gin.Context) {
 	if perr != nil {
 		session, perr := handler.sessionService.FindById(ctx, contextId)
 		if perr != nil {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError("")) // TODO: Comment context not found
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentContextNotFound))
 			return
 		}
 		thingId = session.ThingId
