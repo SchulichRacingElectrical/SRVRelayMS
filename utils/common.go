@@ -7,24 +7,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// UnixMilli use to get ms of given time
-// @params - time
-// return - ms of the given time
 func UnitMilli(t time.Time) int64 {
 	return t.Round(time.Millisecond).UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
 }
 
-// CurrentTimeInMill uset to get current time in ms
-// Used to obtain current timestamp
-// return = curren timestamp in ms
 func CurrentTimeInMilli() int64 {
 	return UnitMilli(time.Now())
-}
-
-type CustomBson struct{}
-
-type BsonWrapper struct {
-	Set interface{} `json:"$set,omitempty" bson:"$set,omitempty"`
 }
 
 func ToMap(s interface{}) (map[string]interface{}, error) {
@@ -35,15 +23,6 @@ func ToMap(s interface{}) (map[string]interface{}, error) {
 
 }
 
-func (customBson *CustomBson) Set(data interface{}) (map[string]interface{}, error) {
-	s := BsonWrapper{Set: data}
-	return ToMap(s)
-}
-
-// Removes duplicates from a int slice
-// source: https://www.golangprograms.com/remove-duplicate-values-from-slice.html
-// @params - integer slice
-// return - integers slice without duplicates
 func Unique(intSlice []int) []int {
 	keys := make(map[int]bool)
 	list := []int{}
@@ -63,15 +42,4 @@ func IdInSlice(a primitive.ObjectID, list []primitive.ObjectID) bool {
 		}
 	}
 	return false
-}
-
-const (
-	Run     = "run"
-	Session = "session"
-)
-
-// Entity Types
-var EntityCollectionTypes = map[string]string{
-	"run":     "Run",
-	"session": "Session",
 }

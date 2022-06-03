@@ -9,16 +9,11 @@
 
 1. Connect to the local database using pgAdmin
 2. Create a database named `sr-velocity`
-3. Open the query tool and copy paste the query in `schema/rdb_init.sql`
-4. Run the query
-
-## Making Schema Changes
-
-The end goal would be do use GORM's AutoMigration feature, but to get things working quickly, we are using GORM Gen to generate the models
 
 **Steps**
 
-1. Make the changes to the database schema(use pgAdmin to make this process easier)
-2. Verify that that changes are applied
-3. Run the generate script `cmd/generate.go` by running the command `go run generate.go`. You might need to change the password in the dsn string
-4. There should be a the generated model files in `app/model` directory
+1. Duplicate the .env file file and place it in the `/cmd` folder
+2. Run: `go run cmd/migrate.go`
+3. The database should be updated
+
+Note that columns will not be deleted if they are removed from the schema.
