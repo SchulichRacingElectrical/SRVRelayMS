@@ -108,7 +108,7 @@ const (
 	SubFolderCreationError = "subFolderCreationError"
 	FailedToDeleteFile     = "failedToDeleteFile"
 	FailedToDeleteFiles    = "failedToDeleteFiles"
-	FailedToRenameFile		 = "failedToRenameFile"
+	FailedToRenameFile     = "failedToRenameFile"
 )
 
 // Error code with description
@@ -198,5 +198,5 @@ var errorMessage = map[string]string{
 	"subfolderCreationError": "Could not create subfolder.",
 	"failedToDeleteFile":     "Failed to delete file associated with session.",
 	"failedToDeleteFiles":    "Failed to delete files associated with thing.",
-	"failedToRenameFile": "Failed to rename the session's file."
+	"failedToRenameFile":     "Failed to rename the session's file.",
 }
