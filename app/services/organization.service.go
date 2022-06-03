@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"database-ms/app/model"
+	"database-ms/app/utils"
 	"database-ms/config"
-	"database-ms/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"

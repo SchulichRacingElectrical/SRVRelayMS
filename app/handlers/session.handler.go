@@ -5,7 +5,7 @@ import (
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"fmt"
 	"io"
 	"net/http"

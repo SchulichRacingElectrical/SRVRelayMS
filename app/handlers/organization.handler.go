@@ -4,7 +4,7 @@ import (
 	"database-ms/app/middleware"
 	model "database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
