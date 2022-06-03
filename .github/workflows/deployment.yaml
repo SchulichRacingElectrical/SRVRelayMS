@@ -1,6 +1,7 @@
 name: Deployment on Publication
 
 on: [push]
+
   #release:
   #  types: [published]
 jobs:
