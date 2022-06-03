@@ -12,12 +12,14 @@ jobs:
       steps:
       - uses: actions/checkout@v2
 
-
-
-      - name: Create .env file 
+      - name: Create .env file
+        env:
+          KEYS: ${{ secrets.DATABASE_ENVIRONMENT }}
         run: |
           touch "$GITHUB_WORKSPACE"/.env
-          echo "${{ secrets.DATABASE_ENVIRONMENT }}" >> "$GITHUB_WORKSPACE"/.env
+          echo "$KEYS"
+          echo "$GITHUB_WORKSPACE"
+          echo "$KEYS" >> "$GITHUB_WORKSPACE"/.env
           
     deploy:
       needs: environment
