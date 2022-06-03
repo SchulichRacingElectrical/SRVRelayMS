@@ -21,6 +21,12 @@ func NewChartPresetAPI(service services.ChartPresetServiceInterface, thingServic
 }
 
 func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var newChartPreset model.ChartPreset
 	err := ctx.BindJSON(&newChartPreset)
@@ -44,7 +50,7 @@ func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 	}
 
 	// Ensure the preset is valid
-	perr = handler.service.Create(ctx.Request.Context(), &newChartPreset)
+	perr = handler.service.Create(ctx, &newChartPreset)
 	if perr != nil {
 		println(perr.Error())
 		if perr.Code == "23505" {
@@ -83,7 +89,7 @@ func (handler *ChartPresetHandler) GetChartPresets(ctx *gin.Context) {
 	}
 
 	// Attempt to read the presets
-	chartPresets, perr := handler.service.FindByThingId(ctx.Request.Context(), thingId)
+	chartPresets, perr := handler.service.FindByThingId(ctx, thingId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPCustomError(utils.InternalError, perr.Error()))
 		return
@@ -95,6 +101,12 @@ func (handler *ChartPresetHandler) GetChartPresets(ctx *gin.Context) {
 }
 
 func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedChartPreset model.ChartPreset
 	err := ctx.BindJSON(&updatedChartPreset)
@@ -133,6 +145,12 @@ func (handler *ChartPresetHandler) UpdateChartPreset(ctx *gin.Context) {
 }
 
 func (handler *ChartPresetHandler) DeleteChartPreset(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read the params
 	chartPresetId, err := uuid.Parse(ctx.Param("chartPresetId"))
 	if err != nil {

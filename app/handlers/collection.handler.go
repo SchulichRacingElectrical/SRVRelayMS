@@ -25,17 +25,17 @@ func NewCollectionAPI(collectionService services.CollectionServiceInterface,
 }
 
 func (handler *CollectionHandler) CreateCollection(ctx *gin.Context) {
+	// Guard against non-lead+
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the body
 	var newCollection model.Collection
 	err := ctx.BindJSON(&newCollection)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-lead+
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -104,17 +104,17 @@ func (handler *CollectionHandler) GetCollections(ctx *gin.Context) {
 }
 
 func (handler *CollectionHandler) UpdateCollections(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedCollection model.Collection
 	err := ctx.BindJSON(&updatedCollection)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-lead+ requests
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -149,6 +149,12 @@ func (handler *CollectionHandler) UpdateCollections(ctx *gin.Context) {
 }
 
 func (handler *CollectionHandler) DeleteCollection(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	collectionId, err := uuid.Parse(ctx.Param("collectionId"))
 	if err != nil {

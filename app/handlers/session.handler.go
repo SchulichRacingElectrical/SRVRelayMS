@@ -35,6 +35,12 @@ func NewSessionAPI(
 }
 
 func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the body
 	var newSession model.Session
 	err := ctx.BindJSON(&newSession)
@@ -125,6 +131,12 @@ func (handler *SessionHandler) GetSessions(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedSession model.Session
 	err := ctx.BindJSON(&updatedSession)
@@ -191,6 +203,12 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
 	if err != nil {
@@ -239,16 +257,16 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 
 // TODO: Attempt to insert data
 func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-		return
-	}
-
-	// Guard against non-lead+ uploads
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -308,6 +326,12 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
 	if err != nil {

@@ -78,17 +78,17 @@ func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
 }
 
 func (handler *OrganizationHandler) UpdateOrganization(ctx *gin.Context) {
+	// Guard against non-admin users
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedOrganization model.Organization
 	err := ctx.BindJSON(&updatedOrganization)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-admin users
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 

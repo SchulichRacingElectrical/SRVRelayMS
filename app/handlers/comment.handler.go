@@ -33,6 +33,12 @@ func NewCommentAPI(
 }
 
 func (handler *CommentHandler) CreateComment(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the body
 	var newComment model.Comment
 	err := ctx.BindJSON(&newComment)
@@ -89,6 +95,12 @@ func (handler *CommentHandler) CreateComment(ctx *gin.Context) {
 }
 
 func (handler *CommentHandler) GetComments(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	contextId, err := uuid.Parse(ctx.Param("contextId"))
 	if err != nil {
@@ -137,6 +149,12 @@ func (handler *CommentHandler) GetComments(ctx *gin.Context) {
 }
 
 func (handler *CommentHandler) UpdateComment(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the body
 	var updatedComment model.Comment
 	err := ctx.BindJSON(&updatedComment)
@@ -182,6 +200,12 @@ func (handler *CommentHandler) UpdateComment(ctx *gin.Context) {
 }
 
 func (handler *CommentHandler) DeleteComment(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	commentId, err := uuid.Parse(ctx.Param("commentId"))
 	if err != nil {

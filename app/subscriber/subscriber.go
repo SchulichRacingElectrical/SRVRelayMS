@@ -84,7 +84,7 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 	log.Println("Thing Data Session Started for " + thingId.String())
 	thingDataChannel := subscriber.Channel()
 
-	//datumService := services.NewDatumService(db, conf)
+	datumService := services.NewDatumService(db, conf)
 	sessionService := services.NewSessionService(db, conf)
 
 	for msg := range thingDataChannel {
@@ -190,8 +190,8 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 				}
 			}
 
-			// // Save thing data in the database
-			// datumService.CreateMany(ctx, datumArray)
+			// Save thing data in the database
+			datumService.CreateMany(ctx, datumArray)
 
 			log.Println("Thing Data Session Ended for " + thingId.String())
 			return
@@ -274,7 +274,6 @@ func ExportToCsv(
 		// Fill gaps after 0
 		if prevTimestamp != 0 {
 			for int(datum["ts"])-prevTimestamp > interval {
-				println("Filling gap")
 				err = csvWriter.Write(prevRow)
 				if err != nil {
 					panic(err)
