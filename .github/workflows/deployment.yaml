@@ -8,7 +8,9 @@ jobs:
       name: Environment Config
       runs-on: self-hosted
       
-      steps:      
+      steps:
+      - uses: actions/checkout@v2
+
       # .env file Setup
       - name: Create .env file
         env:
@@ -25,4 +27,5 @@ jobs:
       steps:
       - name: Deploy
         run: |
-          ls -l
+          sudo docker kill srv-database-ms || true
+          docker-compose up
