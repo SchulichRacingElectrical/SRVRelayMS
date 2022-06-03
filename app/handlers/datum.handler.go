@@ -48,6 +48,12 @@ func (handler *DatumHandler) GetSensorData(ctx *gin.Context) {
 		return
 	}
 
+	// If the session file is uploaded, its data is not available
+	if *session.Generated != true {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
+		return
+	}
+
 	// Attempt to find the sensor
 	sensor, perr := handler.sessionService.FindById(ctx, sensorId)
 	if perr != nil {

@@ -12,11 +12,13 @@ type Session struct {
 	Name          string      `gorm:"column:name;not null;uniqueIndex:unique_session_name_in_thing" json:"name"`
 	StartTime     int64       `gorm:"column:start_time;not null" json:"startTime"`
 	EndTime       *int64      `gorm:"column:end_time" json:"endTime,omitempty"`
+	Generated     *bool       `gorm:"column:generated; not null" json:"generated"`
 	ThingId       uuid.UUID   `gorm:"type:uuid;column:thing_id;not null;uniqueIndex:unique_session_name_in_thing" json:"thingId"`
 	OperatorId    *uuid.UUID  `gorm:"type:uuid;column:operator_id" json:"operatorId,omitempty"`
 	Thing         Thing       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	Operator      Operator    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"-"`
 	CollectionIds []uuid.UUID `gorm:"-" json:"collectionIds"`
+	FileSize      int64       `gorm:"-" json:"fileSize,omitempty"`
 }
 
 func (*Session) TableName() string {

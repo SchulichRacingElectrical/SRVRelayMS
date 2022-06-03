@@ -64,6 +64,8 @@ func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
 	}
 
 	// Attempt to create the session
+	notGenerated := false
+	newSession.Generated = &notGenerated
 	perr = handler.session.CreateSession(ctx.Request.Context(), &newSession)
 	if perr != nil {
 		if perr.Code == "23505" {
@@ -108,6 +110,15 @@ func (handler *SessionHandler) GetSessions(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt the file sizes to each session
+	for i := range sessions {
+		file := handler.filepath + thingId.String() + "/" + sessions[i].Name + ".csv"
+		fi, err := os.Stat(file)
+		if err == nil {
+			sessions[i].FileSize = fi.Size()
+		}
+	}
+
 	// Send the response
 	result := utils.SuccessPayload(sessions, "Successfully retrieved sessions.")
 	utils.Response(ctx, http.StatusOK, result)
@@ -142,22 +153,23 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 		return
 	}
 
-	// Read the current session and don't allow updates to the thingId
+	// Read the current session and don't allow updates to the thingId or generated field
 	session, perr := handler.session.FindById(ctx.Request.Context(), updatedSession.Id)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
 	updatedSession.ThingId = session.ThingId
+	updatedSession.Generated = session.Generated
 
 	// Attempt to rename the file on the file system if the session name changed
-	if session.Name != updatedSession.Name {
+	if session.Name != updatedSession.Name && session.EndTime != nil {
 		err = os.Rename(
 			handler.filepath+session.ThingId.String()+"/"+session.Name+".csv",
 			handler.filepath+session.ThingId.String()+"/"+updatedSession.Name+".csv",
 		)
 		if err != nil {
-			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError("")) // TODO: Error message for failed to rename
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError("")) // TODO: Error message for failed to rename
 			return
 		}
 	}
@@ -209,7 +221,7 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 
 	// Attempt to delete session file
 	if err = os.Remove(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv"); err != nil {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.FailedToDeleteFile))
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToDeleteFile))
 		return
 	}
 

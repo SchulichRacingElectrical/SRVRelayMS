@@ -55,11 +55,13 @@ func AwaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config
 			if err != nil {
 				panic(err)
 			}
+			generated := true
 			session := &model.Session{
 				StartTime: time.Now().UnixMilli(),
 				EndTime:   nil,
 				ThingId:   thingObjId,
 				Name:      uuid.NewString(),
+				Generated: &generated,
 			}
 			perr := sessionService.CreateSession(ctx, session)
 			if perr != nil {
