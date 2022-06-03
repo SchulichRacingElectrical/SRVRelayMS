@@ -12,14 +12,15 @@ jobs:
       steps:
       - uses: actions/checkout@v2
 
-      # .env file Setup
+
+
       - name: Create .env file
         env:
           KEYS: ${{ secrets.DATABASE_ENVIRONMENT }}
         run: |
-          touch .env
-          echo $KEYS
-          echo "$KEYS" >> .env
+          touch srv-database-ms/.env
+          echo "$KEYS"
+          echo "$KEYS" >> srv-database-ms/.env
           
     deploy:
       needs: environment
@@ -30,4 +31,5 @@ jobs:
       - name: Deploy
         run: |
           sudo docker kill srv-database-ms || true
+          sudo docker-compose build
           sudo docker-compose up &
