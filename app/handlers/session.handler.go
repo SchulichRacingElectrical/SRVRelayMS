@@ -5,7 +5,7 @@ import (
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"fmt"
 	"io"
 	"net/http"
@@ -35,6 +35,12 @@ func NewSessionAPI(
 }
 
 func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the body
 	var newSession model.Session
 	err := ctx.BindJSON(&newSession)
@@ -64,10 +70,12 @@ func (handler *SessionHandler) CreateSession(ctx *gin.Context) {
 	}
 
 	// Attempt to create the session
+	notGenerated := false
+	newSession.Generated = &notGenerated
 	perr = handler.session.CreateSession(ctx.Request.Context(), &newSession)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError("")) // TODO: Add session not unique error
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
@@ -108,12 +116,27 @@ func (handler *SessionHandler) GetSessions(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt the file sizes to each session
+	for i := range sessions {
+		file := handler.filepath + thingId.String() + "/" + sessions[i].Name + ".csv"
+		fi, err := os.Stat(file)
+		if err == nil {
+			sessions[i].FileSize = fi.Size()
+		}
+	}
+
 	// Send the response
 	result := utils.SuccessPayload(sessions, "Successfully retrieved sessions.")
 	utils.Response(ctx, http.StatusOK, result)
 }
 
 func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedSession model.Session
 	err := ctx.BindJSON(&updatedSession)
@@ -142,13 +165,26 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 		return
 	}
 
-	// Read the current session and don't allow updates to the thingId
+	// Read the current session and don't allow updates to the thingId or generated field
 	session, perr := handler.session.FindById(ctx.Request.Context(), updatedSession.Id)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 		return
 	}
 	updatedSession.ThingId = session.ThingId
+	updatedSession.Generated = session.Generated
+
+	// Attempt to rename the file on the file system if the session name changed
+	if session.Name != updatedSession.Name && session.EndTime != nil {
+		err = os.Rename(
+			handler.filepath+session.ThingId.String()+"/"+session.Name+".csv",
+			handler.filepath+session.ThingId.String()+"/"+updatedSession.Name+".csv",
+		)
+		if err != nil {
+			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToRenameFile))
+			return
+		}
+	}
 
 	// Attempt to update the collection
 	perr = handler.session.UpdateSession(ctx.Request.Context(), &updatedSession)
@@ -167,6 +203,12 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
 	if err != nil {
@@ -195,16 +237,16 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 		return
 	}
 
+	// Attempt to delete session file
+	if err = os.Remove(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv"); err != nil {
+		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToDeleteFile))
+		return
+	}
+
 	// Attempt to delete the session
 	perr = handler.session.DeleteSession(ctx.Request.Context(), sessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
-		return
-	}
-
-	// Attempt to delete session file
-	if err = os.Remove(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv"); err != nil {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.FailedToDeleteFile))
 		return
 	}
 
@@ -213,8 +255,14 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 	utils.Response(ctx, http.StatusOK, result)
 }
 
-// TODO: Do tenancy check here
+// TODO: Attempt to insert data
 func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
 	if err != nil {
@@ -222,16 +270,24 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	// Guard against non-lead+ uploads
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
-		return
-	}
-
 	// Attempt to get the session
 	session, perr := handler.session.FindById(ctx, sessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.SessionNotFound))
+		return
+	}
+
+	// Attempt to get the associated thing
+	thing, perr := handler.thing.FindById(ctx, session.ThingId)
+	if perr != nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
+	// Guard against cross-tenant uploads
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	if thing.OrganizationId != organization.Id {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -250,16 +306,7 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	// Set the file name to the current session name
-	file.Filename = session.Name
-
-	// Update session filename column
-	perr = handler.session.UpdateSession(ctx.Request.Context(), session)
-	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
-		return
-	}
-
+	// Attempt to make the directory
 	err = os.Mkdir(handler.filepath+session.ThingId.String(), 0777)
 	if err != nil && !os.IsExist(err) {
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(err.Error()))
@@ -279,6 +326,12 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 }
 
 func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	sessionId, err := uuid.Parse(ctx.Param("sessionId"))
 	if err != nil {
@@ -308,7 +361,7 @@ func (handler *SessionHandler) DownloadFile(ctx *gin.Context) {
 	}
 
 	// Attempt to read the file
-	file, err := os.Open(handler.filepath + session.ThingId.String() + "/" + session.Name)
+	file, err := os.Open(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv")
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.FileNotFound))
 		return

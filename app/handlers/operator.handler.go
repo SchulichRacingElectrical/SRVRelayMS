@@ -4,7 +4,7 @@ import (
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,17 +20,17 @@ func NewOperatorAPI(operatorService services.OperatorServiceInterface) *Operator
 }
 
 func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
+	// Guard against non-admin users
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var newOperator model.Operator
 	err := ctx.BindJSON(&newOperator)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-admin users
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -67,17 +67,17 @@ func (handler *OperatorHandler) GetOperators(ctx *gin.Context) {
 }
 
 func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
+	// Guard against non-admin users
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedOperator model.Operator
 	err := ctx.BindJSON(&updatedOperator)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-admin users
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -113,17 +113,17 @@ func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 }
 
 func (handler *OperatorHandler) DeleteOperator(ctx *gin.Context) {
+	// Guard against non-admin requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.OperatorNotFound))
+		return
+	}
+
 	// Attempt to parse the query param
 	organization, _ := middleware.GetOrganizationClaim(ctx)
 	operatorIdToDelete, err := uuid.Parse(ctx.Param("operatorId"))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
-		return
-	}
-
-	// Guard against non-admin requests
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.OperatorNotFound))
 		return
 	}
 

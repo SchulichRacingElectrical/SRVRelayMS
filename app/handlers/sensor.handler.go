@@ -4,7 +4,7 @@ import (
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 	"strconv"
 
@@ -22,6 +22,12 @@ func NewSensorAPI(sensorService services.SensorServiceInterface, thingService se
 }
 
 func (handler *SensorHandler) CreateSensor(ctx *gin.Context) {
+	// Guard against non-admin+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var newSensor model.Sensor
 	err := ctx.BindJSON(&newSensor)
@@ -137,6 +143,12 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 }
 
 func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
+	// Guard against non-admin+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedSensor model.Sensor
 	err := ctx.BindJSON(&updatedSensor)
@@ -176,6 +188,12 @@ func (handler *SensorHandler) UpdateSensor(ctx *gin.Context) {
 }
 
 func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
+	// Guard against non-admin+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	sensorId, err := uuid.Parse(ctx.Param("sensorId"))
 	if err != nil {

@@ -4,7 +4,7 @@ import (
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	"database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,17 +25,17 @@ func NewCollectionAPI(collectionService services.CollectionServiceInterface,
 }
 
 func (handler *CollectionHandler) CreateCollection(ctx *gin.Context) {
+	// Guard against non-lead+
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the body
 	var newCollection model.Collection
 	err := ctx.BindJSON(&newCollection)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-lead+
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -57,7 +57,7 @@ func (handler *CollectionHandler) CreateCollection(ctx *gin.Context) {
 	perr = handler.collectionService.CreateCollection(ctx.Request.Context(), &newCollection)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError("")) // TODO: Add conflict error
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CollectionNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		}
@@ -104,17 +104,17 @@ func (handler *CollectionHandler) GetCollections(ctx *gin.Context) {
 }
 
 func (handler *CollectionHandler) UpdateCollections(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedCollection model.Collection
 	err := ctx.BindJSON(&updatedCollection)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-lead+ requests
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -136,7 +136,7 @@ func (handler *CollectionHandler) UpdateCollections(ctx *gin.Context) {
 	perr = handler.collectionService.UpdateCollection(ctx.Request.Context(), &updatedCollection)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError("")) // TODO: Not unique error
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.CollectionNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, err.Error()))
 		}
@@ -149,6 +149,12 @@ func (handler *CollectionHandler) UpdateCollections(ctx *gin.Context) {
 }
 
 func (handler *CollectionHandler) DeleteCollection(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to read from the params
 	collectionId, err := uuid.Parse(ctx.Param("collectionId"))
 	if err != nil {

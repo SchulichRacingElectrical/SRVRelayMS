@@ -1,10 +1,9 @@
 package main
 
 import (
+	"database-ms/app/databases"
 	"database-ms/app/subscriber"
 	"database-ms/config"
-	"database-ms/databases"
-	"database-ms/routes"
 	"log"
 	"net/http"
 	"time"
@@ -23,7 +22,7 @@ func main() {
 
 	// Router
 	router := gin.Default()
-	routes.InitializeRoutes(router, db, conf)
+	InitializeRoutes(router, db, conf)
 	router.Use(cors.Default())
 
 	// Redis IoT Sub

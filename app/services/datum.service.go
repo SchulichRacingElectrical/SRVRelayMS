@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"database-ms/app/model"
+	"database-ms/app/utils"
 	"database-ms/config"
-	"database-ms/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -33,7 +33,7 @@ func NewDatumService(db *gorm.DB, c *config.Configuration) DatumServiceInterface
 
 func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId uuid.UUID, sensorId uuid.UUID) ([]SensorData, *pgconn.PgError) {
 	var data []*model.Datum
-	result := service.db.Where("session_id = ? AND sensor_id = ?", sessionId, sensorId).Find(&data)
+	result := service.db.Where("session_id = ? AND sensor_id = ?", sessionId, sensorId).Order("timestamp asc").Find(&data)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}

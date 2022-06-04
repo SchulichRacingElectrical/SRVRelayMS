@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"database-ms/app/model"
+	"database-ms/app/utils"
 	"database-ms/config"
-	"database-ms/utils"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
@@ -35,7 +35,7 @@ func NewCommentService(db *gorm.DB, c *config.Configuration) CommentServiceInter
 
 func (service *CommentService) FindCommentsByContextId(ctx context.Context, contextId uuid.UUID) ([]*model.Comment, *pgconn.PgError) {
 	var comments []*model.Comment
-	result := service.db.Where("collection_id = ? OR session_id = ?", contextId).Find(&comments)
+	result := service.db.Order("time asc").Find(&comments, "comment_id is NULL AND (collection_id = ? OR session_id = ?)", contextId, contextId)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}
@@ -44,6 +44,7 @@ func (service *CommentService) FindCommentsByContextId(ctx context.Context, cont
 
 func (service *CommentService) CreateComment(ctx context.Context, comment *model.Comment) *pgconn.PgError {
 	result := service.db.Create(&comment)
+	comment.Comments = []model.Comment{}
 	return utils.GetPostgresError(result.Error)
 }
 

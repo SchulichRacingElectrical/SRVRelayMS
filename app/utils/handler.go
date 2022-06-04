@@ -4,8 +4,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Response will return json responce of http
-// This function should handle both error and success
 func Response(c *gin.Context, statusCode int, payload interface{}) {
 	c.Header("Content-Type", "application/json; charset=UTF-8")
 	c.Header("Access-Control-Allow-Origin", "*")

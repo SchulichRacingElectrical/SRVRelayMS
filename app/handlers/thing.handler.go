@@ -4,7 +4,7 @@ import (
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 	"os"
 
@@ -22,17 +22,17 @@ func NewThingAPI(thingService services.ThingServiceInterface, filepath string) *
 }
 
 func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
+	// Guard against non-admin requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var newThing model.Thing
 	err := ctx.BindJSON(&newThing)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-admin requests
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -42,7 +42,7 @@ func (handler *ThingHandler) CreateThing(ctx *gin.Context) {
 	perr := handler.service.Create(ctx.Request.Context(), &newThing)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusConflict, "") // TODO, create error enum
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
@@ -69,18 +69,18 @@ func (handler *ThingHandler) GetThings(ctx *gin.Context) {
 }
 
 func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
+	// Guard against non-admin users
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedThing model.Thing
 	err := ctx.BindJSON(&updatedThing)
 	if err != nil {
 		println(err.Error())
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-admin users
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -103,7 +103,7 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	perr = handler.service.Update(ctx.Request.Context(), &updatedThing)
 	if perr != nil {
 		if perr.Code == "23505" {
-			utils.Response(ctx, http.StatusConflict, "") // TODO, create error enum
+			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.ThingNotUnique))
 		} else {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.EntityCreationError))
 		}
@@ -116,16 +116,16 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 }
 
 func (handler *ThingHandler) DeleteThing(ctx *gin.Context) {
+	// Guard against non-admin requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ThingNotFound))
+		return
+	}
+
 	// Attempt to parse the query param
 	thingIdToDelete, err := uuid.Parse(ctx.Param("thingId"))
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-admin requests
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.ThingNotFound))
 		return
 	}
 

@@ -4,7 +4,7 @@ import (
 	middleware "database-ms/app/middleware"
 	"database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -80,18 +80,18 @@ func (handler *UserHandler) UpdateUser(ctx *gin.Context) {
 }
 
 func (handler *UserHandler) ChangeUserRole(ctx *gin.Context) {
+	// Guard against non-lead+ requests
+	organization, _ := middleware.GetOrganizationClaim(ctx)
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedUser model.User
 	err := ctx.BindJSON(&updatedUser)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-lead+ requests
-	organization, _ := middleware.GetOrganizationClaim(ctx)
-	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
@@ -232,6 +232,8 @@ func (handler *UserHandler) DeleteUser(ctx *gin.Context) {
 	// Send the response
 	completion(ctx, userIdToDelete)
 }
+
+// TODO
 
 func (handler *UserHandler) ChangePassword(ctx *gin.Context) {
 	// TODO: Allow the user to change their password

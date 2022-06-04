@@ -3,7 +3,7 @@ package handlers
 import (
 	"database-ms/app/middleware"
 	"database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -45,6 +45,12 @@ func (handler *DatumHandler) GetSensorData(ctx *gin.Context) {
 	session, perr := handler.sessionService.FindById(ctx, sessionId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.SessionNotFound))
+		return
+	}
+
+	// If the session file is uploaded, its data is not available
+	if *session.Generated != true {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}
 

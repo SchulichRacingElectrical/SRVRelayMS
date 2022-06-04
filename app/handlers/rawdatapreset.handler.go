@@ -4,7 +4,7 @@ import (
 	"database-ms/app/middleware"
 	"database-ms/app/model"
 	"database-ms/app/services"
-	"database-ms/utils"
+	"database-ms/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +21,12 @@ func NewRawDataPresetAPI(service services.RawDataPresetServiceInterface, thingSe
 }
 
 func (handler *RawDataPresetHandler) CreateRawDataPreset(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the body
 	var newRawDataPreset model.RawDataPreset
 	err := ctx.BindJSON(&newRawDataPreset)
@@ -94,6 +100,12 @@ func (handler *RawDataPresetHandler) GetRawDataPresets(ctx *gin.Context) {
 }
 
 func (handler *RawDataPresetHandler) UpdateRawDataPreset(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedRawDataPreset model.RawDataPreset
 	err := ctx.BindJSON(&updatedRawDataPreset)
@@ -133,6 +145,12 @@ func (handler *RawDataPresetHandler) UpdateRawDataPreset(ctx *gin.Context) {
 }
 
 func (handler *RawDataPresetHandler) DeleteRawDataPreset(ctx *gin.Context) {
+	// Guard against non-member+ requests
+	if !middleware.IsAuthorizationAtLeast(ctx, "Member") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to parse the params
 	rawDataPresetId, err := uuid.Parse(ctx.Param("rawDataPresetId"))
 	if err != nil {

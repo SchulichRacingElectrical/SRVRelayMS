@@ -4,7 +4,7 @@ import (
 	"database-ms/app/middleware"
 	model "database-ms/app/model"
 	services "database-ms/app/services"
-	utils "database-ms/utils"
+	utils "database-ms/app/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +28,7 @@ func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 	}
 
 	// Attempt to create the organizaton
-	_, perr := handler.service.Create(ctx.Request.Context(), &newOrganization)
+	perr := handler.service.Create(ctx, &newOrganization)
 	if perr != nil {
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OrganizationDuplicate))
@@ -78,17 +78,17 @@ func (handler *OrganizationHandler) GetOrganizations(ctx *gin.Context) {
 }
 
 func (handler *OrganizationHandler) UpdateOrganization(ctx *gin.Context) {
+	// Guard against non-admin users
+	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+		return
+	}
+
 	// Attempt to extract the body
 	var updatedOrganization model.Organization
 	err := ctx.BindJSON(&updatedOrganization)
 	if err != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
-		return
-	}
-
-	// Guard against non-admin users
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
 
