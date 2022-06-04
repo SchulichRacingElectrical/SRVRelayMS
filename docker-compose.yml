@@ -7,7 +7,7 @@ services:
     # map the container port to the host
     container_name: srv-database-ms
     ports:
-      - 8080:8080
+      - 6000:6000
     # use our code as local volume so watcher can run
     volumes:
       - .:/go/src/github.com/SchulichRacingElectrical/srv-database-ms

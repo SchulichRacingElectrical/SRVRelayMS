@@ -19,7 +19,7 @@ type Configuration struct {
 	SslMode       string `env:"POSTGRES_SSLMODE,required"`
 	AdminKey      string `env:"ADMIN_API_KEY,required"`
 	AccessSecret  string `env:"ACCESS_SECRET,required"`
-	Address       string `env:"ADDRESS" envDefault:":8080"`
+	Address       string `env:"ADDRESS" envDefault:":6000"`
 	RedisUrl      string `env:"REDIS_URL,required"`
 	RedisPort     string `env:"REDIS_PORT,required"`
 	RedisUsername string `env:"REDIS_USERNAME"`
