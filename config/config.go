@@ -22,7 +22,7 @@ type Configuration struct {
 	Address       string `env:"ADDRESS" envDefault:":8000"`
 	RedisUrl      string `env:"REDIS_URL,required"`
 	RedisPort     string `env:"REDIS_PORT,required"`
-	RedisUsername string `env:"REDIS_USERNAME"`
+	RedisUsername string `env:"REDIS_USERNAME,required"`
 	RedisPassword string `env:"REDIS_PASSWORD,required"`
 	FilePath      string `env:"FILE_PATH,required"`
 }

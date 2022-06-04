@@ -51,27 +51,25 @@ func AwaitThingDataSessions(redisClient *redis.Client, db *gorm.DB, conf *config
 		message := Message{}
 		json.Unmarshal([]byte(msg.Payload), &message)
 		if message.Active {
-			thingObjId, err := uuid.Parse(message.ThingId)
+			thingId, err := uuid.Parse(message.ThingId)
 			if err != nil {
+				log.Println("Failed to read thing ID.")
 				panic(err)
 			}
 			generated := true
 			session := &model.Session{
 				StartTime: time.Now().UnixMilli(),
 				EndTime:   nil,
-				ThingId:   thingObjId,
+				ThingId:   thingId,
 				Name:      uuid.NewString(),
 				Generated: &generated,
 			}
 			perr := sessionService.CreateSession(ctx, session)
 			if perr != nil {
+				log.Println("Failed to create session.")
 				panic(err)
 			}
 			log.Println("Session created with ID: " + session.Id.String())
-			thingId, err := uuid.Parse(message.ThingId)
-			if err != nil {
-				// Failed - Do something
-			}
 			go ThingDataSession(thingId, session, redisClient, db, conf)
 		}
 	}
@@ -83,9 +81,16 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 	defer subscriber.Close()
 	log.Println("Thing Data Session Started for " + thingId.String())
 	thingDataChannel := subscriber.Channel()
-
 	datumService := services.NewDatumService(db, conf)
 	sessionService := services.NewSessionService(db, conf)
+
+	// If there is an error anywhere, we want to delete the session
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("Failed to parse session data, deleted session now...")
+			sessionService.DeleteSession(ctx, session.Id)
+		}
+	}()
 
 	for msg := range thingDataChannel {
 		message := Message{}
@@ -98,11 +103,8 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 				panic(err)
 			}
 
-			// Delete thing data from redis
-			err = redisClient.Del(ctx, "THING_"+thingId.String()).Err()
-			if err != nil {
-				panic(err)
-			}
+			// Delete thing data from redis, next connection will clean up if needed
+			redisClient.Del(ctx, "THING_"+thingId.String())
 
 			// Parse thing data from JSON
 			var thingDataArray []map[string]float64
@@ -110,6 +112,11 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 				var thingDataItemMap map[string]float64
 				json.Unmarshal([]byte(thingDataItem), &thingDataItemMap)
 				thingDataArray = append(thingDataArray, thingDataItemMap)
+			}
+
+			// Exit if no data is found
+			if len(thingDataArray) == 0 {
+				panic("empty data")
 			}
 
 			// Sort the thing data by timestamp
@@ -152,9 +159,6 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 
 			// Re-fetch the session in case a user has modified it
 			session, perr = sessionService.FindById(ctx, session.Id)
-			if perr != nil {
-				panic(err)
-			}
 
 			// Update the session
 			endTime := session.StartTime + int64(thingDataArray[len(thingDataArray)-1]["ts"])
@@ -176,17 +180,17 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 
 			// Process non-linear thing data
 			thingDataArray = ReplaceSmallIdsWithIds(thingDataArray, smallIdToInfoMap)
-			datumArray := make([]*model.Datum, len(thingDataArray)*len(smallIds))
-			for i, thingDataItem := range thingDataArray {
-				for j, smallId := range smallIds {
+			var datumArray []*model.Datum
+			for _, thingDataItem := range thingDataArray {
+				for _, smallId := range smallIds {
 					strSmallId := strconv.Itoa(smallId)
 					sensorId := smallIdToInfoMap[strSmallId].Id
-					datumArray[i*len(smallIds)+j] = &model.Datum{
+					datumArray = append(datumArray, &model.Datum{
 						SessionId: session.Id,
 						SensorId:  sensorId,
 						Value:     float64(thingDataItem[sensorId.String()]),
 						Timestamp: int64(thingDataItem["ts"]),
-					}
+					})
 				}
 			}
 
@@ -204,9 +208,6 @@ func FillMissingValues(
 	smallIds []int,
 	interval int,
 ) []map[string]float64 {
-	if len(thingDataArray) == 0 { // HACK, check at the start.
-		return thingDataArray
-	}
 	// Get the default values of all the sensors
 	currentDataMap := CopyMap(thingDataArray[0])
 	for _, smallId := range smallIds {
