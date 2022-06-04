@@ -7,7 +7,9 @@ services:
     # map the container port to the host
     container_name: srv-database-ms
     ports:
-      - 6000:6000
+      - 8000:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # use our code as local volume so watcher can run
     volumes:
       - .:/go/src/github.com/SchulichRacingElectrical/srv-database-ms

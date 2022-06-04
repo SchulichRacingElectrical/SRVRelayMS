@@ -10,5 +10,7 @@ WORKDIR /go/src/github.com/SchulichRacingElectrical/srv-database-ms
 # copy all the files to the container
 COPY . .
 
+RUN export GIN_MODE=release 
+
 # run watcher
 ENTRYPOINT /go/bin/watcher

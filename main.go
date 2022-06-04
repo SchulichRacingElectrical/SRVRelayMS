@@ -24,6 +24,7 @@ func main() {
 	router := gin.Default()
 	InitializeRoutes(router, db, conf)
 	router.Use(cors.Default())
+	gin.SetMode(gin.ReleaseMode)
 
 	// Redis IoT Sub
 	subscriber.Initialize(conf, db)
