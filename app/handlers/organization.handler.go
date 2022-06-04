@@ -28,7 +28,7 @@ func (handler *OrganizationHandler) CreateOrganization(ctx *gin.Context) {
 	}
 
 	// Attempt to create the organizaton
-	_, perr := handler.service.Create(ctx.Request.Context(), &newOrganization)
+	perr := handler.service.Create(ctx, &newOrganization)
 	if perr != nil {
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusConflict, utils.NewHTTPError(utils.OrganizationDuplicate))

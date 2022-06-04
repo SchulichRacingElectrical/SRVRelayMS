@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
-	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
 
@@ -16,7 +15,7 @@ type OrganizationServiceInterface interface {
 	// Public
 	FindByOrganizationId(context.Context, uuid.UUID) (*model.Organization, *pgconn.PgError)
 	FindAllOrganizations(context.Context) ([]*model.Organization, *pgconn.PgError)
-	Create(context.Context, *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError)
+	Create(context.Context, *model.Organization) *pgconn.PgError
 	UpdateKey(context.Context, *model.Organization) *pgconn.PgError
 	Update(context.Context, *model.Organization) *pgconn.PgError
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
@@ -55,13 +54,10 @@ func (service *OrganizationService) FindAllOrganizations(ctx context.Context) ([
 	return organizations, nil
 }
 
-func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) (*mongo.InsertOneResult, *pgconn.PgError) {
+func (service *OrganizationService) Create(ctx context.Context, organization *model.Organization) *pgconn.PgError {
 	organization.APIKey = uuid.NewString()
 	result := service.db.Create(&organization)
-	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
-	}
-	return nil, nil
+	return utils.GetPostgresError(result.Error)
 }
 
 func (service *OrganizationService) UpdateKey(ctx context.Context, organization *model.Organization) *pgconn.PgError {

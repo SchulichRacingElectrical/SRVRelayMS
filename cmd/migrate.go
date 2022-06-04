@@ -1,8 +1,8 @@
 package main
 
 import (
-	"database-ms/app/config"
 	"database-ms/app/model"
+	"database-ms/config"
 	"fmt"
 
 	"gorm.io/driver/postgres"
