@@ -180,10 +180,10 @@ func (handler *SessionHandler) UpdateSession(ctx *gin.Context) {
 			handler.filepath+session.ThingId.String()+"/"+session.Name+".csv",
 			handler.filepath+session.ThingId.String()+"/"+updatedSession.Name+".csv",
 		)
-		if err != nil {
-			utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToRenameFile))
-			return
-		}
+		// if err != nil {
+		// 	utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToRenameFile))
+		// 	return
+		// }
 	}
 
 	// Attempt to update the collection
@@ -239,8 +239,8 @@ func (handler *SessionHandler) DeleteSession(ctx *gin.Context) {
 
 	// Attempt to delete session file
 	if err = os.Remove(handler.filepath + session.ThingId.String() + "/" + session.Name + ".csv"); err != nil {
-		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToDeleteFile))
-		return
+		// utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.FailedToDeleteFile))
+		// return
 	}
 
 	// Attempt to delete the session
