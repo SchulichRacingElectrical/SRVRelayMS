@@ -20,8 +20,9 @@ type Sensor struct {
 	Name                 string    `gorm:"column:name;not null;uniqueIndex:unique_sensor_name_in_thing" json:"name"`
 	Frequency            int32     `gorm:"column:frequency;not null" json:"frequency"`
 	Unit                 string    `gorm:"column:unit" json:"unit,omitempty"`
-	CanId                int64     `gorm:"column:can_id;not null;uniqueIndex:unique_sensor_can_in_thing" json:"canId"`
-	ThingId              uuid.UUID `gorm:"type:uuid;column:thing_id;not null;uniqueIndex:unique_sensor_name_in_thing;uniqueIndex:unique_sensor_can_in_thing;uniqueIndex:unique_sensor_smallid_in_thing" json:"thingId"`
+	CanId                int64     `gorm:"column:can_id;not null" json:"canId"`
+	CanOffset            int       `gorm:"column:can_offset;not null" json:"canOffset"`
+	ThingId              uuid.UUID `gorm:"type:uuid;column:thing_id;not null;uniqueIndex:unique_sensor_name_in_thing;uniqueIndex:unique_sensor_smallid_in_thing" json:"thingId"`
 	UpperCalibration     float64   `gorm:"type:float;column:upper_calibration" json:"upperCalibration,omitempty"`
 	LowerCalibration     float64   `gorm:"column:lower_calibration" json:"lowerCalibration,omitempty"`
 	ConversionMultiplier float64   `gorm:"column:conversion_multiplier" json:"conversionMultiplier,omitempty"`
