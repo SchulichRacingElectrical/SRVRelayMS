@@ -52,8 +52,12 @@ func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uu
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}
+	allSensors, perr := service.FindByThingId(ctx, thingId)
+	if perr != nil {
+		return nil, perr
+	}
 	sensorIds := []uuid.UUID{}
-	for _, sensor := range sensors {
+	for _, sensor := range allSensors {
 		sensorIds = append(sensorIds, sensor.Id)
 	}
 	response := model.LastUpdateSensors{Sensors: sensors, SensorIds: sensorIds}
