@@ -96,8 +96,7 @@ func (service *OrganizationService) Delete(ctx context.Context, organizationId u
 
 func (service *OrganizationService) FindByOrganizationApiKey(ctx context.Context, APIKey string) (*model.Organization, *pgconn.PgError) {
 	organization := model.Organization{}
-	organization.APIKey = APIKey
-	result := service.db.First(&organization)
+	result := service.db.Where("api_key = ?", APIKey).First(&organization)
 	if result.Error != nil {
 		return nil, &pgconn.PgError{}
 	}

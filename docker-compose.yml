@@ -13,5 +13,5 @@ services:
     # use our code as local volume so watcher can run
     volumes:
       - .:/go/src/github.com/SchulichRacingElectrical/srv-database-ms
-      - /home/ubuntu/:/data/
+      # - /home/ubuntu/:/data/
     working_dir: /go/src/github.com/SchulichRacingElectrical/srv-database-ms
