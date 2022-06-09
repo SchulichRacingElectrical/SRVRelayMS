@@ -7,6 +7,11 @@ import (
 
 const TableNameSensor = "sensor"
 
+type LastUpdateSensors struct {
+	Sensors   []Sensor    `json:"sensors"`
+	SensorIds []uuid.UUID `json:"existingSensorIds"`
+}
+
 type Sensor struct {
 	Base
 	SmallId              int       `gorm:"column:small_id;not null;uniqueIndex:unique_sensor_smallid_in_thing" json:"smallId"`

@@ -100,7 +100,6 @@ func (handler *SensorHandler) FindThingSensors(ctx *gin.Context) {
 	utils.Response(ctx, http.StatusOK, result)
 }
 
-// TODO: Returns list of all sensors Ids
 func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 	// Attempt to read from the params
 	thingId, err := uuid.Parse(ctx.Param("thingId"))
@@ -131,14 +130,14 @@ func (handler *SensorHandler) FindUpdatedSensors(ctx *gin.Context) {
 	}
 
 	// Attempt to fetch the updated sensors
-	sensors, perr := handler.sensorService.FindUpdatedSensors(ctx.Request.Context(), thingId, lastUpdate)
+	sensorDiff, perr := handler.sensorService.FindUpdatedSensors(ctx.Request.Context(), thingId, lastUpdate)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
 		return
 	}
 
 	// Send the response
-	result := utils.SuccessPayload(sensors, "Successfully retrieved sensors")
+	result := utils.SuccessPayload(sensorDiff, "Successfully retrieved sensors")
 	utils.Response(ctx, http.StatusOK, result)
 }
 

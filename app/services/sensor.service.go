@@ -16,7 +16,7 @@ import (
 type SensorServiceInterface interface {
 	// Public
 	FindByThingId(context.Context, uuid.UUID) ([]*model.Sensor, *pgconn.PgError)
-	FindUpdatedSensors(context.Context, uuid.UUID, int64) ([]*model.Sensor, *pgconn.PgError)
+	FindUpdatedSensors(context.Context, uuid.UUID, int64) (*model.LastUpdateSensors, *pgconn.PgError)
 	Create(context.Context, *model.Sensor) *pgconn.PgError
 	Update(context.Context, *model.Sensor) *pgconn.PgError
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
@@ -46,13 +46,18 @@ func (service *SensorService) FindByThingId(ctx context.Context, thingId uuid.UU
 	return sensors, nil
 }
 
-func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) ([]*model.Sensor, *pgconn.PgError) {
-	var sensors []*model.Sensor
+func (service *SensorService) FindUpdatedSensors(ctx context.Context, thingId uuid.UUID, lastUpdate int64) (*model.LastUpdateSensors, *pgconn.PgError) {
+	sensors := []model.Sensor{}
 	result := service.db.Where("thing_id = ? AND last_update > ?", thingId, lastUpdate).Find(&sensors)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}
-	return sensors, nil
+	sensorIds := []uuid.UUID{}
+	for _, sensor := range sensors {
+		sensorIds = append(sensorIds, sensor.Id)
+	}
+	response := model.LastUpdateSensors{Sensors: sensors, SensorIds: sensorIds}
+	return &response, nil
 }
 
 func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) *pgconn.PgError {

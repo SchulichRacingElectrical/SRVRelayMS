@@ -21,7 +21,7 @@ func NewOperatorAPI(operatorService services.OperatorServiceInterface) *Operator
 
 func (handler *OperatorHandler) CreateOperator(ctx *gin.Context) {
 	// Guard against non-admin users
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
@@ -68,7 +68,7 @@ func (handler *OperatorHandler) GetOperators(ctx *gin.Context) {
 
 func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 	// Guard against non-admin users
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
 		return
 	}
@@ -114,7 +114,7 @@ func (handler *OperatorHandler) UpdateOperator(ctx *gin.Context) {
 
 func (handler *OperatorHandler) DeleteOperator(ctx *gin.Context) {
 	// Guard against non-admin requests
-	if !middleware.IsAuthorizationAtLeast(ctx, "Admin") {
+	if !middleware.IsAuthorizationAtLeast(ctx, "Lead") {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.OperatorNotFound))
 		return
 	}
