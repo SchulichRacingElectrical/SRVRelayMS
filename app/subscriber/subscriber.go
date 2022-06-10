@@ -161,7 +161,6 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			session, perr = sessionService.FindById(ctx, session.Id)
 
 			// Update the session
-
 			endTime := time.Now().UnixMilli()
 			session.EndTime = &endTime
 			perr = sessionService.UpdateSession(ctx, session)
