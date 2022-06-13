@@ -161,6 +161,6 @@ func (service *UserService) CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func TokenExpiration() int64 {
+func TokenExpirationDuration() int64 {
 	return tokenExpirationDuration.Milliseconds()
 }

@@ -108,7 +108,7 @@ func (handler *AuthHandler) Login(ctx *gin.Context) {
 
 	// Send the response
 	DBuser.Password = ""
-	DBuser.ExpirationTime = utils.CurrentTimeInMilli()
+	DBuser.ExpirationTime = utils.CurrentTimeInMilli() + services.TokenExpirationDuration()
 	result := utils.SuccessPayload(DBuser, "Successfully signed user in.")
 	ctx.JSON(http.StatusOK, result)
 }
@@ -142,7 +142,7 @@ func (handler *AuthHandler) Renew(ctx *gin.Context) {
 		return
 	}
 	user.Password = ""
-	user.ExpirationTime = utils.CurrentTimeInMilli() + services.TokenExpiration()
+	user.ExpirationTime = utils.CurrentTimeInMilli() + services.TokenExpirationDuration()
 	result := utils.SuccessPayload(user, "Successfully renewed user session.")
 	ctx.JSON(http.StatusOK, result)
 }
