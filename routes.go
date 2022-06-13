@@ -26,7 +26,7 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	sessionAPI := handlers.NewSessionAPI(sessionService, thingService, conf.FilePath)
 	collectionService := services.NewCollectionService(db, conf)
 	collectionAPI := handlers.NewCollectionAPI(collectionService, thingService)
-	commentAPI := handlers.NewCommentAPI(services.NewCommentService(db, conf), thingService, sessionService, collectionService)
+	commentAPI := handlers.NewCommentAPI(services.NewCommentService(db, conf), thingService, sessionService, sensorService, operatorService, collectionService)
 	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(db, conf), thingService)
 	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(db, conf), thingService)
 	datumAPI := handlers.NewDatumAPI(services.NewDatumService(db, conf), thingService, sensorService, sessionService)

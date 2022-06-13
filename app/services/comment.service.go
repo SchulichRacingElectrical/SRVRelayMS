@@ -35,7 +35,7 @@ func NewCommentService(db *gorm.DB, c *config.Configuration) CommentServiceInter
 
 func (service *CommentService) FindCommentsByContextId(ctx context.Context, contextId uuid.UUID) ([]*model.Comment, *pgconn.PgError) {
 	var comments []*model.Comment
-	result := service.db.Order("time asc").Find(&comments, "comment_id is NULL AND (collection_id = ? OR session_id = ?)", contextId, contextId)
+	result := service.db.Order("time asc").Find(&comments, "comment_id is NULL AND (collection_id = ? OR session_id = ? OR thing_id = ? OR sensor_id = ? OR operator_id = ?)", contextId, contextId, contextId, contextId, contextId)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}

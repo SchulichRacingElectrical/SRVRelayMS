@@ -15,6 +15,8 @@ type CommentHandler struct {
 	commentService    services.CommentServiceInterface
 	thingService      services.ThingServiceInterface
 	sessionService    services.SessionServiceInterface
+	sensorService     services.SensorServiceInterface
+	operatorService   services.OperatorServiceInterface
 	collectionService services.CollectionServiceInterface
 }
 
@@ -22,12 +24,16 @@ func NewCommentAPI(
 	commentService services.CommentServiceInterface,
 	thingService services.ThingServiceInterface,
 	sessionService services.SessionServiceInterface,
+	sensorService services.SensorServiceInterface,
+	operatorService services.OperatorServiceInterface,
 	collectionService services.CollectionServiceInterface,
 ) *CommentHandler {
 	return &CommentHandler{
 		commentService:    commentService,
 		thingService:      thingService,
 		sessionService:    sessionService,
+		sensorService:     sensorService,
+		operatorService:   operatorService,
 		collectionService: collectionService,
 	}
 }
@@ -47,43 +53,69 @@ func (handler *CommentHandler) CreateComment(ctx *gin.Context) {
 		return
 	}
 
-	// Attempt to find the associated thingId
-	thingId := uuid.UUID{}
+	// Attempt to find the associated context
+	var thingId *uuid.UUID
+	var organizationId *uuid.UUID
 	if newComment.CollectionId != nil {
 		collection, perr := handler.collectionService.FindById(ctx, *newComment.CollectionId)
 		if perr != nil {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CollectionNotFound))
 			return
 		}
-		thingId = collection.ThingId
-	} else {
+		thingId = &collection.ThingId
+	} else if newComment.SessionId != nil {
 		session, perr := handler.sessionService.FindById(ctx, *newComment.SessionId)
 		if perr != nil {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
 			return
 		}
-		thingId = session.ThingId
+		thingId = &session.ThingId
+	} else if newComment.ThingId != nil {
+		thingId = newComment.ThingId
+	} else if newComment.SensorId != nil {
+		sensor, perr := handler.sensorService.FindById(ctx, *newComment.SensorId)
+		if perr != nil {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
+			return
+		}
+		thingId = &sensor.ThingId
+	} else if newComment.OperatorId != nil {
+		operator, perr := handler.operatorService.FindById(ctx, *newComment.OperatorId)
+		if perr != nil {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SessionNotFound))
+			return
+		}
+		organizationId = &operator.OrganizationId
 	}
 
-	// Attempt to find the thing
-	thing, perr := handler.thingService.FindById(ctx, thingId)
-	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
-		return
-	}
+	// Guard against cross-tenant creation
+	if thingId != nil {
+		thing, perr := handler.thingService.FindById(ctx, *thingId)
+		if perr != nil {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+			return
+		}
 
-	// Guard against cross-tenant writes
-	organization, _ := middleware.GetOrganizationClaim(ctx)
-	if thing.OrganizationId != organization.Id {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
-		return
+		// Guard against cross-tenant writes
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		if thing.OrganizationId != organization.Id {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			return
+		}
+	} else {
+		// Guard against cross-tenant writes
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		if *organizationId != organization.Id {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			return
+		}
 	}
 
 	// Update the comment's time
 	newComment.Time = utils.CurrentTimeInMilli()
 
 	// Attempt to create the comment
-	perr = handler.commentService.CreateComment(ctx.Request.Context(), &newComment)
+	perr := handler.commentService.CreateComment(ctx.Request.Context(), &newComment)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPCustomError(utils.BadRequest, perr.Error()))
 		return
@@ -108,32 +140,58 @@ func (handler *CommentHandler) GetComments(ctx *gin.Context) {
 		return
 	}
 
-	// Attempt to find the associated thingId
-	thingId := uuid.UUID{}
+	// Attempt to find the context object
+	var thingId *uuid.UUID
+	var organizationId *uuid.UUID
 	collection, perr := handler.collectionService.FindById(ctx, contextId)
-	if perr != nil {
-		session, perr := handler.sessionService.FindById(ctx, contextId)
-		if perr != nil {
-			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentContextNotFound))
-			return
-		}
-		thingId = session.ThingId
-	} else {
-		thingId = collection.ThingId
+	if perr == nil {
+		thingId = &collection.ThingId
+	}
+	session, perr := handler.sessionService.FindById(ctx, contextId)
+	if perr == nil {
+		thingId = &session.ThingId
+	}
+	thing, perr := handler.thingService.FindById(ctx, contextId)
+	if perr == nil {
+		thingId = &thing.Id
+	}
+	sensor, perr := handler.sensorService.FindById(ctx, contextId)
+	if perr == nil {
+		thingId = &sensor.ThingId
+	}
+	operator, perr := handler.operatorService.FindById(ctx, contextId)
+	if perr == nil {
+		organizationId = &operator.OrganizationId
 	}
 
-	// Attempt to find the thing
-	thing, perr := handler.thingService.FindById(ctx, thingId)
-	if perr != nil {
-		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+	// Guard against unknown context
+	if thingId == nil && organizationId == nil {
+		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.CommentContextNotFound))
 		return
 	}
 
 	// Guard against cross-tenant reads
-	organization, _ := middleware.GetOrganizationClaim(ctx)
-	if thing.OrganizationId != organization.Id {
-		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
-		return
+	if thingId != nil {
+		// Attempt to find the thing
+		thing, perr := handler.thingService.FindById(ctx, *thingId)
+		if perr != nil {
+			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ThingNotFound))
+			return
+		}
+
+		// Guard against cross-tenant reads
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		if thing.OrganizationId != organization.Id {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			return
+		}
+	} else {
+		// Guard against cross-tenant reads
+		organization, _ := middleware.GetOrganizationClaim(ctx)
+		if *organizationId != organization.Id {
+			utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.Unauthorized))
+			return
+		}
 	}
 
 	// Attempt to read the comments

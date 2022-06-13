@@ -64,7 +64,7 @@ func (service *OperatorService) FindById(ctx context.Context, operatorId uuid.UU
 	var operator *model.Operator
 	result := service.db.Where("id = ?", operatorId).First(&operator)
 	if result.Error != nil {
-		return nil, utils.GetPostgresError(result.Error)
+		return nil, &pgconn.PgError{}
 	}
 	return operator, nil
 }

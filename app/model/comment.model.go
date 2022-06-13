@@ -11,6 +11,9 @@ type Comment struct {
 	Base
 	CollectionId *uuid.UUID `gorm:"type:uuid;column:collection_id" json:"collectionId,omitempty"`
 	SessionId    *uuid.UUID `gorm:"type:uuid;column:session_id" json:"sessionId,omitempty"`
+	ThingId      *uuid.UUID `gorm:"type:uuid;column:thing_id" json:"thingId,omitempty"`
+	SensorId     *uuid.UUID `gorm:"type:uuid;column:sensor_id" json:"sensorId,omitempty"`
+	OperatorId   *uuid.UUID `gorm:"type:uuid;column:operator_id" json:"operatorId,omitempty"`
 	UserId       uuid.UUID  `gorm:"type:uuid;column:user_id" json:"userId"`
 	CommentId    *uuid.UUID `gorm:"type:uuid;column:comment_id" json:"commentId,omitempty"`
 	Username     string     `gorm:"column:username" json:"username"`
@@ -18,6 +21,9 @@ type Comment struct {
 	Content      string     `gorm:"column:content; not null" json:"content"`
 	Collection   Collection `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	Session      Session    `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Thing        Thing      `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Sensor       Sensor     `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	Operator     Operator   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	User         User       `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
 	Comments     []Comment  `gorm:"foreignKey:comment_id;constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"comments"`
 }
