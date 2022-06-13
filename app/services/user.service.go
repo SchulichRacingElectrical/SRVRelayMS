@@ -17,6 +17,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var tokenExpirationDuration time.Duration
+
 type UserServiceInterface interface {
 	// Public
 	FindUsersByOrganizationId(context.Context, uuid.UUID) ([]*model.User, *pgconn.PgError)
@@ -41,6 +43,7 @@ type UserService struct {
 }
 
 func NewUserService(db *gorm.DB, c *config.Configuration) UserServiceInterface {
+	tokenExpirationDuration = 24 * time.Hour
 	return &UserService{config: c, db: db}
 }
 
@@ -106,7 +109,7 @@ func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (
 }
 
 func (service *UserService) CreateToken(c *gin.Context, user *model.User) (string, error) {
-	var expirationDate int = int(time.Now().Add(5 * time.Hour).Unix())
+	var expirationDate int = int(time.Now().Add(tokenExpirationDuration).Unix())
 	atClaims := jwt.MapClaims{}
 	atClaims["userId"] = user.Id
 	atClaims["organizationId"] = user.OrganizationId
@@ -156,4 +159,8 @@ func (service *UserService) HashPassword(password string) string {
 func (service *UserService) CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func TokenExpiration() int64 {
+	return tokenExpirationDuration.Milliseconds()
 }

@@ -14,6 +14,7 @@ type User struct {
 	OrganizationId uuid.UUID    `gorm:"type:uuid;column:organization_id;uniqueIndex:unique_user_name_in_org" json:"organizationId"`
 	Role           string       `gorm:"column:role;not null" json:"role"`
 	Organization   Organization `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"-"`
+	ExpirationTime int64        `gorm:"-" json:"expirationTime"`
 }
 
 func (*User) TableName() string {
