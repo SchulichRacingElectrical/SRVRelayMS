@@ -22,7 +22,7 @@ type SensorServiceInterface interface {
 	Delete(context.Context, uuid.UUID) *pgconn.PgError
 
 	// Private
-	FindBySensorId(context.Context, uuid.UUID) (*model.Sensor, *pgconn.PgError)
+	FindById(context.Context, uuid.UUID) (*model.Sensor, *pgconn.PgError)
 	FindAvailableSmallId(uuid.UUID, context.Context) (int, error)
 }
 
@@ -79,7 +79,7 @@ func (service *SensorService) Create(ctx context.Context, sensor *model.Sensor) 
 }
 
 func (service *SensorService) Update(ctx context.Context, updatedSensor *model.Sensor) *pgconn.PgError {
-	sensor, err := service.FindBySensorId(ctx, updatedSensor.Id)
+	sensor, err := service.FindById(ctx, updatedSensor.Id)
 	if err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (service *SensorService) Delete(ctx context.Context, sensorId uuid.UUID) *p
 
 // PRIVATE FUNCTIONS
 
-func (service *SensorService) FindBySensorId(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, *pgconn.PgError) {
+func (service *SensorService) FindById(ctx context.Context, sensorId uuid.UUID) (*model.Sensor, *pgconn.PgError) {
 	var sensor *model.Sensor
 	result := service.db.Where("id = ?", sensorId).First(&sensor)
 	if result.Error != nil {

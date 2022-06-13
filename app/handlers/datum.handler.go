@@ -13,17 +13,20 @@ import (
 type DatumHandler struct {
 	datumService   services.DatumServiceInterface
 	thingService   services.ThingServiceInterface
+	sensorService  services.SensorServiceInterface
 	sessionService services.SessionServiceInterface
 }
 
 func NewDatumAPI(
 	datumService services.DatumServiceInterface,
 	thingService services.ThingServiceInterface,
+	sensorService services.SensorServiceInterface,
 	sessionService services.SessionServiceInterface,
 ) *DatumHandler {
 	return &DatumHandler{
 		datumService:   datumService,
 		thingService:   thingService,
+		sensorService:  sensorService,
 		sessionService: sessionService,
 	}
 }
@@ -55,7 +58,7 @@ func (handler *DatumHandler) GetSensorData(ctx *gin.Context) {
 	}
 
 	// Attempt to find the sensor
-	sensor, perr := handler.sessionService.FindById(ctx, sensorId)
+	sensor, perr := handler.sensorService.FindById(ctx, sensorId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusUnauthorized, utils.NewHTTPError(utils.SensorNotFound))
 		return
@@ -87,7 +90,7 @@ func (handler *DatumHandler) GetSensorData(ctx *gin.Context) {
 	}
 
 	// Attempt to get the data
-	data, perr := handler.datumService.FindBySessionIdAndSensorId(ctx, sessionId, sessionId)
+	data, perr := handler.datumService.FindBySessionIdAndSensorId(ctx, sessionId, sensorId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.InternalError))
 		return

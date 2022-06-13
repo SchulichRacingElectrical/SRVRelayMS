@@ -14,6 +14,11 @@ type Datum struct {
 	Session   Session   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
+type Data struct {
+	X int64   `json:"x"`
+	Y float64 `json:"y"`
+}
+
 func (*Datum) TableName() string {
 	return TableNameDatum
 }

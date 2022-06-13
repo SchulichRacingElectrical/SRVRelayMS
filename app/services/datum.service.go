@@ -13,7 +13,7 @@ import (
 
 type DatumServiceInterface interface {
 	// Public
-	FindBySessionIdAndSensorId(context.Context, uuid.UUID, uuid.UUID) ([]SensorData, *pgconn.PgError)
+	FindBySessionIdAndSensorId(context.Context, uuid.UUID, uuid.UUID) ([]*SensorData, *pgconn.PgError)
 	CreateMany(context.Context, []*model.Datum) *pgconn.PgError
 }
 
@@ -23,24 +23,26 @@ type DatumService struct {
 }
 
 type SensorData struct {
-	Timestamp int64   `json:"timestamp"`
-	Value     float64 `json:"value"`
+	X int64   `json:"x"`
+	Y float64 `json:"y"`
 }
 
 func NewDatumService(db *gorm.DB, c *config.Configuration) DatumServiceInterface {
 	return &DatumService{config: c, db: db}
 }
 
-func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId uuid.UUID, sensorId uuid.UUID) ([]SensorData, *pgconn.PgError) {
+func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, sessionId uuid.UUID, sensorId uuid.UUID) ([]*SensorData, *pgconn.PgError) {
 	var data []*model.Datum
-	result := service.db.Where("session_id = ? AND sensor_id = ?", sessionId, sensorId).Order("timestamp asc").Find(&data)
+	result := service.db.Order("timestamp asc").Find(&data, "session_id = ? AND sensor_id = ?", sessionId, sensorId)
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}
-	// TODO: Sort the data by timestamp
-	// TODO: Create array of SensorData
-	// TODO: Return the data
-	return nil, nil
+	print(len(data))
+	cleanData := []*SensorData{}
+	for _, datum := range data {
+		cleanData = append(cleanData, &SensorData{X: datum.Timestamp, Y: datum.Value})
+	}
+	return cleanData, nil
 }
 
 func (service *DatumService) CreateMany(ctx context.Context, datumArray []*model.Datum) *pgconn.PgError {

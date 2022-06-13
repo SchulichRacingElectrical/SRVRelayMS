@@ -18,7 +18,8 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	authAPI := handlers.NewAuthAPI(services.NewUserService(db, conf), organizationService)
 	thingService := services.NewThingService(db, conf)
 	thingAPI := handlers.NewThingAPI(thingService, conf.FilePath)
-	sensorAPI := handlers.NewSensorAPI(services.NewSensorService(db, conf), thingService)
+	sensorService := services.NewSensorService(db, conf)
+	sensorAPI := handlers.NewSensorAPI(sensorService, thingService)
 	operatorService := services.NewOperatorService(db, conf)
 	operatorAPI := handlers.NewOperatorAPI(operatorService)
 	sessionService := services.NewSessionService(db, conf)
@@ -28,7 +29,7 @@ func InitializeRoutes(c *gin.Engine, db *gorm.DB, conf *config.Configuration) {
 	commentAPI := handlers.NewCommentAPI(services.NewCommentService(db, conf), thingService, sessionService, collectionService)
 	rawDataPresetAPI := handlers.NewRawDataPresetAPI(services.NewRawDataPresetService(db, conf), thingService)
 	chartPresetAPI := handlers.NewChartPresetAPI(services.NewChartPresetService(db, conf), thingService)
-	datumAPI := handlers.NewDatumAPI(services.NewDatumService(db, conf), thingService, sessionService)
+	datumAPI := handlers.NewDatumAPI(services.NewDatumService(db, conf), thingService, sensorService, sessionService)
 
 	// Declare public endpoints
 	publicEndpoints := c.Group("")

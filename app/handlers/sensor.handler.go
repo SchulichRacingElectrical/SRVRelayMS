@@ -202,7 +202,7 @@ func (handler *SensorHandler) DeleteSensor(ctx *gin.Context) {
 
 	// Attempt to find the sensor
 	organization, _ := middleware.GetOrganizationClaim(ctx)
-	sensor, perr := handler.sensorService.FindBySensorId(ctx, sensorId)
+	sensor, perr := handler.sensorService.FindById(ctx, sensorId)
 	if perr != nil {
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.SensorsNotFound))
 		return
