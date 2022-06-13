@@ -6,7 +6,6 @@ import (
 	"database-ms/app/model"
 	services "database-ms/app/services"
 	utils "database-ms/app/utils"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -306,8 +305,8 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 		return
 	}
 
-	// Attempt to make the directory
-	err = os.Mkdir(handler.filepath+session.ThingId.String(), 0777)
+	// Attempt to the directory
+	err = os.MkdirAll(handler.filepath+session.ThingId.String(), 0777)
 	if err != nil && !os.IsExist(err) {
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(err.Error()))
 		return
@@ -315,7 +314,6 @@ func (handler *SessionHandler) UploadFile(ctx *gin.Context) {
 
 	// Attempt to save the file
 	if err = ctx.SaveUploadedFile(file, handler.filepath+session.ThingId.String()+"/"+session.Name+".csv"); err != nil {
-		fmt.Println(err.Error())
 		utils.Response(ctx, http.StatusInternalServerError, utils.NewHTTPError(utils.CouldNotUploadFile))
 		return
 	}

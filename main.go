@@ -33,8 +33,8 @@ func main() {
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         conf.Address,
-		WriteTimeout: 30 * time.Second,
-		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 10000 * time.Second,
+		ReadTimeout:  10000 * time.Second,
 	}
 
 	// Serving microservice at specified port
