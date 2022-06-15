@@ -79,7 +79,6 @@ func (handler *ThingHandler) UpdateThing(ctx *gin.Context) {
 	var updatedThing model.Thing
 	err := ctx.BindJSON(&updatedThing)
 	if err != nil {
-		println(err.Error())
 		utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.BadRequest))
 		return
 	}

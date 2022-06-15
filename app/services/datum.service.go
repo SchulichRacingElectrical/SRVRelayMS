@@ -37,7 +37,6 @@ func (service *DatumService) FindBySessionIdAndSensorId(ctx context.Context, ses
 	if result.Error != nil {
 		return nil, utils.GetPostgresError(result.Error)
 	}
-	print(len(data))
 	cleanData := []*SensorData{}
 	for _, datum := range data {
 		cleanData = append(cleanData, &SensorData{X: datum.Timestamp, Y: datum.Value})

@@ -52,7 +52,6 @@ func (handler *ChartPresetHandler) CreateChartPreset(ctx *gin.Context) {
 	// Ensure the preset is valid
 	perr = handler.service.Create(ctx, &newChartPreset)
 	if perr != nil {
-		println(perr.Error())
 		if perr.Code == "23505" {
 			utils.Response(ctx, http.StatusBadRequest, utils.NewHTTPError(utils.ChartPresetNotUnique))
 		} else {

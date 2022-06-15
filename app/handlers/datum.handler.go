@@ -97,6 +97,6 @@ func (handler *DatumHandler) GetSensorData(ctx *gin.Context) {
 	}
 
 	// Send the response
-	result := utils.SuccessPayload(data, "Successfully updated.")
+	result := utils.SuccessPayload(data, "Successfully retrieved sensor data.")
 	utils.Response(ctx, http.StatusOK, result)
 }
