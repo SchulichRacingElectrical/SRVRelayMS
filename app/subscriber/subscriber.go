@@ -88,7 +88,9 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("Failed to parse session data, deleting session now...")
-			sessionService.DeleteSession(ctx, session.Id)
+			if session != nil {
+				sessionService.DeleteSession(ctx, session.Id)
+			}
 		}
 	}()
 
