@@ -12,6 +12,7 @@ import (
 
 type Configuration struct {
 	Host          string `env:"POSTGRES_HOST,required"`
+	MigrationHost string `env:"POSTGRES_MIGRATION_HOST,required"`
 	User          string `env:"POSTGRES_USER,required"`
 	Password      string `env:"POSTGRES_PASSWORD,required"`
 	DbName        string `env:"POSTGRES_DB_NAME,required"`
