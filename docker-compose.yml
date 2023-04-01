@@ -1,5 +1,14 @@
-version: "3"
+version: "3.8"
 services:
+  db:
+    image: postgres:14.1-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - db:/var/lib/postgresql/data
   srv-database-ms:
     # use dockerfile to build image
     build:
@@ -7,11 +16,14 @@ services:
     # map the container port to the host
     container_name: srv-database-ms
     ports:
-      - 8000:8000
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 8080:8000
     # use our code as local volume so watcher can run
     volumes:
       - .:/go/src/github.com/SchulichRacingElectrical/srv-database-ms
       # - /home/ubuntu/:/data/
     working_dir: /go/src/github.com/SchulichRacingElectrical/srv-database-ms
+    depends_on:
+      - db
+volumes:
+  db:
+    driver: local
