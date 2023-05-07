@@ -34,8 +34,8 @@ type SensorInfo struct {
 
 func Initialize(conf *config.Configuration, db *gorm.DB) {
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     conf.RedisUrl + ":" + conf.RedisPort,
-		Password: conf.RedisPassword,
+		Addr: conf.RedisUrl + ":" + conf.RedisPort,
+		// Password: conf.RedisPassword,
 	})
 	go AwaitThingDataSessions(redisClient, db, conf)
 }
@@ -88,6 +88,7 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println("Failed to parse session data, deleting session now...")
+			log.Println(err)
 			if session != nil {
 				sessionService.DeleteSession(ctx, session.Id)
 			}
@@ -103,6 +104,11 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 			thingData, err := redisClient.LRange(ctx, "THING_"+thingId.String(), 0, -1).Result()
 			if err != nil {
 				panic(err)
+			}
+
+			// Split thing data if it is a single string
+			if len(thingData) == 1 {
+				thingData = strings.Split(thingData[0], " ")
 			}
 
 			// Delete thing data from redis, next connection will clean up if needed
@@ -161,6 +167,9 @@ func ThingDataSession(thingId uuid.UUID, session *model.Session, redisClient *re
 
 			// Re-fetch the session in case a user has modified it
 			session, perr = sessionService.FindById(ctx, session.Id)
+			if perr != nil {
+				panic(err)
+			}
 
 			// Update the session
 			endTime := time.Now().UnixMilli()

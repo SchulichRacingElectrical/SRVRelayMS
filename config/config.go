@@ -23,9 +23,9 @@ type Configuration struct {
 	Address       string `env:"ADDRESS" envDefault:":8000"`
 	RedisUrl      string `env:"REDIS_URL,required"`
 	RedisPort     string `env:"REDIS_PORT,required"`
-	RedisUsername string `env:"REDIS_USERNAME,required"`
-	RedisPassword string `env:"REDIS_PASSWORD,required"`
-	FilePath      string `env:"FILE_PATH,required"`
+	// RedisUsername string `env:"REDIS_USERNAME,required"`
+	// RedisPassword string `env:"REDIS_PASSWORD,required"`
+	FilePath string `env:"FILE_PATH,required"`
 }
 
 // NewConfig will read the config data from given .env file
@@ -45,6 +45,11 @@ func NewConfig(files ...string) *Configuration {
 	err = env.Parse(&cfg)
 	if err != nil {
 		fmt.Printf("%+v\n", err)
+	}
+
+	// Add trailing slash to file path if not present
+	if cfg.FilePath[len(cfg.FilePath)-1:] != "/" {
+		cfg.FilePath = cfg.FilePath + "/"
 	}
 
 	return &cfg

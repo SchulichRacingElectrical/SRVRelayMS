@@ -29,6 +29,7 @@ type UserServiceInterface interface {
 	// Private
 	FindByUserEmail(context.Context, string) (*model.User, *pgconn.PgError)
 	FindByUserId(context.Context, uuid.UUID) (*model.User, *pgconn.PgError)
+	FindFirst(context.Context) (*model.User, *pgconn.PgError)
 	IsLastAdmin(context.Context, *model.User) (bool, error)
 	CreateToken(*gin.Context, *model.User) (string, error)
 	BlacklistToken(*jwt.Token) error
@@ -94,6 +95,15 @@ func (service *UserService) FindByUserId(ctx context.Context, userId uuid.UUID) 
 	return &user, nil
 }
 
+func (service *UserService) FindFirst(ctx context.Context) (*model.User, *pgconn.PgError) {
+	user := model.User{}
+	result := service.db.First(&user)
+	if result.Error != nil {
+		return nil, &pgconn.PgError{}
+	}
+	return &user, nil
+}
+
 func (service *UserService) IsLastAdmin(ctx context.Context, user *model.User) (bool, error) {
 	users, err := service.FindUsersByOrganizationId(ctx, user.OrganizationId)
 	if err == nil {
@@ -126,7 +136,7 @@ func (service *UserService) CreateToken(c *gin.Context, user *model.User) (strin
 func (service *UserService) BlacklistToken(token *jwt.Token) error {
 	// Extract expiration
 	claims, ok := token.Claims.(jwt.MapClaims)
-	if ok != true {
+	if !ok {
 		return errors.New("error parsing claims")
 	}
 	var exp time.Time

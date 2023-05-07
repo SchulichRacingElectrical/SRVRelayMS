@@ -137,6 +137,7 @@ func GetOrganizationClaim(ctx *gin.Context) (*model.Organization, error) {
 	if organizationExists {
 		return organizationInterface.(*model.Organization), nil
 	} else {
+		fmt.Println("No organization claim found")
 		return nil, gin.Error{}
 	}
 }
